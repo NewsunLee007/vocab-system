@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zootopia Police Academy - Cadet Training V11</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- SheetJS for Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'z-blue-dark': '#0f172a', 
+                        'z-blue-police': '#0055ff', 
+                        'z-blue-neon': '#00f2ff', 
+                        'z-orange': '#ff7b00', 
+                        'z-green': '#84cc16', 
+                        'z-red': '#ef4444', 
+                    },
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'rainbow': 'rainbow 12s linear infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        rainbow: {
+                            '0%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                            '100%': { backgroundPosition: '0% 50%' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            /* V11: High Performance Rainbow Wave */
+            background: linear-gradient(
+                60deg, 
+                #ff0000, #ff8c00, #ffee00, #4de94c, #3783ff, #4815aa, #ff0080, #ff0000
+            );
+            background-size: 300% 300%;
+            animation: rainbow 12s linear infinite;
+            color: white;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Nunito', sans-serif;
+        }
+        
+        .glass-panel {
+            background: rgba(10, 15, 30, 0.35); 
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+
+        .app-container {
+            width: 1280px;
+            height: 800px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border-radius: 28px;
+            box-shadow: 0 0 80px rgba(0,0,0,0.7);
+        }
+
+        .bg-carousel { position: absolute; inset: 0; z-index: -2; pointer-events: none; }
+        .bg-slide { 
+            position: absolute; inset: 0; 
+            background-size: cover; background-position: center; 
+            transition: opacity 2s ease-in-out; 
+            filter: brightness(0.6) contrast(1.2); 
+        }
+        
+        .text-outline { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+        .text-glow { text-shadow: 0 0 15px rgba(0, 242, 255, 0.8); }
+
+        .lightning-path {
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+            animation: drawLine 0.4s ease-out forwards, fadeOut 0.5s 0.3s forwards;
+            filter: drop-shadow(0 0 8px #00f2ff);
+        }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+        @keyframes fadeOut { to { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        const BG_IMAGES = [
+            "https://p.ipic.vip/s38f5g.webp",
+            "https://p.ipic.vip/fzdule.avif",
+            "https://p.ipic.vip/xakkju.webp",
+            "https://p.ipic.vip/xzd8ei.webp",
+            "https://p.ipic.vip/vhvcvx.webp",
+            "https://p.ipic.vip/tj7ag2.webp"
+        ];
+
+        const DEFAULT_WORDS = [
+            {id:1,en:"Police",cn:"警察",tag:"Job"},{id:2,en:"Fox",cn:"狐狸",tag:"Animal"},{id:3,en:"Car",cn:"汽车",tag:"Item"},
+            {id:4,en:"Badge",cn:"徽章",tag:"Item"},{id:5,en:"Rabbit",cn:"兔子",tag:"Animal"},{id:6,en:"Carrot",cn:"胡萝卜",tag:"Food"},
+            {id:7,en:"Mayor",cn:"市长",tag:"Job"},{id:8,en:"Traffic",cn:"交通",tag:"City"},{id:9,en:"Ticket",cn:"罚单",tag:"Item"},
+            {id:10,en:"Detective",cn:"侦探",tag:"Job"},{id:11,en:"Donut",cn:"甜甜圈",tag:"Food"},{id:12,en:"Predator",cn:"食肉动物",tag:"Nature"}
+        ];
+
+        // --- Audio System ---
+        const playSound = (type) => {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            const now = ctx.currentTime;
+            
+            const configs = {
+                pop: { type: 'sine', freq: [800, 300], dur: 0.1, vol: 0.2 },
+                ding: { type: 'triangle', freq: [1200, 1200], dur: 0.5, vol: 0.2 },
+                wrong: { type: 'sawtooth', freq: [150, 100], dur: 0.3, vol: 0.25 },
+                win: { type: 'square', freq: [523, 1046], dur: 0.6, vol: 0.1 },
+                zap: { type: 'sawtooth', freq: [2000, 100], dur: 0.2, vol: 0.15 },
+                delete: { type: 'square', freq: [200, 100], dur: 0.1, vol: 0.1 }
+            };
+
+            const cfg = configs[type] || configs['pop'];
+            osc.type = cfg.type;
+            osc.frequency.setValueAtTime(cfg.freq[0], now);
+            if(cfg.freq[1] !== cfg.freq[0]) osc.frequency.exponentialRampToValueAtTime(cfg.freq[1], now + cfg.dur);
+            gainNode.gain.setValueAtTime(cfg.vol, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + cfg.dur);
+            osc.start(now);
+            osc.stop(now + cfg.dur);
+        };
+
+        // --- Speech System ---
+        let preferredVoice = null;
+        const initSpeech = () => {
+            if (!window.speechSynthesis) return;
+            const loadVoices = () => {
+                const voices = window.speechSynthesis.getVoices();
+                const preferredNames = [
+                    'Google US English', 
+                    'Google UK English Female', 
+                    'Microsoft Zira', 
+                    'Samantha', 
+                    'Victoria',
+                    'Daniel'
+                ];
+                let selected = null;
+                for (const name of preferredNames) {
+                    selected = voices.find(v => v.name.includes(name));
+                    if (selected) break;
+                }
+                if (!selected) {
+                    selected = voices.find(v => v.lang.startsWith('en'));
+                }
+                preferredVoice = selected;
+            };
+            loadVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+            }
+        };
+        // Initialize speech on load
+        // Wait for DOM to be ready implicitly or just run it
+        setTimeout(initSpeech, 100);
+
+        const speak = (text) => {
+            if (!window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            if (preferredVoice) u.voice = preferredVoice;
+            u.lang = 'en-US';
+            u.rate = 0.8; 
+            u.pitch = 1.0;
+            u.volume = 1.0;
+            window.speechSynthesis.speak(u);
+        };
+
+        const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
+
+        // --- Background Component ---
+        const BackgroundCarousel = () => {
+            const [index, setIndex] = useState(0);
+            useEffect(() => {
+                const timer = setInterval(() => setIndex(p => (p + 1) % BG_IMAGES.length), 8000);
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <div className="bg-carousel">
+                    {BG_IMAGES.map((img, i) => (
+                        <div key={i} className="bg-slide" style={{ backgroundImage: `url('${img}')`, opacity: index === i ? 1 : 0 }} />
+                    ))}
+                </div>
+            );
+        };
+
+        // --- UI Components ---
+        const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
+            const variants = {
+                primary: "bg-gradient-to-r from-z-blue-police to-blue-600 text-white border-blue-400/50 hover:shadow-[0_0_20px_rgba(0,85,255,0.6)]",
+                secondary: "bg-slate-800/80 text-cyan-300 border-cyan-400/30 hover:bg-slate-700/80",
+                danger: "bg-gradient-to-r from-red-600 to-red-500 text-white border-red-400/50 hover:shadow-[0_0_15px_rgba(239,68,68,0.6)]",
+                success: "bg-gradient-to-r from-z-green to-lime-500 text-z-blue-dark border-lime-300/50",
+            };
+            return (
+                <button 
+                    onClick={() => { if(!disabled) { playSound('pop'); if (onClick) onClick(); }}} 
+                    className={`px-6 py-3 rounded-xl font-bold transition-all transform active:scale-95 border flex items-center justify-center gap-2 shadow-lg backdrop-blur-md ${variants[variant]} ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : ''} ${className}`}
+                    disabled={disabled}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        // Unified Exit Button (Top Left)
+        const ExitButton = ({ onClick }) => (
+            <button 
+                onClick={onClick}
+                className="bg-red-500/20 hover:bg-red-600 text-white border border-red-500/50 rounded-full px-5 py-2 font-bold text-sm tracking-widest transition-all uppercase flex items-center gap-2 backdrop-blur-md hover:shadow-[0_0_15px_rgba(239,68,68,0.6)] group"
+            >
+                <i className="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> ABORT / 退出
+            </button>
+        );
+
+        const LivesDisplay = ({ lives, max = 3 }) => (
+            <div className="flex gap-2 bg-black/60 px-4 py-2 rounded-full border border-white/20 backdrop-blur-md shadow-lg">
+                {[...Array(max)].map((_, i) => (
+                    <i key={i} className={`fa-solid fa-heart text-xl transition-all duration-300 ${i < lives ? 'text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,1)]' : 'text-gray-600 scale-75'}`}></i>
+                ))}
+            </div>
+        );
+
+        const Modal = ({ title, children, onClose }) => (
+            <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                <div className="glass-panel p-8 rounded-3xl max-w-2xl w-full relative border-t-4 border-z-blue-neon">
+                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><i className="fa-solid fa-xmark text-2xl"></i></button>
+                    <h2 className="text-3xl font-extrabold text-white mb-6 uppercase text-outline text-center">{title}</h2>
+                    <div className="overflow-y-auto max-h-[500px] pr-2">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const LightningLine = ({ startEl, endEl }) => {
+            if (!startEl || !endEl) return null;
+            const root = document.querySelector('.app-container').getBoundingClientRect();
+            const r1 = startEl.getBoundingClientRect();
+            const r2 = endEl.getBoundingClientRect();
+            const x1 = r1.left + r1.width / 2 - root.left;
+            const y1 = r1.top + r1.height / 2 - root.top;
+            const x2 = r2.left + r2.width / 2 - root.left;
+            const y2 = r2.top + r2.height / 2 - root.top;
+            const midX = (x1 + x2) / 2 + (Math.random() - 0.5) * 80;
+            const midY = (y1 + y2) / 2 + (Math.random() - 0.5) * 80;
+            return (
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-50 overflow-visible">
+                    <path d={`M${x1},${y1} Q${midX},${midY} ${x2},${y2}`} fill="none" stroke="#00f2ff" strokeWidth="3" className="lightning-path" strokeLinecap="round" />
+                </svg>
+            );
+        };
+
+        // --- Game Engine ---
+        const useGameEngine = (allWords, batchSize, userInfo, gameType) => {
+            const [level, setLevel] = useState(1);
+            const [lives, setLives] = useState(3);
+            const [score, setScore] = useState(0);
+            const [gameState, setGameState] = useState('playing'); 
+            const [currentBatch, setCurrentBatch] = useState([]);
+            const [processedWords, setProcessedWords] = useState(0);
+
+            // V11: Smart Sorting & Chunking
+            const batches = useMemo(() => {
+                // 1. Sort by length (Difficulty)
+                const sortedWords = [...allWords].sort((a, b) => a.en.length - b.en.length);
+                
+                // 2. Chunk into batches
+                const result = [];
+                for (let i = 0; i < sortedWords.length; i += batchSize) {
+                    result.push(sortedWords.slice(i, i + batchSize));
+                }
+                
+                // 3. Shuffle WITHIN the batch, so level 1 is short words, but random order
+                return result.map(batch => shuffle(batch));
+            }, [allWords, batchSize]);
+
+            useEffect(() => {
+                if (level <= batches.length) {
+                    setCurrentBatch(batches[level - 1]);
+                    setGameState('playing');
+                    setLives(3); 
+                    setProcessedWords(0);
+                } else {
+                    setGameState('victory');
+                }
+            }, [level, batches]);
+
+            const loseLife = () => {
+                playSound('wrong');
+                setLives(prev => {
+                    const newLives = prev - 1;
+                    if (newLives <= 0) {
+                        setGameState('game_over');
+                        saveScore(score); 
+                    }
+                    return newLives;
+                });
+            };
+
+            const addScore = (points) => setScore(s => s + points);
+            const markWordComplete = () => setProcessedWords(p => p + 1);
+            const nextLevel = () => setLevel(l => l + 1);
+
+            const saveScore = (finalScore) => {
+                const historyItem = {
+                    id: Date.now(),
+                    date: new Date().toISOString(),
+                    classId: userInfo.classId,
+                    groupId: userInfo.groupId,
+                    game: gameType,
+                    score: finalScore || score,
+                    maxLevel: level
+                };
+                const existing = JSON.parse(localStorage.getItem('zootopia_history') || '[]');
+                localStorage.setItem('zootopia_history', JSON.stringify([historyItem, ...existing]));
+            };
+
+            useEffect(() => { if (gameState === 'victory') saveScore(score); }, [gameState]);
+
+            return { 
+                level, 
+                lives, 
+                score, 
+                gameState, 
+                currentBatch, 
+                setGameState, 
+                loseLife, 
+                addScore, 
+                nextLevel, 
+                markWordComplete, 
+                remainingWords: Math.max(0, currentBatch.length - processedWords) 
+            };
+        };
+
+        const LevelOverlay = ({ score, onNext, isGameOver = false, onExit, level }) => {
+            // V11: Explicit Victory Check
+            const isVictory = level === 'ALL' || level === undefined; // If loop passed bounds
+            
+            return (
+                <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
+                    <div className="glass-panel p-10 rounded-3xl text-center max-w-lg w-full border-t-4 border-z-blue-neon shadow-2xl">
+                        <h2 className={`text-4xl font-extrabold mb-4 uppercase text-outline ${isGameOver ? 'text-red-500' : 'text-z-green'}`}>
+                            {isGameOver ? 'Mission Failed' : (isVictory ? 'Mission Complete' : 'Sector Clear')}
+                        </h2>
+                        <div className="text-xl font-bold text-gray-300 mb-6">
+                            {isGameOver ? '任务失败' : (isVictory ? '任务完成' : '关卡完成')}
+                        </div>
+                        <div className="text-6xl font-mono text-white mb-6 text-glow">{score} <span className="text-xl text-gray-400">PTS</span></div>
+                        
+                        {isGameOver ? (
+                            <div className="flex flex-col gap-3">
+                                <Button variant="danger" onClick={onExit} className="w-full">Return to HQ / 返回总部</Button>
+                            </div>
+                        ) : isVictory ? (
+                            <div className="flex flex-col gap-3">
+                                <Button variant="success" onClick={onExit} className="w-full text-lg">Return to HQ / 返回首页 <i className="fa-solid fa-home ml-2"></i></Button>
+                            </div>
+                        ) : (
+                            <Button variant="success" onClick={onNext} className="w-full text-lg">Next Sector / 下一关 <i className="fa-solid fa-arrow-right ml-2"></i></Button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Game Header ---
+        const GameHeader = ({ title, level, lives, score, onExit, remaining }) => (
+            <div className="h-24 px-8 flex items-center justify-between glass-panel z-20 border-b border-white/10 relative">
+                <div className="z-30 w-32"><ExitButton onClick={onExit} /></div>
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                    <div className="text-2xl font-extrabold text-white text-outline tracking-wider uppercase">{title}</div>
+                    <div className="flex gap-4 justify-center mt-1">
+                        <span className="text-z-blue-neon font-bold text-sm tracking-widest bg-black/40 px-3 py-1 rounded-full border border-z-blue-neon/30">LEVEL {level}</span>
+                        <span className="text-z-orange font-bold text-sm tracking-widest bg-black/40 px-3 py-1 rounded-full border border-z-orange/30">REMAINING: {remaining}</span>
+                    </div>
+                </div>
+                <div className="flex items-center gap-6 z-30 w-auto justify-end">
+                    <div className="text-4xl font-mono text-white font-bold text-glow">{score}</div>
+                    <LivesDisplay lives={lives} />
+                </div>
+            </div>
+        );
+
+        // --- Game A: Memory Patrol ---
+        const MemoryPatrol = ({ allWords, batchSize, userInfo, onExit }) => {
+            const [mode, setMode] = useState(null);
+            if (!mode) return <ModeSelection onSelect={setMode} onExit={onExit} />;
+            return <MemoryGameLogic allWords={allWords} batchSize={batchSize} mode={mode} userInfo={userInfo} onExit={onExit} />;
+        };
+
+        const ModeSelection = ({ onSelect, onExit }) => (
+            <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-fade-in z-20 relative">
+                <div className="absolute top-4 left-4"><ExitButton onClick={onExit} /></div>
+                <h2 className="text-5xl font-bold text-white mb-12 text-outline drop-shadow-lg">SELECT MODE / 选择模式</h2>
+                <div className="flex gap-12">
+                    <button onClick={() => onSelect('covert')} className="group p-10 glass-panel rounded-3xl hover:bg-z-blue-police/40 transition-all border border-blue-500/30 hover:border-z-blue-neon w-80 hover:scale-105">
+                        <i className="fa-solid fa-eye-slash text-6xl mb-6 text-gray-300 group-hover:text-white"></i>
+                        <h3 className="text-2xl font-bold text-z-blue-neon">Covert Ops</h3>
+                        <p className="text-lg text-gray-300 mt-2 font-bold">Hidden Cards<br/>暗牌记忆</p>
+                    </button>
+                    <button onClick={() => onSelect('recon')} className="group p-10 glass-panel rounded-3xl hover:bg-z-orange/40 transition-all border border-orange-500/30 hover:border-z-orange w-80 hover:scale-105">
+                        <i className="fa-solid fa-eye text-6xl mb-6 text-gray-300 group-hover:text-white"></i>
+                        <h3 className="text-2xl font-bold text-z-orange">Recon Mission</h3>
+                        <p className="text-lg text-gray-300 mt-2 font-bold">Visible Cards<br/>明牌速配</p>
+                    </button>
+                </div>
+            </div>
+        );
+
+        const MemoryGameLogic = ({ allWords, batchSize, mode, userInfo, onExit }) => {
+            const { level, lives, score, gameState, currentBatch, setGameState, loseLife, addScore, nextLevel, remainingWords, markWordComplete } = useGameEngine(allWords, batchSize, userInfo, `Memory Patrol (${mode})`);
+            const [cards, setCards] = useState([]);
+            const [flipped, setFlipped] = useState([]);
+            const [solved, setSolved] = useState([]);
+            const [isChecking, setIsChecking] = useState(false);
+            const [mismatch, setMismatch] = useState([]);
+
+            useEffect(() => {
+                if (currentBatch.length > 0) {
+                    const deck = [];
+                    currentBatch.forEach(word => {
+                        deck.push({ ...word, type: 'en', content: word.en, pairId: word.id });
+                        deck.push({ ...word, type: 'cn', content: word.cn, pairId: word.id });
+                    });
+                    const gameCards = shuffle(deck).map((card, i) => ({ ...card, uniqueId: i }));
+                    setCards(gameCards);
+                    setFlipped([]);
+                    setSolved([]);
+                    setMismatch([]);
+                }
+            }, [currentBatch]);
+
+            const handleFlip = (index) => {
+                if (isChecking || flipped.includes(index) || solved.includes(cards[index].pairId)) return;
+                
+                playSound('pop');
+                const newFlipped = [...flipped, index];
+                setFlipped(newFlipped);
+
+                if (newFlipped.length === 2) {
+                    setIsChecking(true);
+                    const [first, second] = newFlipped;
+                    if (cards[first].pairId === cards[second].pairId) {
+                        // Match
+                        playSound('ding');
+                        addScore(10);
+                        // Speak the English word regardless of which card was flipped first
+                        const wordToSpeak = cards[first].type === 'en' ? cards[first].content : cards[second].content;
+                        speak(wordToSpeak);
+
+                        setSolved(s => [...s, cards[first].pairId]);
+                        setFlipped([]);
+                        setIsChecking(false);
+                        markWordComplete();
+                    } else {
+                        // No Match
+                        setMismatch([first, second]);
+                        playSound('error'); // Optional: Add error sound if available or reuse existing
+                        loseLife();
+                        setTimeout(() => {
+                            setMismatch([]);
+                            setFlipped([]);
+                            setIsChecking(false);
+                        }, 1000);
+                    }
+                }
+            };
+            
+            useEffect(() => {
+                if (currentBatch.length > 0 && solved.length === currentBatch.length) {
+                    setTimeout(() => setGameState('level_complete'), 500);
+                }
+            }, [solved, currentBatch]);
+
+            const Card = ({ card, index, isFlipped, isSolved, isMismatch }) => {
+                const isFaceUp = mode === 'recon' || isFlipped || isSolved;
+                
+                // Base styles
+                let cardStyle = "w-full h-full rounded-2xl cursor-pointer transition-all duration-300 flex items-center justify-center border-2 shadow-lg select-none relative overflow-hidden ";
+                
+                // Content styles
+                let content = null;
+
+                if (isFaceUp) {
+                    // Face Up Logic
+                    if (isSolved) {
+                        cardStyle += "border-green-500 bg-green-900/40 text-green-200 scale-95 opacity-50"; // Dim solved cards
+                    } else if (isMismatch) {
+                        cardStyle += "border-red-500 bg-red-900/40 animate-shake"; // Shake on error
+                    } else {
+                        // Active / Recon mode
+                        if (card.type === 'en') {
+                            cardStyle += "border-cyan-400/60 bg-cyan-900/30 hover:bg-cyan-800/40 hover:border-cyan-300";
+                        } else {
+                            cardStyle += "border-purple-400/60 bg-purple-900/30 hover:bg-purple-800/40 hover:border-purple-300";
+                        }
+                    }
+
+                    content = (
+                        <div className="text-center p-2 w-full">
+                            <div className={`font-bold ${card.type === 'en' ? 'text-xl text-white' : 'text-lg text-gray-200'}`}>
+                                {card.content}
+                            </div>
+                            {/* Small indicator for type (optional) */}
+                            <div className="absolute top-1 right-2 text-xs opacity-30">
+                                {card.type === 'en' ? 'EN' : 'CN'}
+                            </div>
+                        </div>
+                    );
+
+                } else {
+                    // Face Down (Covert mode only)
+                    cardStyle += "bg-slate-800 border-slate-700 hover:border-blue-400/50 hover:bg-slate-750";
+                    content = <i className="fa-solid fa-question text-3xl text-slate-600"></i>;
+                }
+
+                return (
+                    <div className={cardStyle} onClick={() => !isSolved && handleFlip(index)}>
+                        {content}
+                    </div>
+                );
+            };
+
+            if (gameState === 'level_complete') return <LevelOverlay score={score} onNext={nextLevel} level={level} />;
+            if (gameState === 'game_over') return <LevelOverlay score={score} isGameOver={true} onExit={onExit} />;
+            if (gameState === 'victory') return <LevelOverlay score={score} onExit={onExit} level="ALL" />;
+
+            return (
+                <div className="h-full flex flex-col">
+                    <GameHeader title={`Memory Patrol: ${mode === 'recon' ? 'Semantics Link' : 'Recall Ops'}`} level={level} lives={lives} score={score} onExit={onExit} remaining={remainingWords} />
+                    <div className="flex-1 p-8 grid grid-cols-6 grid-rows-4 gap-4">
+                        {cards.map((card, i) => (
+                            <div key={i} className="perspective-1000 h-full">
+                                <Card 
+                                    card={card} 
+                                    index={i} 
+                                    isFlipped={flipped.includes(i)} 
+                                    isSolved={solved.includes(card.pairId)} 
+                                    isMismatch={mismatch.includes(i)}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Game B: Rapid Fire ---
+        const RapidFire = ({ allWords, batchSize, userInfo, onExit }) => {
+            const { level, lives, score, gameState, currentBatch, setGameState, loseLife, addScore, nextLevel, remainingWords, markWordComplete } = useGameEngine(allWords, batchSize, userInfo, 'Rapid Fire');
+            const [currentWord, setCurrentWord] = useState(null);
+            const [options, setOptions] = useState([]);
+            const [feedback, setFeedback] = useState(null); // 'correct' or 'incorrect'
+            const [lightning, setLightning] = useState(null);
+
+            useEffect(() => {
+                if (remainingWords > 0) {
+                    const word = currentBatch[currentBatch.length - remainingWords];
+                    setCurrentWord(word);
+                    
+                    // V11: Smart Distractors - find words of similar length
+                    const otherWords = allWords.filter(w => w.id !== word.id && Math.abs(w.en.length - word.en.length) < 3);
+                    const distractors = shuffle(otherWords).slice(0, 3);
+                    setOptions(shuffle([word, ...distractors]));
+                } else if (currentBatch.length > 0) {
+                    setGameState('level_complete');
+                }
+            }, [remainingWords, currentBatch, allWords]);
+
+            const handleSelect = (option, index) => {
+                if (feedback) return;
+
+                const startEl = document.querySelector('.question-card');
+                const endEl = document.querySelectorAll('.option-button')[index];
+                setLightning({ startEl, endEl });
+
+                if (option.id === currentWord.id) {
+                    playSound('ding');
+                    addScore(15);
+                    setFeedback('correct');
+                } else {
+                    loseLife();
+                    setFeedback('incorrect');
+                }
+                
+                setTimeout(() => {
+                    if (option.id === currentWord.id) markWordComplete();
+                    setFeedback(null);
+                    setLightning(null);
+                }, 1000);
+            };
+
+            if (gameState === 'level_complete') return <LevelOverlay score={score} onNext={nextLevel} level={level} />;
+            if (gameState === 'game_over') return <LevelOverlay score={score} isGameOver={true} onExit={onExit} />;
+            if (gameState === 'victory') return <LevelOverlay score={score} onExit={onExit} level="ALL" />;
+
+            return (
+                <div className="h-full flex flex-col">
+                    <GameHeader title="Rapid Fire" level={level} lives={lives} score={score} onExit={onExit} remaining={remainingWords} />
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+                        {currentWord && (
+                            <>
+                                <div className="question-card glass-panel p-12 rounded-3xl mb-12 text-center border-2 border-z-blue-neon/50 shadow-2xl">
+                                    <div className="text-6xl font-extrabold text-white text-outline">{currentWord.en}</div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-6 w-full max-w-4xl">
+                                    {options.map((opt, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleSelect(opt, i)}
+                                            disabled={!!feedback}
+                                            className={`option-button glass-panel p-6 rounded-2xl text-2xl font-bold transition-all duration-300 border-2 text-white
+                                                ${feedback && opt.id === currentWord.id ? 'bg-green-500/40 border-green-400 scale-105' : ''}
+                                                ${feedback === 'incorrect' && opt.id !== currentWord.id ? 'bg-red-500/40 border-red-400' : ''}
+                                                ${!feedback ? 'border-white/20 hover:bg-white/10 hover:border-white/40' : ''}
+                                            `}
+                                        >
+                                            {opt.cn}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                        {lightning && <LightningLine startEl={lightning.startEl} endEl={lightning.endEl} />}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Game C: Spelling Bee ---
+        const SpellingBee = ({ allWords, batchSize, userInfo, onExit }) => {
+            const { level, lives, score, gameState, currentBatch, setGameState, loseLife, addScore, nextLevel, remainingWords, markWordComplete } = useGameEngine(allWords, batchSize, userInfo, 'Spelling Bee');
+            const [currentWord, setCurrentWord] = useState(null);
+            const [inputValue, setInputValue] = useState('');
+            const [feedback, setFeedback] = useState(null); // 'correct', 'incorrect', 'hint'
+            const inputRef = useRef(null);
+
+            useEffect(() => {
+                if (remainingWords > 0) {
+                    const word = currentBatch[currentBatch.length - remainingWords];
+                    setCurrentWord(word);
+                    setInputValue('');
+                    setFeedback(null);
+                    if(inputRef.current) inputRef.current.focus();
+                } else if (currentBatch.length > 0) {
+                    setGameState('level_complete');
+                }
+            }, [remainingWords, currentBatch]);
+
+            const handleSubmit = (e) => {
+                if (e && e.preventDefault) e.preventDefault();
+                if (!inputValue || feedback) return;
+
+                if (inputValue.toLowerCase() === currentWord.en.toLowerCase()) {
+                    playSound('ding');
+                    addScore(20);
+                    setFeedback('correct');
+                    // Speak the word on correct spelling
+                    speak(currentWord.en);
+                    setTimeout(() => {
+                        markWordComplete();
+                    }, 1000);
+                } else {
+                    loseLife();
+                    setFeedback('incorrect');
+                    setTimeout(() => {
+                        setFeedback(null);
+                        setInputValue('');
+                    }, 1200);
+                }
+            };
+
+            const showHint = () => {
+                if (feedback) return;
+                setFeedback('hint');
+                addScore(-5); // Penalty for hint
+                setTimeout(() => setFeedback(null), 1500);
+            };
+
+            // V11: Split Input Logic
+            const handleInputChange = (e) => {
+                // Ensure only letters are entered
+                const val = e.target.value.replace(/[^a-zA-Z\s-]/g, '');
+                setInputValue(val);
+            };
+
+            const placeholder = currentWord ? Array(currentWord.en.length).fill('_').join(' ') : '';
+
+            if (gameState === 'level_complete') return <LevelOverlay score={score} onNext={nextLevel} level={level} />;
+            if (gameState === 'game_over') return <LevelOverlay score={score} isGameOver={true} onExit={onExit} />;
+            if (gameState === 'victory') return <LevelOverlay score={score} onExit={onExit} level="ALL" />;
+
+            return (
+                <div className="h-full flex flex-col">
+                    <GameHeader title="Spelling Bee" level={level} lives={lives} score={score} onExit={onExit} remaining={remainingWords} />
+                    <div className="flex-1 flex flex-col items-center justify-center p-8">
+                        {currentWord && (
+                            <div className="w-full max-w-2xl text-center">
+                                <div className="glass-panel p-10 rounded-3xl mb-8 border-2 border-z-blue-neon/50 shadow-2xl">
+                                    <div className="text-4xl font-bold text-cyan-300 mb-2">{currentWord.cn}</div>
+                                    <div className="text-xl text-gray-400">{currentWord.tag}</div>
+                                </div>
+                                <form onSubmit={handleSubmit}>
+                                    <div className="relative w-full">
+                                        {/* Visual Placeholder Layer */}
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                                            <div className="text-5xl font-mono tracking-widest text-white/20 select-none">
+                                                {inputValue.length === 0 ? placeholder : ''}
+                                            </div>
+                                        </div>
+                                        
+                                        <input
+                                            ref={inputRef}
+                                            type="text"
+                                            value={inputValue}
+                                            onChange={handleInputChange}
+                                            autoFocus
+                                            autoComplete="off"
+                                            autoCorrect="off"
+                                            spellCheck="false"
+                                            className={`w-full text-center text-5xl font-bold font-mono tracking-widest p-4 rounded-2xl bg-black/50 border-4 transition-all duration-300 text-white outline-none focus:border-z-blue-neon z-10 relative
+                                                ${feedback === 'correct' ? 'border-green-500 text-green-400' : ''}
+                                                ${feedback === 'incorrect' ? 'border-red-500 animate-shake text-red-400' : 'border-white/20'}
+                                            `}
+                                            disabled={!!feedback}
+                                        />
+                                    </div>
+                                </form>
+                                <div className="h-12 mt-4 text-2xl font-bold">
+                                    {feedback === 'hint' && <div className="text-yellow-400 animate-pulse">{currentWord.en}</div>}
+                                </div>
+                                <div className="mt-6 flex justify-center gap-4">
+                                    <Button onClick={handleSubmit} disabled={!inputValue || !!feedback} className="w-48 text-xl">
+                                        <i className="fa-solid fa-check mr-2"></i> 提交 / SUBMIT
+                                    </Button>
+                                    <Button onClick={showHint} variant="secondary" disabled={!!feedback} className="w-48 text-xl">
+                                        <i className="fa-solid fa-lightbulb mr-2"></i> HINT (-5)
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main Menu & User Info ---
+        const MainMenu = ({ onStartGame, onManageWords, onShowHistory, userInfo }) => (
+            <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-fade-in z-20 relative">
+                {/* Return to Learning Center Control */}
+                <div className="absolute top-6 left-6">
+                    <button 
+                        onClick={() => {
+                            // Try to close if opened as popup, otherwise navigate
+                            if(window.opener) {
+                                window.close();
+                            } else {
+                                window.location.href = 'index.html'; 
+                            }
+                        }}
+                        className="glass-panel px-5 py-3 rounded-2xl text-left hover:bg-blue-900/40 transition-all border border-blue-400/30 flex items-center gap-3 group cursor-pointer hover:shadow-[0_0_15px_rgba(0,242,255,0.3)]"
+                    >
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-z-blue-police to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform border border-white/20">
+                            <i className="fa-solid fa-building-columns text-white text-lg"></i>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-cyan-300 font-bold tracking-widest uppercase opacity-80">Return to</span>
+                            <span className="text-sm font-black text-white tracking-wide">学习中心</span>
+                        </div>
+                    </button>
+                </div>
+
+                <div className="absolute top-6 right-6 glass-panel px-4 py-2 rounded-xl text-right">
+                    <div className="font-bold text-lg text-white">{userInfo.name}</div>
+                    <div className="text-sm text-gray-300">班级：{(userInfo.className && userInfo.className.trim()) || userInfo.classId || '-'}</div>
+                </div>
+                <i className="fa-solid fa-shield-halved text-8xl text-z-blue-neon mb-4 text-glow"></i>
+                <h1 className="text-6xl font-black text-white mb-2 text-outline">ZPD Cadet Training</h1>
+                <p className="text-2xl text-cyan-300 mb-12">词汇特训 V11</p>
+                <div className="flex flex-col gap-5 w-full max-w-sm">
+                    <Button onClick={() => onStartGame('rapid_fire')} className="w-full text-xl"><i className="fa-solid fa-bolt-lightning mr-2"></i> Rapid Fire / 快速反应</Button>
+                    <Button onClick={() => onStartGame('spelling_bee')} className="w-full text-xl"><i className="fa-solid fa-keyboard mr-2"></i> Spelling Bee / 拼写达人</Button>
+                    <Button onClick={() => onStartGame('memory_patrol')} className="w-full text-xl"><i className="fa-solid fa-clone mr-2"></i> Memory Patrol / 记忆巡逻</Button>
+                    <div className="flex gap-4 mt-4">
+                        <Button onClick={onManageWords} variant="secondary" className="w-full"><i className="fa-solid fa-book mr-2"></i> Word Bank</Button>
+                        <Button onClick={onShowHistory} variant="secondary" className="w-full"><i className="fa-solid fa-trophy mr-2"></i> History</Button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- Word Management ---
+        const WordManager = ({ datasets, setDatasets, onBack, onBackup, onRestore }) => {
+            const [newWordEn, setNewWordEn] = useState('');
+            const [newWordCn, setNewWordCn] = useState('');
+            const [activeDataset, setActiveDataset] = useState(datasets[0].name);
+            const [isImporting, setIsImporting] = useState(false);
+            const fileInputRef = useRef(null);
+
+            const fetchSystemWords = async () => {
+                try {
+                    const systemWordsJSON = localStorage.getItem('zootopia_words');
+                    if (systemWordsJSON) {
+                        const systemWords = JSON.parse(systemWordsJSON);
+                        if (Array.isArray(systemWords) && systemWords.length > 0) {
+                            const formattedWords = systemWords.map((word, index) => ({
+                                id: `sys-${Date.now()}-${index}`,
+                                en: word.en,
+                                cn: word.cn,
+                                tag: 'System'
+                            }));
+                            
+                            setDatasets(prev => {
+                                const existingSystemDatasetIndex = prev.findIndex(d => d.name === '系统词库');
+                                if (existingSystemDatasetIndex > -1) {
+                                    const updated = [...prev];
+                                    updated[existingSystemDatasetIndex].words = formattedWords;
+                                    return updated;
+                                } else {
+                                    return [...prev, { name: '系统词库', words: formattedWords }];
+                                }
+                            });
+                            setActiveDataset('系统词库');
+                            alert(`成功同步 ${formattedWords.length} 个单词！`);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch or parse system words:", error);
+                    alert("同步系统词库失败，请检查控制台。");
+                }
+            };
+
+            const handleAddWord = (e) => {
+                e.preventDefault();
+                if (!newWordEn || !newWordCn) return;
+                const newWord = { id: Date.now(), en: newWordEn, cn: newWordCn, tag: 'Custom' };
+                const updatedDatasets = datasets.map(d => 
+                    d.name === activeDataset ? { ...d, words: [newWord, ...d.words] } : d
+                );
+                setDatasets(updatedDatasets);
+                setNewWordEn('');
+                setNewWordCn('');
+            };
+
+            const handleDeleteWord = (id) => {
+                playSound('delete');
+                const updatedDatasets = datasets.map(d => 
+                    d.name === activeDataset ? { ...d, words: d.words.filter(w => w.id !== id) } : d
+                );
+                setDatasets(updatedDatasets);
+            };
+
+            const handleImport = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        const importedWords = json.map((row, i) => ({
+                            id: `import-${Date.now()}-${i}`,
+                            en: row.en || row.english || row.word,
+                            cn: row.cn || row.chinese || row.meaning,
+                            tag: 'Imported'
+                        })).filter(w => w.en && w.cn);
+
+                        if (importedWords.length > 0) {
+                            const newDataset = { name: `导入-${file.name.split('.')[0]}`, words: importedWords };
+                            setDatasets(d => [...d, newDataset]);
+                            setActiveDataset(newDataset.name);
+                            alert(`成功导入 ${importedWords.length} 个单词！`);
+                        } else {
+                            alert('未在文件中找到有效单词。请确保列名为 "en" 和 "cn"。');
+                        }
+                    } catch (err) {
+                        alert('导入失败，请确保文件格式正确。');
+                        console.error(err);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+                event.target.value = null; // Reset file input
+            };
+
+            const currentWords = datasets.find(d => d.name === activeDataset)?.words || [];
+
+            return (
+                <Modal title="Word Bank / 词库管理" onClose={onBack}>
+                    <div className="flex gap-4 mb-4">
+                        <select value={activeDataset} onChange={e => setActiveDataset(e.target.value)} className="flex-1 bg-slate-800/80 text-white p-3 rounded-lg border border-white/20">
+                            {datasets.map(d => <option key={d.name} value={d.name}>{d.name} ({d.words.length})</option>)}
+                        </select>
+                        <Button onClick={fetchSystemWords} variant="secondary"><i className="fa-solid fa-sync mr-2"></i> 同步系统词库</Button>
+                    </div>
+                    <div className="flex gap-4 mb-4">
+                        <Button onClick={() => fileInputRef.current.click()} variant="secondary" className="w-full"><i className="fa-solid fa-file-import mr-2"></i> 导入 Excel</Button>
+                        <input type="file" ref={fileInputRef} onChange={handleImport} accept=".xlsx, .xls" className="hidden" />
+                        <Button onClick={onBackup} variant="secondary" className="w-full"><i className="fa-solid fa-download mr-2"></i> 备份</Button>
+                        <Button onClick={onRestore} variant="secondary" className="w-full"><i className="fa-solid fa-upload mr-2"></i> 恢复</Button>
+                    </div>
+                    <form onSubmit={handleAddWord} className="flex gap-2 mb-4">
+                        <input type="text" value={newWordEn} onChange={e => setNewWordEn(e.target.value)} placeholder="English Word" className="flex-1 bg-slate-800/80 p-3 rounded-lg border border-white/20 text-white" />
+                        <input type="text" value={newWordCn} onChange={e => setNewWordCn(e.target.value)} placeholder="中文释义" className="flex-1 bg-slate-800/80 p-3 rounded-lg border border-white/20 text-white" />
+                        <Button type="submit" className="px-4"><i className="fa-solid fa-plus"></i></Button>
+                    </form>
+                    <div className="h-[300px] overflow-y-auto bg-black/30 rounded-lg p-2">
+                        {currentWords.map(word => (
+                            <div key={word.id} className="flex items-center justify-between p-2 rounded hover:bg-white/10">
+                                <div>
+                                    <span className="font-bold text-lg">{word.en}</span>
+                                    <span className="text-gray-400 ml-3">{word.cn}</span>
+                                </div>
+                                <button onClick={() => handleDeleteWord(word.id)} className="text-red-500 hover:text-red-400"><i className="fa-solid fa-trash"></i></button>
+                            </div>
+                        ))}
+                    </div>
+                </Modal>
+            );
+        };
+
+        // --- History Viewer ---
+        const HistoryViewer = ({ onBack }) => {
+            const [history, setHistory] = useState([]);
+            useEffect(() => {
+                setHistory(JSON.parse(localStorage.getItem('zootopia_history') || '[]'));
+            }, []);
+
+            return (
+                <Modal title="Mission History / 任务历史" onClose={onBack}>
+                    <div className="h-[400px] overflow-y-auto bg-black/30 rounded-lg p-2">
+                        {history.length === 0 ? (
+                            <div className="text-center text-gray-400 p-8">No missions completed yet.</div>
+                        ) : (
+                            history.map(item => (
+                                <div key={item.id} className="flex items-center justify-between p-3 rounded hover:bg-white/10 border-b border-white/10">
+                                    <div>
+                                        <div className="font-bold text-lg">{item.game}</div>
+                                        <div className="text-sm text-gray-400">{new Date(item.date).toLocaleString()}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-2xl font-mono text-z-blue-neon">{item.score} PTS</div>
+                                        <div className="text-sm text-gray-400">Max Level: {item.maxLevel}</div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </Modal>
+            );
+        };
+
+        // --- Main App Component ---
+        const App = () => {
+            const [screen, setScreen] = useState('menu'); // menu, game, words, history
+            const [gameType, setGameType] = useState(null);
+            const [datasets, setDatasets] = useState([{ name: '默认词库', words: DEFAULT_WORDS }]);
+            const [activeWords, setActiveWords] = useState(DEFAULT_WORDS);
+            const [userInfo, setUserInfo] = useState({ name: 'Cadet 007', className: '未设置班级', classId: 'A', groupId: '1' });
+            const [batchSize, setBatchSize] = useState(6);
+
+            // Load from localStorage on mount
+            useEffect(() => {
+                const savedDatasets = localStorage.getItem('zootopia_datasets');
+                if (savedDatasets) {
+                    setDatasets(JSON.parse(savedDatasets));
+                }
+                const savedUser = localStorage.getItem('zootopia_user');
+                if(savedUser) setUserInfo(JSON.parse(savedUser));
+            }, []);
+
+            // Save to localStorage when datasets change
+            useEffect(() => {
+                localStorage.setItem('zootopia_datasets', JSON.stringify(datasets));
+                // V11: Always use the first dataset for the game
+                setActiveWords(datasets[0]?.words || []);
+            }, [datasets]);
+
+            const handleStartGame = (type) => {
+                if (activeWords.length < batchSize) {
+                    alert(`词库单词不足！至少需要 ${batchSize} 个单词才能开始游戏。`);
+                    return;
+                }
+                setGameType(type);
+                setScreen('game');
+            };
+
+            const handleBackup = () => {
+                const dataStr = JSON.stringify({ datasets, userInfo }, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                const exportFileDefaultName = `zootopia_backup_${new Date().toISOString().slice(0,10)}.json`;
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            };
+
+            const handleRestore = () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = readerEvent => {
+                        try {
+                            const content = JSON.parse(readerEvent.target.result);
+                            if (content.datasets && content.userInfo) {
+                                setDatasets(content.datasets);
+                                setUserInfo(content.userInfo);
+                                alert('恢复成功！');
+                            } else {
+                                alert('恢复失败：文件格式不正确。');
+                            }
+                        } catch (err) {
+                            alert('恢复失败：无法解析文件。');
+                        }
+                    }
+                    reader.readAsText(file);
+                }
+                input.click();
+            };
+
+            const renderScreen = () => {
+                switch (screen) {
+                    case 'game':
+                        const GameComponent = {
+                            'rapid_fire': RapidFire,
+                            'spelling_bee': SpellingBee,
+                            'memory_patrol': MemoryPatrol
+                        }[gameType];
+                        return <GameComponent allWords={activeWords} batchSize={batchSize} userInfo={userInfo} onExit={() => setScreen('menu')} />;
+                    case 'words':
+                        return <WordManager datasets={datasets} setDatasets={setDatasets} onBack={() => setScreen('menu')} onBackup={handleBackup} onRestore={handleRestore} />;
+                    case 'history':
+                        return <HistoryViewer onBack={() => setScreen('menu')} />;
+                    case 'menu':
+                    default:
+                        return <MainMenu onStartGame={handleStartGame} onManageWords={() => setScreen('words')} onShowHistory={() => setScreen('history')} userInfo={userInfo} />;
+                }
+            };
+
+            return (
+                <div className="app-container glass-panel">
+                    <BackgroundCarousel />
+                    {renderScreen()}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

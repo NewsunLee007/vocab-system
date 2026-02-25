@@ -154,7 +154,7 @@ const auth = {
                 
                 router.navigate('admin');
                 app.updateNav();
-                helpers.showToast('网络连接异常，已切换至离线模式', 'warning');
+                helpers.showToast('后端接口不可用，已切换至离线模式（数据不会同步到服务器）', 'warning');
                 return true;
             } else {
                 helpers.showToast('密码错误，请重试', 'error');
@@ -410,7 +410,7 @@ const auth = {
             }
             
             if (teacher) {
-                helpers.showToast('网络连接失败，已切换至离线模式', 'info');
+                helpers.showToast('后端接口不可用，已切换至离线模式（数据不会同步到服务器）', 'warning');
                 // ... same logic as before ...
                 this.currentUser = {
                     role: 'teacher',
@@ -491,7 +491,7 @@ const auth = {
             
             const localStudent = db.findStudentByClassAndName(className, name);
             if (localStudent && helpers.verifyPassword(pwd, localStudent.pwd)) {
-                 helpers.showToast('网络连接失败，已切换至离线模式', 'info');
+                 helpers.showToast('后端接口不可用，已切换至离线模式（学习记录不会同步到服务器）', 'warning');
                  this.completeStudentLogin(localStudent);
                  return true;
             }

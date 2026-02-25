@@ -1,22 +1,90 @@
-const API_BASE_URL = '/api'; // Relative path since we serve frontend from same server
+const API_STORAGE_KEY = 'xinji_api_base_url';
+const DEFAULT_API_BASE_URL = '/api';
+
+function normalizeApiBaseUrl(input) {
+    if (!input) return DEFAULT_API_BASE_URL;
+    let url = String(input).trim();
+    url = url.replace(/\/+$/, '');
+    if (!url) return DEFAULT_API_BASE_URL;
+    return url;
+}
+
+try {
+    const params = new URLSearchParams(window.location.search);
+    const apiParam = params.get('api');
+    if (apiParam) {
+        localStorage.setItem(API_STORAGE_KEY, normalizeApiBaseUrl(apiParam));
+    }
+} catch (e) {}
 
 const api = {
+    _baseUrl: normalizeApiBaseUrl((() => {
+        try {
+            return localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_BASE_URL;
+        } catch (e) {
+            return DEFAULT_API_BASE_URL;
+        }
+    })()),
+
+    getBaseUrl() {
+        return this._baseUrl;
+    },
+
+    setBaseUrl(url) {
+        const normalized = normalizeApiBaseUrl(url);
+        this._baseUrl = normalized;
+        try {
+            localStorage.setItem(API_STORAGE_KEY, normalized);
+        } catch (e) {}
+        return normalized;
+    },
+
+    clearBaseUrl() {
+        this._baseUrl = DEFAULT_API_BASE_URL;
+        try {
+            localStorage.removeItem(API_STORAGE_KEY);
+        } catch (e) {}
+        return this._baseUrl;
+    },
+
+    _url(path) {
+        const base = this.getBaseUrl();
+        if (!path) return base;
+        const p = path.startsWith('/') ? path : `/${path}`;
+        return `${base}${p}`;
+    },
+
+    async _readErrorMessage(response, fallback) {
+        if (!response) return fallback;
+        try {
+            const data = await response.json();
+            if (data && typeof data.message === 'string') return data.message;
+            return fallback;
+        } catch (e) {
+            try {
+                const text = await response.text();
+                if (text) return text.slice(0, 200);
+            } catch (e2) {}
+            return fallback;
+        }
+    },
+
     async login(credentials) {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        const response = await fetch(this._url('/auth/login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials)
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Login failed');
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Login failed');
         }
         return response.json();
     },
     
     async register(userData) {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        const response = await fetch(this._url('/auth/register'), {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -25,8 +93,8 @@ const api = {
             body: JSON.stringify(userData)
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Register failed');
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Register failed');
         }
         return response.json();
     },
@@ -35,7 +103,7 @@ const api = {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('Not authenticated');
 
-        const url = `${API_BASE_URL}/auth/change-password`;
+        const url = this._url('/auth/change-password');
         const headers = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
@@ -50,22 +118,15 @@ const api = {
         }
         
         if (!response.ok) {
-            let errorMsg = 'Change password failed';
-            try {
-                const error = await response.json();
-                errorMsg = error.message || errorMsg;
-            } catch (e) {
-                // If response is not JSON (e.g. 404/405/500 HTML), use status text
-                errorMsg = `Server Error (${response.status}): ${response.statusText}`;
-            }
-            throw new Error(errorMsg);
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Change password failed');
         }
         return response.json();
     },
 
     async resetPassword(userIds) {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/admin/reset-password`, {
+        const response = await fetch(this._url('/admin/reset-password'), {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -74,8 +135,8 @@ const api = {
             body: JSON.stringify({ userIds })
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Reset password failed');
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Reset password failed');
         }
         return response.json();
     },
@@ -84,7 +145,7 @@ const api = {
         const token = localStorage.getItem('token');
         if (!token) return { data: {} };
         
-        const response = await fetch(`${API_BASE_URL}/sync`, {
+        const response = await fetch(this._url('/sync'), {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) {
@@ -93,8 +154,8 @@ const api = {
                 localStorage.removeItem('token');
                 throw new Error('Session expired');
             }
-            const error = await response.json();
-            throw new Error(error.message || 'Sync pull failed');
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Sync pull failed');
         }
         return response.json();
     },
@@ -103,7 +164,7 @@ const api = {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const response = await fetch(`${API_BASE_URL}/sync`, {
+        const response = await fetch(this._url('/sync'), {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -112,8 +173,8 @@ const api = {
             body: JSON.stringify({ data })
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Sync push failed');
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Sync push failed');
         }
         return response.json();
     },
@@ -124,13 +185,13 @@ const api = {
         const token = localStorage.getItem('token');
         if (!token) return null;
         
-        const response = await fetch(`${API_BASE_URL}/school/data`, {
+        const response = await fetch(this._url('/school/data'), {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) {
              if (response.status === 404) return null; // No data yet
-             const error = await response.json();
-             throw new Error(error.message || 'Fetch school data failed');
+             const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+             throw new Error(message || 'Fetch school data failed');
         }
         return response.json();
     },
@@ -139,7 +200,7 @@ const api = {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('Not authenticated');
 
-        const response = await fetch(`${API_BASE_URL}/school/data`, {
+        const response = await fetch(this._url('/school/data'), {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -148,8 +209,8 @@ const api = {
             body: JSON.stringify({ data })
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Update school data failed');
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Update school data failed');
         }
         return response.json();
     }

@@ -101,6 +101,42 @@ const api = {
             throw new Error(error.message || 'Sync push failed');
         }
         return response.json();
+    },
+
+    // New API methods for cloud storage of school data
+    
+    async fetchSchoolData() {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        
+        const response = await fetch(`${API_BASE_URL}/school/data`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+             if (response.status === 404) return null; // No data yet
+             const error = await response.json();
+             throw new Error(error.message || 'Fetch school data failed');
+        }
+        return response.json();
+    },
+
+    async updateSchoolData(data) {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('Not authenticated');
+
+        const response = await fetch(`${API_BASE_URL}/school/data`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ data })
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Update school data failed');
+        }
+        return response.json();
     }
 };
 

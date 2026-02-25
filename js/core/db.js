@@ -17,15 +17,40 @@ const db = {
     /**
      * 初始化数据库
      */
-    init() {
+    async init() {
+        // 1. 尝试从 localStorage 加载缓存
         const saved = helpers.storage.get(this.KEYS.DB);
         if (saved) {
             this._data = saved;
         } else {
-            // 首次使用，加载种子数据
+            // 首次使用，加载种子数据作为兜底
             this._data = helpers.deepClone(SEED_DATA);
             this.save();
         }
+
+        // 2. 尝试从云端拉取最新学校数据 (需已登录)
+        // 注意：如果是未登录状态，api.fetchSchoolData 会返回 null
+        try {
+            const cloudData = await api.fetchSchoolData();
+            if (cloudData && cloudData.data) {
+                console.log('Fetching school data from cloud...');
+                // 合并逻辑：保留本地的用户进度，更新学校基础数据（词表、学生名单等）
+                // 这里简单粗暴地覆盖非进度数据
+                // 实际应用中可能需要更精细的 merge
+                
+                this._data.teachers = cloudData.data.teachers || this._data.teachers;
+                this._data.students = cloudData.data.students || this._data.students;
+                this._data.wordlists = cloudData.data.wordlists || this._data.wordlists;
+                this._data.tasks = cloudData.data.tasks || this._data.tasks;
+                
+                // 保存合并后的数据
+                this.save(); 
+                console.log('School data synced from cloud.');
+            }
+        } catch (e) {
+            console.warn('Failed to fetch school data:', e);
+        }
+
         return this;
     },
 
@@ -49,15 +74,28 @@ const db = {
      */
     async syncToCloud() {
         try {
-            // 只同步必要的学习进度数据，避免全量覆盖导致冲突
-            // 这里为了简化，我们推送整个 studentStates (如果是学生登录)
             const user = auth.getCurrentUser();
-            if (user && user.role === 'student') {
+            if (!user) return;
+            
+            // 1. 同步个人进度 (Student)
+            if (user.role === 'student') {
                 const myState = this._data.studentStates[user.id];
                 if (myState) {
                     await api.syncPush(myState);
-                    console.log('Cloud sync successful');
                 }
+            }
+            
+            // 2. 同步学校数据 (Admin/Teacher) - 仅当有关键数据变更时
+            // 为了简化，我们假设每次 save 都会触发全量更新（在实际生产中应优化为 diff 更新）
+            if (user.role === 'admin' || user.role === 'teacher') {
+                 const schoolData = {
+                     teachers: this._data.teachers,
+                     students: this._data.students,
+                     wordlists: this._data.wordlists,
+                     tasks: this._data.tasks
+                 };
+                 await api.updateSchoolData(schoolData);
+                 console.log('School data pushed to cloud.');
             }
         } catch (e) {
             console.warn('Cloud sync failed:', e);

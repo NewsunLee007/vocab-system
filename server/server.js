@@ -24,7 +24,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/school', require('./routes/school')); // New route for centralized data
 
 // Catch-all route for SPA (if using history mode, but here simple hash routing or multi-page)
-app.get('*', (req, res) => {
+app.get(/^\/(?!api).*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../index.html'));
 });
 

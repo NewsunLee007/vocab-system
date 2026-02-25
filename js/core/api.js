@@ -33,14 +33,21 @@ const api = {
     
     async changePassword(oldPassword, newPassword) {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ oldPassword, newPassword })
-        });
+        if (!token) throw new Error('Not authenticated');
+
+        const url = `${API_BASE_URL}/auth/change-password`;
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const body = JSON.stringify({ oldPassword, newPassword });
+
+        const attempt = (method) => fetch(url, { method, headers, body });
+
+        let response = await attempt('POST');
+        if (response.status === 405) {
+            response = await attempt('PUT');
+        }
         
         if (!response.ok) {
             let errorMsg = 'Change password failed';

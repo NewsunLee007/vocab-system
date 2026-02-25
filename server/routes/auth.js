@@ -129,8 +129,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Change Password
-router.post('/change-password', verifyToken(), async (req, res) => {
+const changePasswordHandler = async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
         const userId = req.user.id;
@@ -163,6 +162,9 @@ router.post('/change-password', verifyToken(), async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
     }
-});
+};
+
+router.post('/change-password', verifyToken(), changePasswordHandler);
+router.put('/change-password', verifyToken(), changePasswordHandler);
 
 module.exports = router;

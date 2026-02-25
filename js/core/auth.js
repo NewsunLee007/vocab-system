@@ -78,8 +78,11 @@ const auth = {
 
                 // 检查是否需要强制修改密码
                 if (!admin.passwordChanged) {
+                    this.currentUser = admin;
+                    this.saveSession();
                     this._pendingPasswordChange = admin;
                     this.showForceChangePasswordModal();
+                    app.updateNav();
                     return true;
                 }
                 
@@ -118,12 +121,16 @@ const auth = {
             if (isValid) {
                 // 检查是否需要强制修改密码
                 if (!admin.passwordChanged) {
-                    this._pendingPasswordChange = {
+                    this.currentUser = {
                         role: 'admin',
                         id: admin.id,
-                        name: admin.name
+                        name: admin.name,
+                        passwordChanged: false
                     };
+                    this.saveSession();
+                    this._pendingPasswordChange = this.currentUser;
                     this.showForceChangePasswordModal();
+                    app.updateNav();
                     return true;
                 }
                 
@@ -209,13 +216,13 @@ const auth = {
             this.hideForceChangePasswordModal();
             
             // 3. 更新本地用户状态 (标记密码已修改)
-            if (this.currentUser) {
-                this.currentUser.passwordChanged = true;
-                this.saveSession();
-            }
+            const pendingUser = this._pendingPasswordChange || this.currentUser;
+            if (!this.currentUser && pendingUser) this.currentUser = pendingUser;
+            if (this.currentUser) this.currentUser.passwordChanged = true;
+            this.saveSession();
             
             // 4. 清除待处理状态
-            const pendingRole = this._pendingPasswordChange ? this._pendingPasswordChange.role : (this.currentUser ? this.currentUser.role : null);
+            const pendingRole = pendingUser ? pendingUser.role : (this.currentUser ? this.currentUser.role : null);
             this._pendingPasswordChange = null;
             
             helpers.hideLoading();
@@ -238,7 +245,7 @@ const auth = {
                 } else if (pendingRole === 'teacher') {
                     router.navigate('teacher');
                 } else {
-                    router.navigate('student-dashboard');
+                    router.navigate('student');
                 }
             }, 1000);
             
@@ -276,7 +283,7 @@ const auth = {
                         app.updateNav();
                         if (pendingRole === 'admin') router.navigate('admin');
                         else if (pendingRole === 'teacher') router.navigate('teacher');
-                        else router.navigate('student-dashboard');
+                        else router.navigate('student');
                     }, 1000);
                     return;
                 }
@@ -348,8 +355,11 @@ const auth = {
 
                 // 检查是否需要强制修改密码
                 if (!teacher.passwordChanged) {
+                    this.currentUser = teacher;
+                    this.saveSession();
                     this._pendingPasswordChange = teacher;
                     this.showForceChangePasswordModal();
+                    app.updateNav();
                     return true;
                 }
                 
@@ -442,8 +452,11 @@ const auth = {
                 
                 // 检查是否需要强制修改密码
                 if (!student.passwordChanged && pwd === '123456') { // 假设默认密码
+                     this.currentUser = student;
+                     this.saveSession();
                      this._pendingPasswordChange = student;
                      this.showForceChangePasswordModal();
+                     app.updateNav();
                      return true;
                 }
 

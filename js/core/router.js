@@ -77,6 +77,10 @@ const router = {
         if (!isLoggedIn) return false;
         
         const user = auth.getCurrentUser();
+        if (user && user.passwordChanged === false) {
+            auth.showForceChangePasswordModal();
+            return false;
+        }
         
         // 角色权限检查
         console.log('Checking role, user.role:', user?.role);

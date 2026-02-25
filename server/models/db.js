@@ -10,20 +10,33 @@ const tasks = Datastore.create({ filename: path.join(dbPath, 'tasks.db'), autolo
 const logs = Datastore.create({ filename: path.join(dbPath, 'logs.db'), autoload: true });
 const wordlists = Datastore.create({ filename: path.join(dbPath, 'wordlists.db'), autoload: true });
 
+const bcrypt = require('bcryptjs');
+
 // Ensure Indexes for Performance
 async function initIndexes() {
     try {
         await users.ensureIndex({ fieldName: 'username' });
-        // Composite index is not directly supported by NeDB ensureIndex, but we can query by both fields.
-        // However, ensuring uniqueness for (username + class) is tricky. We'll handle it in logic.
-        
         await progress.ensureIndex({ fieldName: 'user_id' });
         await tasks.ensureIndex({ fieldName: 'teacher_id' });
         await logs.ensureIndex({ fieldName: 'user_id' });
         
         console.log('Database indexes initialized.');
+        
+        // Initialize default admin if not exists
+        const admin = await users.findOne({ username: 'admin' });
+        if (!admin) {
+            const hashedPassword = await bcrypt.hash('123456', 10);
+            await users.insert({
+                username: 'admin',
+                role: 'admin',
+                password: hashedPassword,
+                passwordChanged: false,
+                createdAt: new Date()
+            });
+            console.log('Default admin account created (admin/123456).');
+        }
     } catch (err) {
-        console.error('Failed to initialize indexes:', err);
+        console.error('Failed to initialize database:', err);
     }
 }
 

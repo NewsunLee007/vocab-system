@@ -262,6 +262,28 @@ const db = {
         return false;
     },
 
+    updateAdminPassword(id, hashedPassword) {
+        const admin = this._data.admins.find(a => a.id === id);
+        if (admin) {
+            admin.pwd = hashedPassword;
+            admin.passwordChanged = true;
+            this.save();
+            return true;
+        }
+        return false;
+    },
+
+    updateTeacherPassword(id, hashedPassword) {
+        const teacher = this._data.teachers.find(t => t.id === id);
+        if (teacher) {
+            teacher.pwd = hashedPassword;
+            teacher.passwordChanged = true;
+            this.save();
+            return true;
+        }
+        return false;
+    },
+
     resetStudentPassword(id) {
         const student = this.findStudent(id);
         if (student) {

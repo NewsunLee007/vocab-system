@@ -55,60 +55,95 @@ const auth = {
     },
 
     /**
-     * 执行教务处登录
+     * 执行教务处登录 (升级为 API)
      */
-    performAdminLogin(pwd) {
-        console.log('Attempting admin login with password:', pwd);
-        
-        const admin = db.findAdmin('admin');
-        console.log('Found admin:', admin);
-        
-        if (!admin) {
-            helpers.showToast('管理员账户不存在', 'error');
-            console.error('Admin not found in database');
-            return false;
-        }
-        
-        const isValid = helpers.verifyPassword(pwd, admin.pwd);
-        console.log('Password valid:', isValid);
-        console.log('Input password hash:', btoa(pwd));
-        console.log('Stored password hash:', admin.pwd);
-        
-        if (isValid) {
-            // 检查是否需要强制修改密码（首次登录）
-            if (!admin.passwordChanged) {
-                this._pendingPasswordChange = {
+    async performAdminLogin(pwd) {
+        try {
+            helpers.showLoading('正在登录...');
+            
+            // 尝试 API 登录
+            // Admin username is 'admin' by default
+            const result = await api.login({ username: 'admin', password: pwd, role: 'admin' });
+            helpers.hideLoading();
+
+            if (result && result.token) {
+                localStorage.setItem('token', result.token);
+                
+                const admin = {
+                    id: result.user.id,
+                    name: result.user.username,
+                    role: 'admin',
+                    passwordChanged: result.user.passwordChanged
+                };
+
+                // 检查是否需要强制修改密码
+                if (!admin.passwordChanged) {
+                    this._pendingPasswordChange = admin;
+                    this.showForceChangePasswordModal();
+                    return true;
+                }
+                
+                this.currentUser = admin;
+                this.saveSession();
+                
+                // 尝试拉取云端数据 (包括词表等)
+                try {
+                    await db.init(); // Re-init to fetch cloud data
+                } catch (e) {
+                    console.warn('Failed to sync cloud data after admin login', e);
+                }
+                
+                // 关闭模态框
+                app.hideAdminLogin();
+                
+                router.navigate('admin');
+                app.updateNav();
+                helpers.showToast('欢迎回来，教务处管理员！', 'success');
+                return true;
+            }
+        } catch (err) {
+            helpers.hideLoading();
+            console.warn('API admin login failed, trying local:', err);
+            
+            // 本地降级
+            const admin = db.findAdmin('admin');
+            
+            if (!admin) {
+                helpers.showToast('管理员账户不存在', 'error');
+                return false;
+            }
+            
+            const isValid = helpers.verifyPassword(pwd, admin.pwd);
+            
+            if (isValid) {
+                // 检查是否需要强制修改密码
+                if (!admin.passwordChanged) {
+                    this._pendingPasswordChange = {
+                        role: 'admin',
+                        id: admin.id,
+                        name: admin.name
+                    };
+                    this.showForceChangePasswordModal();
+                    return true;
+                }
+                
+                this.currentUser = {
                     role: 'admin',
                     id: admin.id,
                     name: admin.name
                 };
-                this.showForceChangePasswordModal();
+                this.saveSession();
+                
+                app.hideAdminLogin();
+                
+                router.navigate('admin');
+                app.updateNav();
+                helpers.showToast('网络连接异常，已切换至离线模式', 'warning');
                 return true;
+            } else {
+                helpers.showToast('密码错误，请重试', 'error');
+                return false;
             }
-            
-            this.currentUser = {
-                role: 'admin',
-                id: admin.id,
-                name: admin.name
-            };
-            this.saveSession();
-            
-            // 直接关闭模态框
-            const modal = document.getElementById('modal-admin-login');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.add('opacity-0');
-            }
-            const pwdInput = document.getElementById('modal-admin-pwd');
-            if (pwdInput) pwdInput.value = '';
-            
-            router.navigate('admin');
-            app.updateNav();
-            helpers.showToast('欢迎回来，教务处管理员！', 'success');
-            return true;
-        } else {
-            helpers.showToast('密码错误，请重试', 'error');
-            return false;
         }
     },
 
@@ -209,6 +244,44 @@ const auth = {
             
         } catch (err) {
             helpers.hideLoading();
+            console.warn('API password change failed, trying local fallback:', err);
+            
+            // 尝试本地降级修改
+            const pendingId = this._pendingPasswordChange ? this._pendingPasswordChange.id : (this.currentUser ? this.currentUser.id : null);
+            const pendingRole = this._pendingPasswordChange ? this._pendingPasswordChange.role : (this.currentUser ? this.currentUser.role : null);
+            
+            if (pendingId && pendingRole) {
+                let success = false;
+                const hashedPwd = helpers.hash(newPwd);
+                
+                if (pendingRole === 'admin') {
+                    success = db.updateAdminPassword(pendingId, hashedPwd);
+                } else if (pendingRole === 'teacher') {
+                    success = db.updateTeacherPassword(pendingId, hashedPwd);
+                } else if (pendingRole === 'student') {
+                    success = db.updateStudentPassword(pendingId, hashedPwd);
+                }
+                
+                if (success) {
+                    helpers.showToast('网络连接异常，已在本地修改密码', 'warning');
+                    this.hideForceChangePasswordModal();
+                    
+                    if (this.currentUser) {
+                        this.currentUser.passwordChanged = true;
+                        this.saveSession();
+                    }
+                    this._pendingPasswordChange = null;
+                    
+                    setTimeout(() => {
+                        app.updateNav();
+                        if (pendingRole === 'admin') router.navigate('admin');
+                        else if (pendingRole === 'teacher') router.navigate('teacher');
+                        else router.navigate('student-dashboard');
+                    }, 1000);
+                    return;
+                }
+            }
+            
             helpers.showToast(err.message || '修改失败，请重试', 'error');
         }
     },

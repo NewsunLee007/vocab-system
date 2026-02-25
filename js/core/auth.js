@@ -165,15 +165,51 @@ const auth = {
         }
         
         try {
-            // 调用 API 修改密码
+            helpers.showLoading('正在修改密码并登录...');
+            
+            // 1. 调用 API 修改密码
             await api.changePassword('ignored', newPwd);
             
-            helpers.showToast('密码修改成功，请重新登录', 'success');
+            // 2. 隐藏模态框和遮罩层
             this.hideForceChangePasswordModal();
-            this.logout();
+            
+            // 3. 更新本地用户状态 (标记密码已修改)
+            if (this.currentUser) {
+                this.currentUser.passwordChanged = true;
+                this.saveSession();
+            }
+            
+            // 4. 清除待处理状态
+            const pendingRole = this._pendingPasswordChange ? this._pendingPasswordChange.role : (this.currentUser ? this.currentUser.role : null);
+            this._pendingPasswordChange = null;
+            
+            helpers.hideLoading();
+            helpers.showToast('密码修改成功，正在进入系统...', 'success');
+            
+            // 5. 根据角色跳转到对应页面，而不是登出
+            setTimeout(() => {
+                // 确保所有模态框都关闭
+                const allModals = document.querySelectorAll('[id^="modal-"]');
+                allModals.forEach(modal => {
+                    modal.classList.add('hidden');
+                    modal.classList.add('opacity-0');
+                });
+                
+                // 强制更新导航栏
+                app.updateNav();
+                
+                if (pendingRole === 'admin') {
+                    router.navigate('admin');
+                } else if (pendingRole === 'teacher') {
+                    router.navigate('teacher');
+                } else {
+                    router.navigate('student-dashboard');
+                }
+            }, 1000);
             
         } catch (err) {
-            helpers.showToast(err.message || '修改失败', 'error');
+            helpers.hideLoading();
+            helpers.showToast(err.message || '修改失败，请重试', 'error');
         }
     },
 

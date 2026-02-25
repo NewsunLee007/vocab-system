@@ -41,9 +41,17 @@ const api = {
             },
             body: JSON.stringify({ oldPassword, newPassword })
         });
+        
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Change password failed');
+            let errorMsg = 'Change password failed';
+            try {
+                const error = await response.json();
+                errorMsg = error.message || errorMsg;
+            } catch (e) {
+                // If response is not JSON (e.g. 404/405/500 HTML), use status text
+                errorMsg = `Server Error (${response.status}): ${response.statusText}`;
+            }
+            throw new Error(errorMsg);
         }
         return response.json();
     },

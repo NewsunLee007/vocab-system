@@ -498,6 +498,35 @@ const auth = {
     },
 
     /**
+     * 显示强制修改密码模态框
+     */
+    showForceChangePasswordModal() {
+        const modal = document.getElementById('modal-force-change-password');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.offsetHeight; // Trigger reflow
+            modal.classList.remove('opacity-0');
+        }
+    },
+
+    /**
+     * 隐藏强制修改密码模态框
+     */
+    hideForceChangePasswordModal() {
+        const modal = document.getElementById('modal-force-change-password');
+        if (modal) {
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // 确保所有输入框被清空
+        const inputs = document.querySelectorAll('#modal-force-change-password input');
+        inputs.forEach(input => input.value = '');
+    },
+
+    /**
      * 显示安全警告模态框
      */
     showSecurityModal() {

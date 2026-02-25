@@ -1,16 +1,9 @@
 /**
  * 新纪元英语词汇系统 - 数据层
- * 封装 localStorage 操作，提供数据持久化
+ * 通过 API 与后端数据库交互
  */
 
 const db = {
-    // 存储键名
-    KEYS: {
-        DB: 'xinji_vocabulary_db',
-        CURRENT_USER: 'xinji_current_user',
-        SYSTEM: 'xinji_system'
-    },
-
     // 内存中的数据缓存
     _data: null,
 
@@ -18,34 +11,32 @@ const db = {
      * 初始化数据库
      */
     async init() {
-        // 1. 尝试从 localStorage 加载缓存
-        const saved = helpers.storage.get(this.KEYS.DB);
-        if (saved) {
-            this._data = saved;
-        } else {
-            // 首次使用，加载种子数据作为兜底
-            this._data = helpers.deepClone(SEED_DATA);
-            this.save();
-        }
+        this._data = {
+            admins: [],
+            teachers: [],
+            students: [],
+            wordLists: [],
+            tasks: [],
+            learningLogs: [],
+            studentStates: {},
+            system: {
+                mockCurrentIP: helpers.generateMockIP(),
+                lastLoginIP: '',
+                lastLoginStudentId: null
+            }
+        };
 
-        // 2. 尝试从云端拉取最新学校数据 (需已登录)
-        // 注意：如果是未登录状态，api.fetchSchoolData 会返回 null
         try {
             const cloudData = await api.fetchSchoolData();
             if (cloudData && cloudData.data) {
-                console.log('Fetching school data from cloud...');
-                // 合并逻辑：保留本地的用户进度，更新学校基础数据（词表、学生名单等）
-                // 这里简单粗暴地覆盖非进度数据
-                // 实际应用中可能需要更精细的 merge
-                
-                this._data.teachers = cloudData.data.teachers || this._data.teachers;
-                this._data.students = cloudData.data.students || this._data.students;
-                this._data.wordlists = cloudData.data.wordlists || this._data.wordlists;
-                this._data.tasks = cloudData.data.tasks || this._data.tasks;
-                
-                // 保存合并后的数据
-                this.save(); 
-                console.log('School data synced from cloud.');
+                const d = cloudData.data;
+                this._data.teachers = d.teachers || [];
+                this._data.students = d.students || [];
+                this._data.wordLists = d.wordlists || d.wordLists || [];
+                this._data.tasks = d.tasks || [];
+                this._data.learningLogs = d.learningLogs || [];
+                this._data.studentStates = d.studentStates || {};
+                this._data.admins = d.admins || [];
             }
         } catch (e) {
             console.warn('Failed to fetch school data:', e);
@@ -55,11 +46,9 @@ const db = {
     },
 
     /**
-     * 保存数据到 localStorage 并尝试同步到云端
+     * 保存数据并尝试同步到云端（仅内存）
      */
     save() {
-        helpers.storage.set(this.KEYS.DB, this._data);
-        
         // 尝试同步到云端 (防抖)
         if (this._syncTimeout) clearTimeout(this._syncTimeout);
         this._syncTimeout = setTimeout(() => {
@@ -91,7 +80,7 @@ const db = {
                  const schoolData = {
                      teachers: this._data.teachers,
                      students: this._data.students,
-                     wordlists: this._data.wordlists,
+                     wordlists: this._data.wordLists,
                      tasks: this._data.tasks
                  };
                  await api.updateSchoolData(schoolData);
@@ -106,9 +95,21 @@ const db = {
      * 重置数据库（用于测试）
      */
     reset() {
-        this._data = helpers.deepClone(SEED_DATA);
+        this._data = {
+            admins: [],
+            teachers: [],
+            students: [],
+            wordLists: [],
+            tasks: [],
+            learningLogs: [],
+            studentStates: {},
+            system: {
+                mockCurrentIP: helpers.generateMockIP(),
+                lastLoginIP: '',
+                lastLoginStudentId: null
+            }
+        };
         this.save();
-        helpers.storage.remove(this.KEYS.CURRENT_USER);
         return this;
     },
 

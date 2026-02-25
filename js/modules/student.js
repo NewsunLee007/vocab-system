@@ -35,7 +35,7 @@ const student = {
 
         // 检查并启动新手指引
         setTimeout(() => {
-            if (typeof Tour !== 'undefined' && !localStorage.getItem('tour_completed_student-intro')) {
+            if (typeof Tour !== 'undefined' && !helpers.memoryStore.get('tour_completed_student-intro')) {
                 this.startTour();
             }
         }, 800);
@@ -2436,7 +2436,7 @@ const student = {
             
             // 保存到本地存储
             const key = `gameCompletion_${auth.getCurrentUser()?.id || 'anonymous'}`;
-            const existing = JSON.parse(localStorage.getItem(key) || '[]');
+            const existing = JSON.parse(helpers.memoryStore.get(key) || '[]');
             existing.push(completion);
             
             // 只保留最近10次记录
@@ -2444,7 +2444,7 @@ const student = {
                 existing.splice(0, existing.length - 10);
             }
             
-            localStorage.setItem(key, JSON.stringify(existing));
+            helpers.memoryStore.set(key, JSON.stringify(existing));
             
         } catch (error) {
             errorHandler.handle(error, '保存游戏完成记录');
@@ -3028,7 +3028,7 @@ const student = {
         // 在实际应用中，应该从学习记录中提取错误单词
         // 这里暂时返回空数组或本地存储中的数据
         try {
-            const errorWords = JSON.parse(localStorage.getItem(`errorWords_${studentId}_${wordlistId}`) || '[]');
+            const errorWords = JSON.parse(helpers.memoryStore.get(`errorWords_${studentId}_${wordlistId}`) || '[]');
             return errorWords;
         } catch (e) {
             return [];
@@ -3231,7 +3231,7 @@ const student = {
             const all = db.getAllWords ? db.getAllWords() : [];
             const compact = all.map(w => ({ en: w.word || w.en || '', cn: w.meaning || w.cn || '' }))
                 .filter(w => w.en && w.cn);
-            localStorage.setItem('zootopia_words', JSON.stringify(compact));
+            helpers.memoryStore.set('zootopia_words', JSON.stringify(compact));
             
             // 尝试打开游戏文件
             const gameUrl = './zootopia.html';
@@ -3255,10 +3255,10 @@ const student = {
     saveTaskProgress(taskId, completedCount) {
         const user = auth.getCurrentUser();
         const key = `task_progress_${user.id}_${taskId}`;
-        const progress = JSON.parse(localStorage.getItem(key) || '{"completed": 0}');
+        const progress = JSON.parse(helpers.memoryStore.get(key) || '{"completed": 0}');
         progress.completed += completedCount;
         progress.lastTime = new Date().toISOString();
-        localStorage.setItem(key, JSON.stringify(progress));
+        helpers.memoryStore.set(key, JSON.stringify(progress));
     },
 
     /**
@@ -3267,7 +3267,7 @@ const student = {
     getTaskProgress(taskId) {
         const user = auth.getCurrentUser();
         const key = `task_progress_${user.id}_${taskId}`;
-        return JSON.parse(localStorage.getItem(key) || '{"completed": 0}');
+        return JSON.parse(helpers.memoryStore.get(key) || '{"completed": 0}');
     },
 
     /**
@@ -3453,7 +3453,7 @@ const student = {
      */
     addDifficultWord(studentId, word) {
         const key = `difficult_words_${studentId}`;
-        const data = JSON.parse(localStorage.getItem(key) || '[]');
+        const data = JSON.parse(helpers.memoryStore.get(key) || '[]');
         
         const existing = data.find(item => item.word.toLowerCase() === word.toLowerCase());
         if (existing) {
@@ -3468,7 +3468,7 @@ const student = {
             });
         }
         
-        localStorage.setItem(key, JSON.stringify(data));
+        helpers.memoryStore.set(key, JSON.stringify(data));
     },
 
     /**
@@ -3656,7 +3656,7 @@ const student = {
      */
     getEbbinghausReviewWords(studentId) {
         const key = `learning_history_${studentId}`;
-        const history = JSON.parse(localStorage.getItem(key) || '[]');
+        const history = JSON.parse(helpers.memoryStore.get(key) || '[]');
         const now = new Date();
         const reviewWords = [];
         
@@ -3701,7 +3701,7 @@ const student = {
     recordLearningTime(word) {
         const user = auth.getCurrentUser();
         const key = `learning_history_${user.id}`;
-        const history = JSON.parse(localStorage.getItem(key) || '[]');
+        const history = JSON.parse(helpers.memoryStore.get(key) || '[]');
         
         history.push({
             word: word,
@@ -3714,7 +3714,7 @@ const student = {
             history.shift();
         }
         
-        localStorage.setItem(key, JSON.stringify(history));
+        helpers.memoryStore.set(key, JSON.stringify(history));
     },
 
     /**
@@ -3837,14 +3837,14 @@ const student = {
                 { name: [wl.textbook, wl.grade, wl.volume, helpers.formatUnitLabel(wl.unit || wl.title)].filter(Boolean).join(' ') || helpers.formatUnitLabel(wl.title) || '所选单元', words: formatted },
                 { name: '系统词库', words: systemWords }
             ];
-            localStorage.setItem('zootopia_datasets', JSON.stringify(datasets));
+            helpers.memoryStore.set('zootopia_datasets', JSON.stringify(datasets));
             const user = auth.getCurrentUser();
             const className = user ? (user.class || user.className || user.classId || '') : '';
             const classId = user ? (user.classId || user.class || '') : '';
             const userInfo = user 
                 ? { name: user.name || '学生', className: className || undefined, classId: classId || undefined, groupId: user.groupId || '1' }
                 : { name: '学生', className: '', classId: '', groupId: '1' };
-            localStorage.setItem('zootopia_user', JSON.stringify(userInfo));
+            helpers.memoryStore.set('zootopia_user', JSON.stringify(userInfo));
 
             const selector = document.getElementById('game-dataset-selector');
             if (selector) selector.remove();

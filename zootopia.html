@@ -128,6 +128,18 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
+        const store = (() => {
+            try {
+                const openerStore = window.opener && window.opener.helpers && window.opener.helpers.memoryStore;
+                if (openerStore && typeof openerStore.get === 'function' && typeof openerStore.set === 'function') return openerStore;
+            } catch (e) {}
+            const map = new Map();
+            return {
+                set: (k, v) => (map.set(String(k), v), true),
+                get: (k) => (map.has(String(k)) ? map.get(String(k)) : null),
+                remove: (k) => map.delete(String(k))
+            };
+        })();
 
         const BG_IMAGES = [
             "https://p.ipic.vip/s38f5g.webp",
@@ -367,8 +379,8 @@
                     score: finalScore || score,
                     maxLevel: level
                 };
-                const existing = JSON.parse(localStorage.getItem('zootopia_history') || '[]');
-                localStorage.setItem('zootopia_history', JSON.stringify([historyItem, ...existing]));
+                const existing = JSON.parse(store.get('zootopia_history') || '[]');
+                store.set('zootopia_history', JSON.stringify([historyItem, ...existing]));
             };
 
             useEffect(() => { if (gameState === 'victory') saveScore(score); }, [gameState]);
@@ -855,7 +867,7 @@
 
             const fetchSystemWords = async () => {
                 try {
-                    const systemWordsJSON = localStorage.getItem('zootopia_words');
+                    const systemWordsJSON = store.get('zootopia_words');
                     if (systemWordsJSON) {
                         const systemWords = JSON.parse(systemWordsJSON);
                         if (Array.isArray(systemWords) && systemWords.length > 0) {
@@ -982,7 +994,7 @@
         const HistoryViewer = ({ onBack }) => {
             const [history, setHistory] = useState([]);
             useEffect(() => {
-                setHistory(JSON.parse(localStorage.getItem('zootopia_history') || '[]'));
+                setHistory(JSON.parse(store.get('zootopia_history') || '[]'));
             }, []);
 
             return (
@@ -1018,19 +1030,19 @@
             const [userInfo, setUserInfo] = useState({ name: 'Cadet 007', className: '未设置班级', classId: 'A', groupId: '1' });
             const [batchSize, setBatchSize] = useState(6);
 
-            // Load from localStorage on mount
+            // Load on mount
             useEffect(() => {
-                const savedDatasets = localStorage.getItem('zootopia_datasets');
+                const savedDatasets = store.get('zootopia_datasets');
                 if (savedDatasets) {
                     setDatasets(JSON.parse(savedDatasets));
                 }
-                const savedUser = localStorage.getItem('zootopia_user');
+                const savedUser = store.get('zootopia_user');
                 if(savedUser) setUserInfo(JSON.parse(savedUser));
             }, []);
 
-            // Save to localStorage when datasets change
+            // Save when datasets change
             useEffect(() => {
-                localStorage.setItem('zootopia_datasets', JSON.stringify(datasets));
+                store.set('zootopia_datasets', JSON.stringify(datasets));
                 // V11: Always use the first dataset for the game
                 setActiveWords(datasets[0]?.words || []);
             }, [datasets]);

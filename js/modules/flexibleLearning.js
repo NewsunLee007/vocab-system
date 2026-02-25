@@ -263,14 +263,14 @@ const flexibleLearning = {
             taskId: this.session.taskId,
             savedAt: new Date().toISOString()
         };
-        localStorage.setItem(this.session.progressKey, JSON.stringify(progress));
+        helpers.memoryStore.set(this.session.progressKey, JSON.stringify(progress));
     },
 
     /**
      * 恢复进度
      */
     restoreProgress() {
-        const saved = localStorage.getItem(this.session.progressKey);
+        const saved = helpers.memoryStore.get(this.session.progressKey);
         if (saved) {
             const progress = JSON.parse(saved);
             // 检查是否是同一批单词
@@ -370,7 +370,7 @@ const flexibleLearning = {
      */
     finish() {
         // 清除进度
-        localStorage.removeItem(this.session.progressKey);
+        helpers.memoryStore.remove(this.session.progressKey);
         
         speech.stop();
         const view = document.getElementById('flexible-learning-view');

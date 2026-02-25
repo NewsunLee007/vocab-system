@@ -28,14 +28,14 @@ const Tour = {
      * 检查教程是否已完成
      */
     isCompleted() {
-        return localStorage.getItem(`tour_completed_${this.options.id}`) === 'true';
+        return helpers.memoryStore.get(`tour_completed_${this.options.id}`) === true;
     },
 
     /**
      * 重置教程状态
      */
     reset() {
-        localStorage.removeItem(`tour_completed_${this.options.id}`);
+        helpers.memoryStore.remove(`tour_completed_${this.options.id}`);
     },
 
     /**
@@ -262,7 +262,7 @@ const Tour = {
         }
         
         // 记录完成状态
-        localStorage.setItem(`tour_completed_${this.options.id}`, 'true');
+        helpers.memoryStore.set(`tour_completed_${this.options.id}`, true);
     },
 
     clearHighlight() {

@@ -26,7 +26,7 @@ const teacher = {
 
         // 检查并启动新手指引
         setTimeout(() => {
-            if (typeof Tour !== 'undefined' && !localStorage.getItem('tour_completed_teacher-intro')) {
+            if (typeof Tour !== 'undefined' && !helpers.memoryStore.get('tour_completed_teacher-intro')) {
                 this.startTour();
             }
         }, 800);

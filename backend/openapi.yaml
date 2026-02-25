@@ -1,0 +1,210 @@
+openapi: 3.0.3
+info:
+  title: Vocab System API
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+paths:
+  /api/health:
+    get:
+      responses:
+        '200':
+          description: OK
+  /api/health/db:
+    get:
+      responses:
+        '200':
+          description: DB OK
+  /api/auth/login:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role, username, password]
+              properties:
+                role:
+                  type: string
+                  enum: [admin, teacher, student]
+                username:
+                  type: string
+                password:
+                  type: string
+                className:
+                  type: string
+      responses:
+        '200':
+          description: Logged in
+  /api/auth/logout:
+    post:
+      responses:
+        '200':
+          description: Logged out
+  /api/auth/me:
+    get:
+      responses:
+        '200':
+          description: Session
+  /api/auth/change-password:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [oldPassword, newPassword]
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Updated
+  /api/vocabulary:
+    get:
+      parameters:
+        - in: query
+          name: teacherId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, words]
+              properties:
+                id: { type: string }
+                teacherId: { type: string }
+                title: { type: string }
+                type: { type: string }
+                textbook: { type: string }
+                grade: { type: string }
+                volume: { type: string }
+                unit: { type: string }
+                words:
+                  type: array
+                  items: { type: object }
+      responses:
+        '200': { description: Created }
+  /api/vocabulary/{id}:
+    put:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Updated }
+    delete:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Deleted }
+  /api/teachers:
+    get:
+      responses:
+        '200': { description: OK }
+    post:
+      responses:
+        '200': { description: Created }
+  /api/teachers/{id}:
+    put:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Updated }
+    delete:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Deleted }
+  /api/students:
+    get:
+      parameters:
+        - in: query
+          name: teacherId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      responses:
+        '200': { description: Created }
+  /api/students/{id}:
+    put:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Updated }
+    delete:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Deleted }
+  /api/learning-records:
+    get:
+      parameters:
+        - in: query
+          name: studentId
+          schema: { type: string }
+        - in: query
+          name: type
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recordType, payload]
+              properties:
+                studentId: { type: string }
+                vocabularyId: { type: string }
+                recordType: { type: string }
+                payload: { type: object }
+                score: { type: integer }
+      responses:
+        '200': { description: Created }
+  /api/school/data:
+    get:
+      responses:
+        '200': { description: OK }
+    post:
+      responses:
+        '200': { description: Updated }
+  /api/sync:
+    get:
+      responses:
+        '200': { description: OK }
+    post:
+      responses:
+        '200': { description: OK }
+

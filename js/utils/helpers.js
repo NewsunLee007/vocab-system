@@ -356,48 +356,24 @@ const helpers = {
         return s.includes('单元') ? s : s; // 非数字保留原样
     },
 
-    /**
-     * 本地存储封装
-     */
-    storage: {
-        set(key, value) {
-            try {
-                localStorage.setItem(key, JSON.stringify(value));
+    memoryStore: (() => {
+        const map = new Map();
+        return {
+            set(key, value) {
+                map.set(String(key), value);
                 return true;
-            } catch (e) {
-                console.error('Storage set error:', e);
-                return false;
-            }
-        },
-        
-        get(key, defaultValue = null) {
-            try {
-                const item = localStorage.getItem(key);
-                return item ? JSON.parse(item) : defaultValue;
-            } catch (e) {
-                console.error('Storage get error:', e);
-                return defaultValue;
-            }
-        },
-        
-        remove(key) {
-            try {
-                localStorage.removeItem(key);
+            },
+            get(key, defaultValue = null) {
+                const k = String(key);
+                return map.has(k) ? map.get(k) : defaultValue;
+            },
+            remove(key) {
+                return map.delete(String(key));
+            },
+            clear() {
+                map.clear();
                 return true;
-            } catch (e) {
-                console.error('Storage remove error:', e);
-                return false;
             }
-        },
-        
-        clear() {
-            try {
-                localStorage.clear();
-                return true;
-            } catch (e) {
-                console.error('Storage clear error:', e);
-                return false;
-            }
-        }
-    }
+        };
+    })()
 };

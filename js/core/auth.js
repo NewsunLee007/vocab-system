@@ -13,13 +13,25 @@ const auth = {
     /**
      * 初始化认证状态
      */
-    init() {
-        const saved = helpers.storage.get(db.KEYS.CURRENT_USER);
-        if (saved) {
-            this.currentUser = saved;
-            return true;
+    async init() {
+        try {
+            const session = await api.me();
+            if (session && session.user) {
+                const u = session.user;
+                this.currentUser = {
+                    id: u.id,
+                    name: u.username,
+                    role: u.role,
+                    class: u.className,
+                    passwordChanged: u.passwordChanged
+                };
+                return true;
+            }
+            return false;
+        } catch (e) {
+            this.currentUser = null;
+            return false;
         }
-        return false;
     },
 
     /**
@@ -75,9 +87,7 @@ const auth = {
             const result = await api.login({ username: 'admin', password: pwd, role: 'admin' });
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
-            if (result && result.token) {
-                localStorage.setItem('token', result.token);
-                
+            if (result && result.user) {
                 const admin = {
                     id: result.user.id,
                     name: result.user.username,
@@ -88,15 +98,13 @@ const auth = {
                 // 检查是否需要强制修改密码
                 if (!admin.passwordChanged) {
                     this.currentUser = admin;
-                    this.saveSession();
-                    this._pendingPasswordChange = admin;
+                    this._pendingPasswordChange = { ...admin, oldPassword: pwd };
                     this.showForceChangePasswordModal();
                     app.updateNav();
                     return true;
                 }
                 
                 this.currentUser = admin;
-                this.saveSession();
                 
                 // 尝试拉取云端数据 (包括词表等)
                 try {
@@ -115,53 +123,11 @@ const auth = {
             }
         } catch (err) {
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
-            console.warn('API admin login failed, trying local:', err);
-            
-            // 本地降级
-            const admin = db.findAdmin('admin');
-            
-            if (!admin) {
-                helpers.showToast('管理员账户不存在', 'error');
-                return false;
-            }
-            
-            const isValid = helpers.verifyPassword(pwd, admin.pwd);
-            
-            if (isValid) {
-                // 检查是否需要强制修改密码
-                if (!admin.passwordChanged) {
-                    this.currentUser = {
-                        role: 'admin',
-                        id: admin.id,
-                        name: admin.name,
-                        passwordChanged: false
-                    };
-                    this.saveSession();
-                    this._pendingPasswordChange = this.currentUser;
-                    this.showForceChangePasswordModal();
-                    app.updateNav();
-                    return true;
-                }
-                
-                this.currentUser = {
-                    role: 'admin',
-                    id: admin.id,
-                    name: admin.name
-                };
-                this.saveSession();
-                
-                app.hideAdminLogin();
-                
-                router.navigate('admin');
-                app.updateNav();
-                helpers.showToast('后端接口不可用，已切换至离线模式（数据不会同步到服务器）', 'warning');
-                return true;
-            } else {
-                helpers.showToast('密码错误，请重试', 'error');
-                return false;
-            }
+            helpers.showToast(err.message || '后端接口不可用，请检查 API 地址/网络', 'error');
+            return false;
         }
     },
+
 
     /**
      * 显示强制修改密码模态框
@@ -219,16 +185,15 @@ const auth = {
             helpers.showLoading('正在修改密码并登录...');
             
             // 1. 调用 API 修改密码
-            await api.changePassword('ignored', newPwd);
+            const pendingUser = this._pendingPasswordChange || this.currentUser;
+            await api.changePassword(pendingUser?.oldPassword || 'ignored', newPwd);
             
             // 2. 隐藏模态框和遮罩层
             this.hideForceChangePasswordModal();
             
             // 3. 更新本地用户状态 (标记密码已修改)
-            const pendingUser = this._pendingPasswordChange || this.currentUser;
             if (!this.currentUser && pendingUser) this.currentUser = pendingUser;
             if (this.currentUser) this.currentUser.passwordChanged = true;
-            this.saveSession();
             
             // 4. 清除待处理状态
             const pendingRole = pendingUser ? pendingUser.role : (this.currentUser ? this.currentUser.role : null);
@@ -260,44 +225,6 @@ const auth = {
             
         } catch (err) {
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
-            console.warn('API password change failed, trying local fallback:', err);
-            
-            // 尝试本地降级修改
-            const pendingId = this._pendingPasswordChange ? this._pendingPasswordChange.id : (this.currentUser ? this.currentUser.id : null);
-            const pendingRole = this._pendingPasswordChange ? this._pendingPasswordChange.role : (this.currentUser ? this.currentUser.role : null);
-            
-            if (pendingId && pendingRole) {
-                let success = false;
-                const hashedPwd = helpers.hash(newPwd);
-                
-                if (pendingRole === 'admin') {
-                    success = db.updateAdminPassword(pendingId, hashedPwd);
-                } else if (pendingRole === 'teacher') {
-                    success = db.updateTeacherPassword(pendingId, hashedPwd);
-                } else if (pendingRole === 'student') {
-                    success = db.updateStudentPassword(pendingId, hashedPwd);
-                }
-                
-                if (success) {
-                    helpers.showToast('网络连接异常，已在本地修改密码', 'warning');
-                    this.hideForceChangePasswordModal();
-                    
-                    if (this.currentUser) {
-                        this.currentUser.passwordChanged = true;
-                        this.saveSession();
-                    }
-                    this._pendingPasswordChange = null;
-                    
-                    setTimeout(() => {
-                        app.updateNav();
-                        if (pendingRole === 'admin') router.navigate('admin');
-                        else if (pendingRole === 'teacher') router.navigate('teacher');
-                        else router.navigate('student');
-                    }, 1000);
-                    return;
-                }
-            }
-            
             helpers.showToast(err.message || '修改失败，请重试', 'error');
         }
     },
@@ -364,9 +291,7 @@ const auth = {
             const result = await api.login({ username: input, password: pwd, role: 'teacher' });
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
-            if (result && result.token) {
-                localStorage.setItem('token', result.token);
-                
+            if (result && result.user) {
                 const teacher = {
                     id: result.user.id,
                     name: result.user.username,
@@ -377,15 +302,13 @@ const auth = {
                 // 检查是否需要强制修改密码
                 if (!teacher.passwordChanged) {
                     this.currentUser = teacher;
-                    this.saveSession();
-                    this._pendingPasswordChange = teacher;
+                    this._pendingPasswordChange = { ...teacher, oldPassword: pwd };
                     this.showForceChangePasswordModal();
                     app.updateNav();
                     return true;
                 }
                 
                 this.currentUser = teacher;
-                this.saveSession();
                 
                 // 关闭模态框
                 app.hideTeacherLogin();
@@ -397,34 +320,6 @@ const auth = {
             }
         } catch (err) {
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
-            console.warn('API login failed, trying local:', err);
-            
-            // 本地降级
-            let teacher = db.findTeacherByCredentials(input, pwd);
-            if (!teacher) {
-                const teachers = db.getTeachers();
-                const matchedByName = teachers.find(t => t.name === input);
-                if (matchedByName && helpers.verifyPassword(pwd, matchedByName.pwd)) {
-                    teacher = matchedByName;
-                }
-            }
-            
-            if (teacher) {
-                helpers.showToast('后端接口不可用，已切换至离线模式（数据不会同步到服务器）', 'warning');
-                // ... same logic as before ...
-                this.currentUser = {
-                    role: 'teacher',
-                    id: teacher.id,
-                    name: teacher.name,
-                    subject: teacher.subject
-                };
-                this.saveSession();
-                app.hideTeacherLogin();
-                router.navigate('teacher');
-                app.updateNav();
-                return true;
-            }
-            
             helpers.showToast(err.message || '登录失败', 'error');
             return false;
         }
@@ -448,9 +343,7 @@ const auth = {
             const result = await api.login({ username: name, className, password: pwd, role: 'student' });
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
-            if (result && result.token) {
-                localStorage.setItem('token', result.token);
-                
+            if (result && result.user) {
                 // 登录成功，尝试拉取云端数据
                 try {
                     const syncData = await api.syncPull();
@@ -472,10 +365,9 @@ const auth = {
                 };
                 
                 // 检查是否需要强制修改密码
-                if (!student.passwordChanged && pwd === '123456') { // 假设默认密码
+                if (!student.passwordChanged) {
                      this.currentUser = student;
-                     this.saveSession();
-                     this._pendingPasswordChange = student;
+                     this._pendingPasswordChange = { ...student, oldPassword: pwd };
                      this.showForceChangePasswordModal();
                      app.updateNav();
                      return true;
@@ -486,16 +378,6 @@ const auth = {
             }
         } catch (err) {
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
-            // 如果 API 登录失败，尝试本地登录作为降级（仅当有本地数据时）
-            console.warn('API login failed, trying local:', err);
-            
-            const localStudent = db.findStudentByClassAndName(className, name);
-            if (localStudent && helpers.verifyPassword(pwd, localStudent.pwd)) {
-                 helpers.showToast('后端接口不可用，已切换至离线模式（学习记录不会同步到服务器）', 'warning');
-                 this.completeStudentLogin(localStudent);
-                 return true;
-            }
-            
             helpers.showToast(err.message || '登录失败', 'error');
             return false;
         }
@@ -520,9 +402,7 @@ const auth = {
         };
         
         console.log('currentUser set:', this.currentUser);
-        
-        this.saveSession();
-        console.log('Session saved, navigating to student...');
+        console.log('Session ready, navigating to student...');
         
         const result = router.navigate('student');
         console.log('Navigation result:', result);
@@ -602,25 +482,14 @@ const auth = {
     },
 
     /**
-     * 保存会话到 localStorage
-     */
-    saveSession() {
-        helpers.storage.set(db.KEYS.CURRENT_USER, this.currentUser);
-    },
-
-    /**
-     * 清除会话
-     */
-    clearSession() {
-        helpers.storage.remove(db.KEYS.CURRENT_USER);
-        this.currentUser = null;
-    },
-
-    /**
      * 登出
      */
-    logout() {
-        this.clearSession();
+    async logout() {
+        try {
+            await api.logout();
+        } catch (e) {}
+        this.currentUser = null;
+        this._pendingPasswordChange = null;
         router.navigate('login');
         app.updateNav();
         helpers.showToast('已安全退出', 'info');
@@ -653,7 +522,6 @@ const auth = {
     updateCurrentUser(updates) {
         if (this.currentUser) {
             Object.assign(this.currentUser, updates);
-            this.saveSession();
         }
     }
 };

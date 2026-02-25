@@ -156,7 +156,7 @@ const errorHandler = {
             logs.splice(0, logs.length - 100);
         }
         
-        localStorage.setItem('errorLogs', JSON.stringify(logs));
+        helpers.memoryStore.set('errorLogs', logs);
         
         // 发送到后端（如果有的话）
         this.sendErrorLogToServer(errorLog);
@@ -167,8 +167,8 @@ const errorHandler = {
      */
     getErrorLogs() {
         try {
-            const logs = localStorage.getItem('errorLogs');
-            return logs ? JSON.parse(logs) : [];
+            const logs = helpers.memoryStore.get('errorLogs');
+            return Array.isArray(logs) ? logs : [];
         } catch (error) {
             console.error('Failed to parse error logs:', error);
             return [];
@@ -305,7 +305,7 @@ const errorHandler = {
      * 清理错误日志
      */
     clearErrorLogs() {
-        localStorage.removeItem('errorLogs');
+        helpers.memoryStore.remove('errorLogs');
         console.log('Error logs cleared');
     }
 };

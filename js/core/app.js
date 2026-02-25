@@ -6,12 +6,11 @@ const app = {
     /**
      * 初始化应用
      */
-    init() {
-        // 初始化数据库
-        db.init();
+    async init() {
+        await auth.init();
+        await db.init();
         
-        // 初始化认证状态
-        const hasSession = auth.init();
+        const hasSession = auth.isLoggedIn();
         
         // 更新导航栏
         this.updateNav();

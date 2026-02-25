@@ -120,23 +120,43 @@ const helpers = {
     },
 
     /**
-     * 导出CSV文件
+     * 显示加载动画
      */
-    exportCSV(filename, rows) {
-        const csvContent = "\uFEFF" + rows.map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    showLoading(text = '加载中...') {
+        // 先移除可能存在的旧 loading
+        this.hideLoading();
+        
+        const loader = document.createElement('div');
+        loader.id = 'global-loader';
+        loader.className = 'fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] fade-in';
+        loader.innerHTML = `
+            <div class="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl text-center transform scale-100 animate-bounce-subtle">
+                <div class="w-12 h-12 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-slate-700 font-medium">${text}</p>
+            </div>
+        `;
+        document.body.appendChild(loader);
     },
 
     /**
-     * 显示提示消息
+     * 隐藏加载动画
      */
+    hideLoading() {
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            loader.style.transition = 'opacity 0.3s';
+            setTimeout(() => {
+                if (loader && loader.parentNode) {
+                    loader.parentNode.removeChild(loader);
+                }
+            }, 300);
+        }
+        
+        // 强制移除所有可能残留的 loading 元素（通过 class 查找）
+        const allLoaders = document.querySelectorAll('.fixed.inset-0.bg-slate-900\\/50.z-\\[100\\]');
+        allLoaders.forEach(el => el.remove());
+    },
     showToast(message, type = 'info', duration = 3000) {
         const toast = document.createElement('div');
         const colors = {

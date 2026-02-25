@@ -25,33 +25,42 @@ const auth = {
     /**
      * 教务处登录
      */
-    loginAdmin() {
-        const pwd = document.getElementById('admin-pwd')?.value;
-        if (!pwd) {
-            helpers.showToast('请输入密码', 'warning');
+    async loginAdmin() {
+        try {
+            const pwd = document.getElementById('admin-pwd')?.value;
+            if (!pwd) {
+                helpers.showToast('请输入密码', 'warning');
+                return false;
+            }
+            return await this.performAdminLogin(pwd);
+        } catch (err) {
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
+            helpers.showToast(err?.message || '登录失败', 'error');
             return false;
         }
-        return this.performAdminLogin(pwd);
     },
 
     /**
      * 从模态框教务处登录
      */
-    loginAdminFromModal() {
-        const pwd = document.getElementById('modal-admin-pwd')?.value;
-        if (!pwd) {
-            helpers.showToast('请输入密码', 'warning');
+    async loginAdminFromModal() {
+        try {
+            const pwd = document.getElementById('modal-admin-pwd')?.value;
+            if (!pwd) {
+                helpers.showToast('请输入密码', 'warning');
+                return false;
+            }
+            const success = await this.performAdminLogin(pwd);
+            if (success) {
+                app.hideAdminLogin();
+                document.getElementById('modal-admin-pwd').value = '';
+            }
+            return success;
+        } catch (err) {
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
+            helpers.showToast(err?.message || '登录失败', 'error');
             return false;
         }
-        const result = this.performAdminLogin(pwd);
-        console.log('Login result:', result);
-        if (result) {
-            console.log('Hiding admin login modal...');
-            app.hideAdminLogin();
-            // 清空密码输入框
-            document.getElementById('modal-admin-pwd').value = '';
-        }
-        return result;
     },
 
     /**
@@ -64,7 +73,7 @@ const auth = {
             // 尝试 API 登录
             // Admin username is 'admin' by default
             const result = await api.login({ username: 'admin', password: pwd, role: 'admin' });
-            helpers.hideLoading();
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
             if (result && result.token) {
                 localStorage.setItem('token', result.token);
@@ -105,7 +114,7 @@ const auth = {
                 return true;
             }
         } catch (err) {
-            helpers.hideLoading();
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
             console.warn('API admin login failed, trying local:', err);
             
             // 本地降级
@@ -225,7 +234,7 @@ const auth = {
             const pendingRole = pendingUser ? pendingUser.role : (this.currentUser ? this.currentUser.role : null);
             this._pendingPasswordChange = null;
             
-            helpers.hideLoading();
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
             helpers.showToast('密码修改成功，正在进入系统...', 'success');
             
             // 5. 根据角色跳转到对应页面，而不是登出
@@ -250,7 +259,7 @@ const auth = {
             }, 1000);
             
         } catch (err) {
-            helpers.hideLoading();
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
             console.warn('API password change failed, trying local fallback:', err);
             
             // 尝试本地降级修改
@@ -296,35 +305,47 @@ const auth = {
     /**
      * 教师登录 - 支持工号或姓名登录
      */
-    loginTeacher() {
-        const input = document.getElementById('teacher-id')?.value.trim();
-        const pwd = document.getElementById('teacher-pwd')?.value;
-        
-        if (!input || !pwd) {
-            helpers.showToast('请输入工号/姓名和密码', 'warning');
+    async loginTeacher() {
+        try {
+            const input = document.getElementById('teacher-id')?.value.trim();
+            const pwd = document.getElementById('teacher-pwd')?.value;
+            
+            if (!input || !pwd) {
+                helpers.showToast('请输入工号/姓名和密码', 'warning');
+                return false;
+            }
+            
+            return await this.performTeacherLogin(input, pwd);
+        } catch (err) {
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
+            helpers.showToast(err?.message || '登录失败', 'error');
             return false;
         }
-        
-        return this.performTeacherLogin(input, pwd);
     },
 
     /**
      * 从模态框教师登录
      */
-    loginTeacherFromModal() {
-        const input = document.getElementById('modal-teacher-id')?.value.trim();
-        const pwd = document.getElementById('modal-teacher-pwd')?.value;
-        
-        if (!input || !pwd) {
-            helpers.showToast('请输入工号/姓名和密码', 'warning');
+    async loginTeacherFromModal() {
+        try {
+            const input = document.getElementById('modal-teacher-id')?.value.trim();
+            const pwd = document.getElementById('modal-teacher-pwd')?.value;
+            
+            if (!input || !pwd) {
+                helpers.showToast('请输入工号/姓名和密码', 'warning');
+                return false;
+            }
+            
+            const success = await this.performTeacherLogin(input, pwd);
+            if (success) {
+                app.hideTeacherLogin();
+            }
+            return success;
+        } catch (err) {
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
+            helpers.showToast(err?.message || '登录失败', 'error');
             return false;
         }
-        
-        const result = this.performTeacherLogin(input, pwd);
-        if (result) {
-            app.hideTeacherLogin();
-        }
-        return result;
     },
 
     /**
@@ -341,7 +362,7 @@ const auth = {
             // So if teacher registered with ID as username, it works.
             
             const result = await api.login({ username: input, password: pwd, role: 'teacher' });
-            helpers.hideLoading();
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
             if (result && result.token) {
                 localStorage.setItem('token', result.token);
@@ -375,7 +396,7 @@ const auth = {
                 return true;
             }
         } catch (err) {
-            helpers.hideLoading();
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
             console.warn('API login failed, trying local:', err);
             
             // 本地降级
@@ -425,7 +446,7 @@ const auth = {
         try {
             helpers.showLoading('正在登录...');
             const result = await api.login({ username: name, className, password: pwd, role: 'student' });
-            helpers.hideLoading();
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
             if (result && result.token) {
                 localStorage.setItem('token', result.token);
@@ -464,7 +485,7 @@ const auth = {
                 return true;
             }
         } catch (err) {
-            helpers.hideLoading();
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
             // 如果 API 登录失败，尝试本地登录作为降级（仅当有本地数据时）
             console.warn('API login failed, trying local:', err);
             

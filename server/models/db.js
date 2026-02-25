@@ -25,7 +25,7 @@ async function initIndexes() {
         // Initialize default admin if not exists
         const admin = await users.findOne({ username: 'admin' });
         if (!admin) {
-            const hashedPassword = await bcrypt.hash('123456', 10);
+            const hashedPassword = await bcrypt.hash('root', 10);
             await users.insert({
                 username: 'admin',
                 role: 'admin',
@@ -33,7 +33,7 @@ async function initIndexes() {
                 passwordChanged: false,
                 createdAt: new Date()
             });
-            console.log('Default admin account created (admin/123456).');
+            console.log('Default admin account created (admin/root).');
         }
     } catch (err) {
         console.error('Failed to initialize database:', err);

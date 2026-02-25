@@ -123,8 +123,8 @@ const helpers = {
      * 显示加载动画
      */
     showLoading(text = '加载中...') {
-        // 先移除可能存在的旧 loading
-        this.hideLoading();
+        const hide = this.hideLoading;
+        if (typeof hide === 'function') hide.call(this);
         
         const loader = document.createElement('div');
         loader.id = 'global-loader';

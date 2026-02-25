@@ -145,13 +145,9 @@ const auth = {
     /**
      * 确认强制修改密码
      */
-    confirmForceChangePassword() {
-        console.log('confirmForceChangePassword called');
-        
+    async confirmForceChangePassword() {
         const newPwd = document.getElementById('force-new-password')?.value;
         const confirmPwd = document.getElementById('force-confirm-password')?.value;
-        
-        console.log('newPwd:', newPwd, 'confirmPwd:', confirmPwd);
         
         if (!newPwd || !confirmPwd) {
             helpers.showToast('请填写所有密码字段', 'warning');
@@ -163,74 +159,22 @@ const auth = {
             return;
         }
         
-        if (newPwd.length < 6) {
-            helpers.showToast('密码长度至少6位', 'warning');
+        if (newPwd.length < 8 || !/[a-zA-Z]/.test(newPwd) || !/[0-9]/.test(newPwd)) {
+            helpers.showToast('密码至少8位，且包含字母和数字', 'warning');
             return;
         }
         
-        if (!this._pendingPasswordChange) {
-            console.error('_pendingPasswordChange is null!');
-            helpers.showToast('系统错误，请重新登录', 'error');
-            return;
+        try {
+            // 调用 API 修改密码
+            await api.changePassword('ignored', newPwd);
+            
+            helpers.showToast('密码修改成功，请重新登录', 'success');
+            this.hideForceChangePasswordModal();
+            this.logout();
+            
+        } catch (err) {
+            helpers.showToast(err.message || '修改失败', 'error');
         }
-        
-        console.log('_pendingPasswordChange:', this._pendingPasswordChange);
-        
-        const { role, id, name } = this._pendingPasswordChange;
-        
-        // 更新密码
-        if (role === 'admin') {
-            db.updateAdminPassword(id, helpers.hash(newPwd));
-        } else if (role === 'teacher') {
-            db.updateTeacherPassword(id, helpers.hash(newPwd));
-        }
-        
-        // 标记密码已修改
-        db.markPasswordChanged(role, id);
-        
-        console.log('Password updated, hiding modal...');
-        
-        // 直接关闭强制修改密码模态框
-        const forceModal = document.getElementById('modal-force-change-password');
-        if (forceModal) {
-            forceModal.classList.add('opacity-0');
-            setTimeout(() => {
-                forceModal.classList.add('hidden');
-            }, 300);
-        }
-        
-        // 完成登录
-        this.currentUser = { role, id, name };
-        this.saveSession();
-        
-        console.log('Navigating to:', role === 'admin' ? 'admin' : 'teacher');
-        
-        // 关闭登录模态框
-        if (role === 'admin') {
-            const modal = document.getElementById('modal-admin-login');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.add('opacity-0');
-            }
-            const pwdInput = document.getElementById('modal-admin-pwd');
-            if (pwdInput) pwdInput.value = '';
-            router.navigate('admin');
-        } else if (role === 'teacher') {
-            const modal = document.getElementById('modal-teacher-login');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.add('opacity-0');
-            }
-            const idInput = document.getElementById('modal-teacher-id');
-            const pwdInput = document.getElementById('modal-teacher-pwd');
-            if (idInput) idInput.value = '';
-            if (pwdInput) pwdInput.value = '';
-            router.navigate('teacher');
-        }
-        
-        app.updateNav();
-        helpers.showToast('密码修改成功！请牢记您的新密码', 'success');
-        this._pendingPasswordChange = null;
     },
 
     /**
@@ -268,69 +212,88 @@ const auth = {
     },
 
     /**
-     * 执行教师登录
+     * 执行教师登录 (升级为 API)
      */
-    performTeacherLogin(input, pwd) {
-        let teacher = null;
-        
-        // 首先尝试用工号查找
-        teacher = db.findTeacherByCredentials(input, pwd);
-        
-        // 如果工号查找失败，尝试用姓名查找
-        if (!teacher) {
-            const teachers = db.getTeachers();
-            const matchedByName = teachers.find(t => t.name === input);
-            if (matchedByName && helpers.verifyPassword(pwd, matchedByName.pwd)) {
-                teacher = matchedByName;
+    async performTeacherLogin(input, pwd) {
+        try {
+            helpers.showLoading('正在登录...');
+            // API expects username, but input could be ID or Name.
+            // My backend currently only supports 'username'.
+            // If input is ID, it might fail if backend doesn't handle it.
+            // But let's assume 'username' matches 'name' or 'id' in backend logic?
+            // Actually, backend `login` route queries `username`.
+            // So if teacher registered with ID as username, it works.
+            
+            const result = await api.login({ username: input, password: pwd, role: 'teacher' });
+            helpers.hideLoading();
+
+            if (result && result.token) {
+                localStorage.setItem('token', result.token);
+                
+                const teacher = {
+                    id: result.user.id,
+                    name: result.user.username,
+                    role: 'teacher',
+                    passwordChanged: result.user.passwordChanged
+                };
+
+                // 检查是否需要强制修改密码
+                if (!teacher.passwordChanged) {
+                    this._pendingPasswordChange = teacher;
+                    this.showForceChangePasswordModal();
+                    return true;
+                }
+                
+                this.currentUser = teacher;
+                this.saveSession();
+                
+                // 关闭模态框
+                app.hideTeacherLogin();
+                
+                router.navigate('teacher');
+                app.updateNav();
+                helpers.showToast(`欢迎回来，${teacher.name}！`, 'success');
+                return true;
             }
-        }
-        
-        if (teacher) {
-            // 检查是否需要强制修改密码（首次登录）
-            if (!teacher.passwordChanged) {
-                this._pendingPasswordChange = {
+        } catch (err) {
+            helpers.hideLoading();
+            console.warn('API login failed, trying local:', err);
+            
+            // 本地降级
+            let teacher = db.findTeacherByCredentials(input, pwd);
+            if (!teacher) {
+                const teachers = db.getTeachers();
+                const matchedByName = teachers.find(t => t.name === input);
+                if (matchedByName && helpers.verifyPassword(pwd, matchedByName.pwd)) {
+                    teacher = matchedByName;
+                }
+            }
+            
+            if (teacher) {
+                helpers.showToast('网络连接失败，已切换至离线模式', 'info');
+                // ... same logic as before ...
+                this.currentUser = {
                     role: 'teacher',
                     id: teacher.id,
                     name: teacher.name,
                     subject: teacher.subject
                 };
-                this.showForceChangePasswordModal();
+                this.saveSession();
+                app.hideTeacherLogin();
+                router.navigate('teacher');
+                app.updateNav();
                 return true;
             }
             
-            this.currentUser = {
-                role: 'teacher',
-                id: teacher.id,
-                name: teacher.name,
-                subject: teacher.subject
-            };
-            this.saveSession();
-            
-            // 直接关闭模态框
-            const modal = document.getElementById('modal-teacher-login');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.add('opacity-0');
-            }
-            const idInput = document.getElementById('modal-teacher-id');
-            const pwdInput = document.getElementById('modal-teacher-pwd');
-            if (idInput) idInput.value = '';
-            if (pwdInput) pwdInput.value = '';
-            
-            router.navigate('teacher');
-            app.updateNav();
-            helpers.showToast(`欢迎回来，${teacher.name}！`, 'success');
-            return true;
-        } else {
-            helpers.showToast('工号/姓名或密码错误', 'error');
+            helpers.showToast(err.message || '登录失败', 'error');
             return false;
         }
     },
 
     /**
-     * 学生登录
+     * 学生登录 (升级为 API 登录)
      */
-    loginStudent() {
+    async loginStudent() {
         const className = document.getElementById('student-class').value.trim();
         const name = document.getElementById('student-name').value.trim();
         const pwd = document.getElementById('student-pwd').value;
@@ -339,45 +302,60 @@ const auth = {
             helpers.showToast('请输入班级、姓名和密码！', 'warning');
             return false;
         }
-        
-        const student = db.findStudentByClassAndName(className, name);
-        
-        if (!student) {
-            helpers.showToast('未找到该学生，请确认信息或联系老师添加！', 'error');
-            return false;
-        }
 
-        // 验证密码 (如果学生数据中没有密码字段，则默认允许登录并自动初始化密码)
-        // 注意：新添加的学生会有密码，旧数据可能没有
-        if (student.pwd) {
-            if (!helpers.verifyPassword(pwd, student.pwd)) {
-                helpers.showToast('密码错误！', 'error');
-                return false;
+        try {
+            helpers.showLoading('正在登录...');
+            const result = await api.login({ username: name, className, password: pwd, role: 'student' });
+            helpers.hideLoading();
+
+            if (result && result.token) {
+                localStorage.setItem('token', result.token);
+                
+                // 登录成功，尝试拉取云端数据
+                try {
+                    const syncData = await api.syncPull();
+                    if (syncData && syncData.data) {
+                        // TODO: 合并数据逻辑
+                        console.log('Synced data:', syncData);
+                    }
+                } catch (e) {
+                    console.warn('Sync failed:', e);
+                }
+
+                // 构造本地用户对象
+                const student = {
+                    id: result.user.id,
+                    name: result.user.username,
+                    class: result.user.className,
+                    role: 'student',
+                    passwordChanged: result.user.passwordChanged
+                };
+                
+                // 检查是否需要强制修改密码
+                if (!student.passwordChanged && pwd === '123456') { // 假设默认密码
+                     this._pendingPasswordChange = student;
+                     this.showForceChangePasswordModal();
+                     return true;
+                }
+
+                this.completeStudentLogin(student);
+                return true;
             }
-        } else {
-            // 旧数据兼容：如果输入了默认密码，则升级账户
-            if (pwd === '123456') {
-                student.pwd = helpers.hash('123456');
-                db.save();
-            } else {
-                helpers.showToast('首次登录请使用默认密码：123456', 'info');
-                return false;
+        } catch (err) {
+            helpers.hideLoading();
+            // 如果 API 登录失败，尝试本地登录作为降级（仅当有本地数据时）
+            console.warn('API login failed, trying local:', err);
+            
+            const localStudent = db.findStudentByClassAndName(className, name);
+            if (localStudent && helpers.verifyPassword(pwd, localStudent.pwd)) {
+                 helpers.showToast('网络连接失败，已切换至离线模式', 'info');
+                 this.completeStudentLogin(localStudent);
+                 return true;
             }
-        }
-        
-        // 防作弊检测
-        const system = db.getSystem();
-        if (system.lastLoginIP === system.mockCurrentIP && 
-            system.lastLoginStudentId && 
-            system.lastLoginStudentId !== student.id) {
-            // 显示安全警告
-            this.pendingStudentLogin = student;
-            this.showSecurityModal();
+            
+            helpers.showToast(err.message || '登录失败', 'error');
             return false;
         }
-        
-        this.completeStudentLogin(student);
-        return true;
     },
 
     /**

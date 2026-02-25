@@ -30,10 +30,38 @@ const db = {
     },
 
     /**
-     * 保存数据到 localStorage
+     * 保存数据到 localStorage 并尝试同步到云端
      */
     save() {
-        return helpers.storage.set(this.KEYS.DB, this._data);
+        helpers.storage.set(this.KEYS.DB, this._data);
+        
+        // 尝试同步到云端 (防抖)
+        if (this._syncTimeout) clearTimeout(this._syncTimeout);
+        this._syncTimeout = setTimeout(() => {
+            this.syncToCloud();
+        }, 2000);
+        
+        return true;
+    },
+
+    /**
+     * 同步到云端
+     */
+    async syncToCloud() {
+        try {
+            // 只同步必要的学习进度数据，避免全量覆盖导致冲突
+            // 这里为了简化，我们推送整个 studentStates (如果是学生登录)
+            const user = auth.getCurrentUser();
+            if (user && user.role === 'student') {
+                const myState = this._data.studentStates[user.id];
+                if (myState) {
+                    await api.syncPush(myState);
+                    console.log('Cloud sync successful');
+                }
+            }
+        } catch (e) {
+            console.warn('Cloud sync failed:', e);
+        }
     },
 
     /**

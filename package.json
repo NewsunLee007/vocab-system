@@ -7,7 +7,9 @@
     "start": "node backend/src/server.js",
     "start:legacy": "node server/server.js",
     "test": "jest --runInBand",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "reset:admin": "node backend/scripts/reset-admin-password.js",
+    "reset:admin:legacy": "node backend/scripts/reset-admin-password.js --mode=legacy"
   },
   "repository": {
     "type": "git",

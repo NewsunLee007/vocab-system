@@ -47,6 +47,20 @@ node backend/scripts/migrate-from-nedb.js
 
 默认读取目录：`vocab-system/server/data`，也可通过 `NEDB_DIR` 指定。
 
+## 忘记管理员密码
+
+无法直接找回旧密码明文（数据库只存哈希），请执行重置：
+
+```bash
+npm run reset:admin -- --password=NewPass123
+```
+
+如果你运行的是旧版 NeDB 后端：
+
+```bash
+npm run reset:admin:legacy -- --password=NewPass123
+```
+
 ## 跨域配置（前后端分离）
 
 设置环境变量 `CORS_ORIGIN`：

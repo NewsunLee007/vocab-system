@@ -78,6 +78,14 @@ npm run reset:admin:legacy -- --password=NewPass123
 - `DB_NAME`
 - `DB_CONN_LIMIT`（可选）
 
+常见失败原因：
+
+- 缺少以上 Secrets
+- VPS 数据库仅允许 `127.0.0.1` 访问，GitHub Runner 无法连入
+- 数据库账号无更新 `teachers` 表权限
+
+如果数据库不对公网开放，建议在 VPS 本机执行脚本重置（最稳定）。
+
 ## 跨域配置（前后端分离）
 
 设置环境变量 `CORS_ORIGIN`：

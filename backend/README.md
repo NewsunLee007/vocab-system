@@ -61,6 +61,23 @@ npm run reset:admin -- --password=NewPass123
 npm run reset:admin:legacy -- --password=NewPass123
 ```
 
+如果你不使用终端，可以在 GitHub 网页执行：
+
+1. 打开仓库 Actions，选择 `Reset Admin Password`
+2. 点击 `Run workflow`
+3. `mode` 选 `mariadb`（新后端）或 `legacy`（旧版）
+4. `username` 填 `admin`
+5. `password` 填新密码并执行
+
+使用 `mariadb` 模式前，需要在仓库 Settings -> Secrets and variables -> Actions 配置：
+
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `DB_CONN_LIMIT`（可选）
+
 ## 跨域配置（前后端分离）
 
 设置环境变量 `CORS_ORIGIN`：

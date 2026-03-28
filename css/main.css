@@ -1,0 +1,251 @@
+/* ============================================
+   新纪元英语词汇系统 - 全局样式
+   ============================================ */
+
+/* CSS Variables */
+:root {
+    --primary-color: #4f46e5;
+    --primary-hover: #4338ca;
+    --secondary-color: #10b981;
+    --secondary-hover: #059669;
+    --danger-color: #f43f5e;
+    --warning-color: #f59e0b;
+    --dark-color: #1e293b;
+    --light-color: #f8fafc;
+    --border-radius: 1rem;
+    --transition: all 0.3s ease;
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+/* Utility Classes */
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Card Hover Effects */
+.login-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Form Elements */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+}
+
+/* Button Base */
+button {
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Navigation Tab Active State */
+.nav-tab-active {
+    border-bottom: 3px solid var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Table Styles */
+table {
+    border-collapse: collapse;
+}
+
+th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Loading Animation */
+@keyframes loading {
+    0% {
+        width: 0%;
+        margin-left: 0;
+    }
+    50% {
+        width: 50%;
+        margin-left: 25%;
+    }
+    100% {
+        width: 0%;
+        margin-left: 100%;
+    }
+}
+
+/* Selection Color */
+::selection {
+    background-color: rgba(79, 70, 229, 0.2);
+    color: #1e293b;
+}
+
+/* Focus Visible */
+:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+    html {
+        font-size: 14px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    nav,
+    button,
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white;
+    }
+}
+
+/* 3D Card Flip Styles */
+.preserve-3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+
+.backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    -ms-backface-visibility: hidden;
+}
+
+.rotate-y-0 {
+    transform: rotateY(0deg);
+}
+
+.rotate-y-180 {
+    transform: rotateY(180deg);
+}
+
+#flashcard-container {
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+#flashcard-container > div {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+}
+
+/* Flashcard Mode Specific Styles */
+#flashcard-mode {
+    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.8);
+}
+
+#flashcard-mode .preserve-3d {
+    perspective: 1200px;
+}
+
+#flashcard-mode .backface-hidden {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Progress Bar Animation */
+#flashcard-progress-bar {
+    transition: width 0.3s ease-in-out;
+}
+
+/* Responsive Card Sizes */
+@media (max-width: 768px) {
+    #flashcard-mode .max-w-2xl {
+        max-width: 90%;
+    }
+    
+    #flashcard-mode h2 {
+        font-size: 1.5rem;
+    }
+    
+    #flashcard-mode .text-6xl {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    #flashcard-mode .text-6xl {
+        font-size: 2rem;
+    }
+    
+    #flashcard-mode .p-8 {
+        padding: 1.5rem;
+    }
+}

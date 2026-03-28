@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model User {
+  id              String           @id @default(cuid())
+  username        String
+  className       String?
+  role            UserRole
+  passwordHash    String
+  passwordChanged Boolean          @default(false)
+  loginAttempts   Int              @default(0)
+  lockUntil       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  vocabularies    Vocabulary[]
+  learningRecords LearningRecord[]
+
+  @@index([role, className])
+  @@unique([username, className, role])
+}
+
+model Vocabulary {
+  id          String           @id @default(cuid())
+  word        String
+  phonetic    String?
+  definition  String
+  example     String?
+  difficulty  Int              @default(1)
+  tags        Json?
+  createdById String?
+  createdBy   User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  records     LearningRecord[]
+
+  @@index([word])
+}
+
+model LearningRecord {
+  id           String     @id @default(cuid())
+  userId       String
+  vocabularyId String
+  attempts     Int        @default(0)
+  correct      Int        @default(0)
+  mastery      Float      @default(0)
+  lastReviewAt DateTime?
+  nextReviewAt DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vocabularyId])
+  @@index([nextReviewAt])
+}
+
+model SchoolData {
+  id        String   @id @default("school")
+  payload   Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+}

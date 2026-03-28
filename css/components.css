@@ -1,0 +1,269 @@
+/* ============================================
+   新纪元英语词汇系统 - 组件样式
+   ============================================ */
+
+/* 3D Card Flip Components */
+.perspective {
+    perspective: 1000px;
+}
+
+.preserve-3d {
+    transform-style: preserve-3d;
+}
+
+.backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+    transform: rotateY(180deg);
+}
+
+.card-transition {
+    transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+/* Learning Control Buttons */
+.learning-btn {
+    transition: all 0.2s ease;
+}
+
+.learning-btn:active {
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+}
+
+/* Task Cards */
+.task-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.task-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.task-card.learn {
+    border-left-color: #4f46e5;
+}
+
+.task-card.test {
+    border-left-color: #f43f5e;
+}
+
+/* Student Badge */
+.student-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Word List Item */
+.wordlist-item {
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.wordlist-item:hover {
+    border-color: #4f46e5;
+    background-color: #eef2ff;
+}
+
+/* Test Option Buttons */
+.test-option {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.test-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s ease;
+}
+
+.test-option:hover::before {
+    left: 100%;
+}
+
+.test-option.correct {
+    background-color: #d1fae5;
+    border-color: #10b981;
+    color: #065f46;
+}
+
+.test-option.wrong {
+    background-color: #ffe4e6;
+    border-color: #f43f5e;
+    color: #9f1239;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Progress Bar */
+.progress-bar {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Tag/Badge Styles */
+.tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.tag-blue {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.tag-purple {
+    background-color: #f3e8ff;
+    color: #7c3aed;
+}
+
+.tag-green {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.tag-red {
+    background-color: #ffe4e6;
+    color: #9f1239;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #64748b;
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tooltip */
+.tooltip {
+    position: relative;
+}
+
+.tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem 0.75rem;
+    background-color: #1e293b;
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 0.375rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 50;
+}
+
+.tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+    bottom: calc(100% + 5px);
+}
+
+/* Status Indicators */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-dot.active {
+    background-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+.status-dot.inactive {
+    background-color: #94a3b8;
+}
+
+.status-dot.warning {
+    background-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}

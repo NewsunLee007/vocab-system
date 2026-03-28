@@ -22,6 +22,7 @@ const db = {
             tasks: [],
             learningLogs: [],
             studentStates: {},
+            dict: {},
             system: {
                 mockCurrentIP: helpers.generateMockIP(),
                 lastLoginIP: '',
@@ -40,6 +41,7 @@ const db = {
                 this._data.learningLogs = d.learningLogs || [];
                 this._data.studentStates = d.studentStates || {};
                 this._data.admins = d.admins || [];
+                this._data.dict = d.dict || {};
             }
         } catch (e) {
             console.warn('Failed to fetch school data:', e);

@@ -5,6 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "build": "prisma generate",
+    "vercel-build": "prisma generate",
     "start": "node backend/src/server.js",
     "start:legacy": "node server/server.js",
     "start:vercel-local": "vercel dev",

@@ -4,6 +4,7 @@
   "description": "一个基于纯前端技术（HTML/CSS/JavaScript）的在线英语单词智能学习与语境检测系统，专为初中英语教育设计。",
   "main": "server/server.js",
   "scripts": {
+    "build": "prisma generate",
     "start": "node backend/src/server.js",
     "start:legacy": "node server/server.js",
     "start:vercel-local": "vercel dev",

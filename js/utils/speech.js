@@ -113,10 +113,22 @@ const speech = {
         try {
             await this.speak(word);
         } catch (error) {
-            console.warn('语音播放失败:', error);
+            // 获取错误类型
+            const errorType = error?.error || error?.message || 'unknown';
+            
+            // interrupted 是正常中断（如连续点击），不需要重试也不需要报错
+            if (errorType === 'interrupted' || errorType === 'canceled') {
+                console.log('语音播放被中断（正常行为）');
+                return;
+            }
+            
+            console.warn('语音播放失败:', errorType, error);
+            
+            // 其他错误可以重试
             if (retryCount < 2) {
-                // 重试
-                setTimeout(() => this.speakWord(word, retryCount + 1), 100);
+                console.log(`重试语音播放 (${retryCount + 1}/2)...`);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                return this.speakWord(word, retryCount + 1);
             }
         }
     },

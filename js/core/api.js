@@ -146,10 +146,10 @@ const api = {
         return this._readSuccessData(response);
     },
     
-    async changePassword(oldPassword, newPassword) {
+    async changePassword(currentPassword, newPassword) {
         const url = this._url('/auth/change-password');
         const headers = this._headers({ 'Content-Type': 'application/json' });
-        const body = JSON.stringify({ oldPassword, newPassword });
+        const body = JSON.stringify({ currentPassword, newPassword });
 
         const attempt = (method) => fetch(url, { method, headers, body });
 

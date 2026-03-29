@@ -2375,5 +2375,4 @@ const admin = {
             helpers.showToast('AI 生成模块未就绪，请刷新页面重试', 'error');
         }
     }
-    }
 };

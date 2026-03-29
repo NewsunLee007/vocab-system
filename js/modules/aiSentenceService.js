@@ -282,21 +282,39 @@ ${wordListStr}
         const distractors = this.generateDistractors(word, generated.pos, meaning);
         const options = [word, ...distractors];
         
-        // 打乱选项顺序
+        // 打乱选项顺序（Fisher-Yates 洗牌算法）
         for (let i = options.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [options[i], options[j]] = [options[j], options[i]];
         }
-        const correctIndex = options.indexOf(word);
+        
+        // 查找正确答案位置（确保能找到）
+        let correctIndex = options.findIndex(opt => 
+            typeof opt === 'string' && opt.toLowerCase() === word.toLowerCase()
+        );
+        
+        // 如果找不到（不应该发生），强制设为 0
+        if (correctIndex === -1) {
+            console.warn(`正确答案 "${word}" 在选项中未找到，强制设为第一个选项`);
+            correctIndex = 0;
+        }
         
         // 生成释义干扰项
         const meaningDistractors = this.generateMeaningDistractors(meaning);
         const allMeanings = [meaning, ...meaningDistractors];
+        
+        // 打乱释义选项顺序
         for (let i = allMeanings.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [allMeanings[i], allMeanings[j]] = [allMeanings[j], allMeanings[i]];
         }
-        const meaningCorrectIndex = allMeanings.indexOf(meaning);
+        
+        // 查找正确释义位置
+        let meaningCorrectIndex = allMeanings.findIndex(m => m === meaning);
+        if (meaningCorrectIndex === -1) {
+            console.warn(`正确释义在选项中未找到，强制设为第一个选项`);
+            meaningCorrectIndex = 0;
+        }
         
         return {
             context: {

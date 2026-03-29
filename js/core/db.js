@@ -44,6 +44,15 @@ const db = {
                 this._data.admins = d.admins || [];
                 this._data.dict = d.dict || {};
                 this._data.aiDrafts = d.aiDrafts || {};
+                // 恢复加密的 AI 配置（全局共享，仅含加密 apiKey）
+                if (d.aiConfig) {
+                    this._data.aiConfig = d.aiConfig;
+                    // 同步到 system.aiConfig，以便 getAIConfig() 能取到
+                    if (!this._data.system) this._data.system = {};
+                    if (!this._data.system.aiConfig) {
+                        this._data.system.aiConfig = d.aiConfig;
+                    }
+                }
             }
         } catch (e) {
             console.warn('Failed to fetch school data:', e);
@@ -96,7 +105,8 @@ const db = {
                      students: this._data.students,
                      wordlists: this._data.wordLists,
                      tasks: this._data.tasks,
-                     aiDrafts: this._data.aiDrafts || {}
+                     aiDrafts: this._data.aiDrafts || {},
+                     aiConfig: this._data.aiConfig || null  // 已加密的 AI 配置
                  };
                  await api.updateSchoolData(schoolData);
                  console.log('School data pushed to cloud.');
@@ -650,31 +660,88 @@ const db = {
     // ==================== AI配置操作 ====================
 
     /**
-     * 获取AI配置
+     * 简单加密 API Key（Base64 + 反转，防止明文存储）
      */
-    getAIConfig() {
-        // 从system存储中获取AI配置
-        const system = this._data.system || {};
-        return system.aiConfig || {
-            provider: 'builtin',
-            apiKey: '',
-            endpoint: '',
-            model: '',
-            temperature: 0.7,
-            maxTokens: 2000,
-            systemPrompt: '你是一个专业的英语教育助手，擅长为单词生成真实语境例句和干扰选项。',
-            lastUpdated: null
-        };
+    _encryptKey(plainKey) {
+        if (!plainKey) return '';
+        try {
+            return btoa(unescape(encodeURIComponent(plainKey))).split('').reverse().join('');
+        } catch (e) {
+            return btoa(plainKey).split('').reverse().join('');
+        }
     },
 
     /**
-     * 保存AI配置
+     * 解密 API Key
+     */
+    _decryptKey(encKey) {
+        if (!encKey) return '';
+        try {
+            return decodeURIComponent(escape(atob(encKey.split('').reverse().join(''))));
+        } catch (e) {
+            try {
+                return atob(encKey.split('').reverse().join(''));
+            } catch (e2) {
+                return '';
+            }
+        }
+    },
+
+    /**
+     * 获取AI配置（自动解密 apiKey）
+     */
+    getAIConfig() {
+        // 优先从云端同步的 aiConfig（存在 _data.aiConfig）中获取
+        const cloudConfig = this._data.aiConfig;
+        // 也检查 system 里的本地副本
+        const system = this._data.system || {};
+        const localConfig = system.aiConfig;
+
+        const rawConfig = cloudConfig || localConfig || null;
+        if (!rawConfig) {
+            return {
+                provider: 'builtin',
+                apiKey: '',
+                endpoint: '',
+                model: '',
+                temperature: 0.7,
+                maxTokens: 2000,
+                systemPrompt: '你是一个专业的英语教育助手，擅长为单词生成真实语境例句和干扰选项。',
+                lastUpdated: null
+            };
+        }
+
+        // 解密 apiKey
+        const decrypted = { ...rawConfig };
+        if (rawConfig.apiKeyEnc && !rawConfig.apiKey) {
+            decrypted.apiKey = this._decryptKey(rawConfig.apiKeyEnc);
+        }
+        return decrypted;
+    },
+
+    /**
+     * 保存AI配置（加密 apiKey 后存入）
      */
     saveAIConfig(config) {
         if (!this._data.system) {
             this._data.system = {};
         }
-        this._data.system.aiConfig = config;
+
+        // 加密 apiKey
+        const toStore = { ...config };
+        if (config.apiKey) {
+            toStore.apiKeyEnc = this._encryptKey(config.apiKey);
+            // 存储明文副本供本会话使用，但同步到云端时只发送加密版
+        }
+
+        // 本地 system 存储（含明文，本会话可直接使用）
+        this._data.system.aiConfig = toStore;
+
+        // 云端同步用（加密版本）
+        const cloudVersion = { ...toStore };
+        delete cloudVersion.apiKey; // 云端不存明文
+        this._data.aiConfig = cloudVersion;
+
         this.save();
         return config;
     },

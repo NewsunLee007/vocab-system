@@ -1607,9 +1607,9 @@ const teacher = {
     },
 
     /**
-     * 保存导入的学生 - 支持多种宽松格式
+     * 保存导入的学生 - 支持多种宽松格式（同步注册到数据库）
      */
-    saveImportStudents() {
+    async saveImportStudents() {
         const text = document.getElementById('import-textarea').value.trim();
         const defaultClass = document.getElementById('import-default-class').value.trim();
         
@@ -1623,6 +1623,7 @@ const teacher = {
         let added = 0;
         let skipped = 0;
         let errors = [];
+        const parsedStudents = [];
 
         lines.forEach((line, index) => {
             line = line.trim();
@@ -1695,14 +1696,46 @@ const teacher = {
             if (existing) {
                 skipped++;
             } else {
+                parsedStudents.push({ name, className });
+            }
+        });
+
+        if (parsedStudents.length === 0 && errors.length === 0 && skipped > 0) {
+            this.hideImportModal();
+            this.renderStudents();
+            helpers.showToast(`所有学生已存在 (${skipped}名跳过)`, 'info');
+            return;
+        }
+
+        helpers.showLoading(`正在注册学生账号 (0/${parsedStudents.length})...`);
+
+        for (let i = 0; i < parsedStudents.length; i++) {
+            const { name, className } = parsedStudents[i];
+            helpers.showLoading(`正在注册学生账号 (${i + 1}/${parsedStudents.length})...`);
+            try {
+                const regResult = await api.register({
+                    username: name,
+                    className: className,
+                    role: 'student',
+                    password: name  // 默认密码=姓名
+                });
                 db.addStudent({
+                    id: regResult.id || ('s_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)),
                     teacherId: user.id,
                     class: className,
                     name: name
                 });
                 added++;
+            } catch (err) {
+                if (err.message && (err.message.includes('已存在') || err.message.includes('409'))) {
+                    skipped++;
+                } else {
+                    errors.push(`${name}: ${err.message}`);
+                }
             }
-        });
+        }
+
+        if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
         this.hideImportModal();
         this.renderStudents();
@@ -3930,9 +3963,9 @@ const teacher = {
     },
 
     /**
-     * 批量保存新学生
+     * 批量保存新学生（同步注册到数据库）
      */
-    saveNewStudents() {
+    async saveNewStudents() {
         const namesText = document.getElementById('new-student-names')?.value.trim();
         const className = document.getElementById('new-student-class')?.value.trim();
         
@@ -3957,39 +3990,66 @@ const teacher = {
         const user = auth.getCurrentUser();
         let added = 0;
         let skipped = 0;
-        
-        names.forEach(name => {
-            // 检查是否已存在
+        const errors = [];
+
+        helpers.showLoading(`正在注册学生账号 (0/${names.length})...`);
+
+        for (let i = 0; i < names.length; i++) {
+            const name = names[i];
+            helpers.showLoading(`正在注册学生账号 (${i + 1}/${names.length})...`);
+
+            // 检查本地是否已存在
             const existing = db.findStudentByClassAndName(className, name);
             if (existing) {
                 skipped++;
-                return;
+                continue;
             }
-            
-            const student = {
-                id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                teacherId: user.id,
-                name: name,
-                class: className,
-                coins: 0,
-                badges: [],
-                streak: 0,
-                totalLearned: 0,
-                totalTests: 0,
-                totalCorrect: 0,
-                totalQuestions: 0
-            };
-            
-            db.addStudent(student);
-            added++;
-        });
-        
+
+            try {
+                // 先在数据库创建用户账号（默认密码=姓名，首次登录强制修改）
+                const regResult = await api.register({
+                    username: name,
+                    className: className,
+                    role: 'student',
+                    password: name  // 默认密码=姓名，首次登录要求修改
+                });
+
+                // 用数据库返回的真实 ID 存入本地
+                const student = {
+                    id: regResult.id || ('s_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)),
+                    teacherId: user.id,
+                    name: name,
+                    class: className,
+                    coins: 0,
+                    badges: [],
+                    streak: 0,
+                    totalLearned: 0,
+                    totalTests: 0,
+                    totalCorrect: 0,
+                    totalQuestions: 0
+                };
+
+                db.addStudent(student);
+                added++;
+            } catch (err) {
+                // 如果数据库说已存在(409)，查一下本地有没有
+                if (err.message && (err.message.includes('已存在') || err.message.includes('409'))) {
+                    skipped++;
+                } else {
+                    errors.push(`${name}: ${err.message}`);
+                }
+            }
+        }
+
+        if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
+
         this.hideAddStudentModal();
         this.renderStudents();
         
         let msg = `成功添加 ${added} 名学生！`;
-        if (skipped > 0) msg += ` (${skipped}名已存在)`;
-        helpers.showToast(msg, 'success');
+        if (skipped > 0) msg += ` (${skipped}名已存在跳过)`;
+        if (errors.length > 0) msg += ` (${errors.length}名失败：${errors.slice(0, 3).join('；')})`;
+        helpers.showToast(msg, added > 0 ? 'success' : 'warning');
     },
 
     /**

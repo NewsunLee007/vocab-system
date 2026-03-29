@@ -1352,6 +1352,14 @@ const admin = {
             // Format Unit Name
             const formattedTitle = helpers.formatFullWordlistTitle(wl);
 
+            // 检查是否已有 AI 草稿
+            const aiDraft = db.getAIDraft(wl.id);
+            const aiButtonClass = aiDraft 
+                ? 'text-emerald-400 hover:text-emerald-300' 
+                : 'text-purple-400 hover:text-purple-300';
+            const aiButtonIcon = aiDraft ? 'fa-check-circle' : 'fa-robot';
+            const aiButtonLabel = aiDraft ? 'AI已生成' : 'AI生成';
+
             const row = document.createElement('tr');
             row.className = 'hover:bg-white/10 transition border-b border-white/10';
             row.innerHTML = `
@@ -1361,10 +1369,13 @@ const admin = {
                 <td class="py-3 px-4">${wl.words?.length || 0}</td>
                 <td class="py-3 px-4 ${statusClass}">${wordsWithSentence}/${wl.words.length}</td>
                 <td class="py-3 px-4">
-                    <button onclick="admin.viewWordlistDetail('${wl.id}')" class="text-indigo-400 hover:text-indigo-300 text-sm mr-3">
+                    <button onclick="admin.viewWordlistDetail('${wl.id}')" class="text-indigo-400 hover:text-indigo-300 text-sm mr-2">
                         <i class="fa-solid fa-eye mr-1"></i>查看
                     </button>
-                    <button onclick="admin.editWordlist('${wl.id}')" class="text-amber-400 hover:text-amber-300 text-sm mr-3">
+                    <button onclick="admin.triggerAIGenerate('${wl.id}')" class="${aiButtonClass} text-sm mr-2">
+                        <i class="fa-solid ${aiButtonIcon} mr-1"></i>${aiButtonLabel}
+                    </button>
+                    <button onclick="admin.editWordlist('${wl.id}')" class="text-amber-400 hover:text-amber-300 text-sm mr-2">
                         <i class="fa-solid fa-pen mr-1"></i>编辑
                     </button>
                     <button onclick="admin.deleteWordlist('${wl.id}')" class="text-rose-400 hover:text-rose-300 text-sm">
@@ -2349,5 +2360,67 @@ const admin = {
             }
         };
         input.click();
+    },
+
+    // ==================== 教务处 AI 生成练习和例句 ====================
+
+    /**
+     * 触发 AI 生成练习和例句（教务处词表管理）
+     */
+    async triggerAIGenerate(wordlistId) {
+        const wordlist = db.findWordList(wordlistId);
+        if (!wordlist) {
+            helpers.showToast('词表不存在', 'error');
+            return;
+        }
+
+        // 检查是否已有草稿
+        const existingDraft = db.getAIDraft(wordlistId);
+        if (existingDraft) {
+            const confirm = window.confirm(
+                `词表「${wordlist.title}」已有 AI 生成数据（生成于 ${new Date(existingDraft.generatedAt || Date.now()).toLocaleString('zh-CN')}）。\n\n是否重新生成？（将覆盖原有数据）`
+            );
+            if (!confirm) return;
+        }
+
+        // 检查 AI 配置
+        const aiConfig = db.getAIConfig();
+        if (!aiConfig || aiConfig.provider === 'builtin' || !aiConfig.apiKey) {
+            helpers.showToast('请先在「设置 → AI生成设置」中配置 AI 服务商和 API Key', 'warning');
+            return;
+        }
+
+        helpers.showLoading(`正在调用 AI 生成「${wordlist.title}」的练习和例句...`);
+
+        try {
+            // 调用 aiSentenceService（与教师端共用）
+            if (typeof aiSentenceService === 'undefined') {
+                throw new Error('AI 服务模块未加载，请刷新页面重试');
+            }
+
+            const materials = await aiSentenceService.generateMaterials(wordlist, aiConfig);
+            
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
+
+            // 保存到数据库
+            const currentUser = auth.getCurrentUser();
+            if (currentUser) {
+                db.saveAIDraft(wordlistId, {
+                    materials: materials,
+                    generatedAt: Date.now(),
+                    generatedBy: currentUser.id
+                }, currentUser.id);
+            }
+
+            // 刷新词表列表（更新 AI 已生成标记）
+            this.renderWordlists();
+
+            helpers.showToast(`✅ AI 生成成功！「${wordlist.title}」共 ${Object.keys(materials || {}).length} 个单词已生成例句和练习`, 'success');
+
+        } catch (err) {
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
+            console.error('AI 生成失败:', err);
+            helpers.showToast(`AI 生成失败：${err.message || '未知错误'}`, 'error');
+        }
     }
 };

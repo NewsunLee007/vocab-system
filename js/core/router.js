@@ -78,7 +78,7 @@ const router = {
         
         const user = auth.getCurrentUser();
         if (user && user.passwordChanged === false) {
-            auth.showForceChangePasswordModal();
+            // 密码未修改，需重新登录才能走强制改密码流程（登录时有 oldPassword）
             return false;
         }
         

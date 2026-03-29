@@ -18,6 +18,12 @@ const auth = {
             const session = await api.me();
             if (session && session.user) {
                 const u = session.user;
+                // 如果密码未修改，清除 token 强制重新登录（走登录流程才能拿到 oldPassword 供验证）
+                if (u.passwordChanged === false) {
+                    api.clearToken();
+                    this.currentUser = null;
+                    return false;
+                }
                 this.currentUser = {
                     id: u.id,
                     name: u.username,

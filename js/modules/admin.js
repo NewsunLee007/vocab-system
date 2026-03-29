@@ -1507,13 +1507,18 @@ const admin = {
                 if (ext === '.csv') {
                     // 解析CSV
                     parsedData = this.parseCSV(data);
+                    if (parsedData.length === 0) throw new Error('CSV文件为空');
                     headers = parsedData[0];
-                    parsedData = parsedData.slice(1);
+                    parsedData = parsedData.slice(1).filter(row => row.some(cell => cell));
                 } else {
-                    // 使用简单的Excel解析（实际项目中应使用SheetJS库）
-                    // 这里模拟解析结果
-                    parsedData = this.simulateExcelParse(data);
-                    headers = ['教材', '年级', '册别', '单元', '单词', '中文', '音标', '词性'];
+                    // 使用 SheetJS 解析 xlsx/xls
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                    if (rows.length === 0) throw new Error('Excel文件为空');
+                    headers = rows[0].map(h => String(h).trim());
+                    parsedData = rows.slice(1).filter(row => row.some(cell => cell !== ''));
                 }
 
                 this.currentExcelData = parsedData;
@@ -1531,14 +1536,14 @@ const admin = {
                 helpers.showToast(`成功读取 ${parsedData.length} 行数据`, 'success');
             } catch (err) {
                 console.error(err);
-                helpers.showToast('文件解析失败，请检查文件格式', 'error');
+                helpers.showToast('文件解析失败：' + (err.message || '请检查文件格式'), 'error');
             }
         };
 
         if (ext === '.csv') {
-            reader.readAsText(file);
+            reader.readAsText(file, 'UTF-8');
         } else {
-            reader.readAsBinaryString(file);
+            reader.readAsArrayBuffer(file);
         }
     },
 
@@ -1570,15 +1575,11 @@ const admin = {
     },
 
     /**
-     * 模拟Excel解析（实际项目中应使用SheetJS）
+     * 模拟Excel解析（已废弃，保留兼容）
+     * @deprecated 已改用 SheetJS 真实解析
      */
     simulateExcelParse(data) {
-        // 模拟返回一些示例数据
-        return [
-            ['人教版', '七年级', '上册', '1', 'hello', '你好', '/həˈləʊ/', 'int.'],
-            ['人教版', '七年级', '上册', '1', 'good', '好的', '/ɡʊd/', 'adj.'],
-            ['人教版', '七年级', '上册', '1', 'morning', '早晨', '/ˈmɔːnɪŋ/', 'n.'],
-        ];
+        return [];
     },
 
     /**

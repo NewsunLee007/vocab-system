@@ -102,35 +102,26 @@ const db = {
         try {
             const user = auth.getCurrentUser();
             if (!user) return;
-            
-            // 1. 同步个人进度 (Student)
-            if (user.role === 'student') {
-                const myState = this._data.studentStates[user.id];
-                if (myState) {
-                    await api.syncPush(myState);
-                }
-            }
-            
-            // 2. 同步学校数据 (Admin/Teacher) - 仅当有关键数据变更时
-            // 为了简化，我们假设每次 save 都会触发全量更新（在实际生产中应优化为 diff 更新）
-            if (user.role === 'admin' || user.role === 'teacher') {
-                 const schoolData = {
-                     teachers: this._data.teachers,
-                     students: this._data.students,
-                     wordlists: this._data.wordLists,
-                     tasks: this._data.tasks,
-                     learningLogs: this._data.learningLogs,
-                     studentStates: this._data.studentStates,
-                     dict: this._data.dict,
-                     aiDrafts: this._data.aiDrafts || {},
-                     aiConfig: this._data.aiConfig || null,
-                     difficultWords: this._data.difficultWords || {},
-                     learningHistory: this._data.learningHistory || {},
-                     teacherReviewedSentences: this._data.teacherReviewedSentences || {}
-                 };
-                 await api.updateSchoolData(schoolData);
-                 console.log('School data pushed to cloud.');
-            }
+
+            // 构建要同步的学校数据
+            const schoolData = {
+                teachers: this._data.teachers,
+                students: this._data.students,
+                wordlists: this._data.wordLists,
+                tasks: this._data.tasks,
+                learningLogs: this._data.learningLogs,
+                studentStates: this._data.studentStates,
+                dict: this._data.dict,
+                aiDrafts: this._data.aiDrafts || {},
+                aiConfig: this._data.aiConfig || null,
+                difficultWords: this._data.difficultWords || {},
+                learningHistory: this._data.learningHistory || {},
+                teacherReviewedSentences: this._data.teacherReviewedSentences || {}
+            };
+
+            // 所有角色都可以同步学校数据（包括学生产生的学习记录）
+            await api.updateSchoolData(schoolData);
+            console.log('School data pushed to cloud.');
         } catch (e) {
             console.warn('Cloud sync failed:', e);
             if (helpers && typeof helpers.showToast === 'function') {
@@ -179,6 +170,7 @@ const db = {
             ...student,
             name: student.name || student.username || '',
             class: student.class || student.className || '',
+            teacherId: student.teacherId || null,  // 确保保留 teacherId
             coins: Number(student.coins || 0),
             badges: Array.isArray(student.badges) ? student.badges : [],
             streak: Number(student.streak || 0),

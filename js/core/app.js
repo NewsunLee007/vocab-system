@@ -57,25 +57,25 @@ const app = {
         switch (user.role) {
             case 'admin':
                 currentUserDisplay.innerHTML = '<i class="fa-solid fa-building-columns mr-2"></i>教务处总控';
-                // 管理员：深色渐变背景
+                // 管理员：半透明深灰
                 if (mainNav) {
-                    mainNav.className = 'fixed top-0 left-0 right-0 bg-gradient-to-r from-slate-900 to-slate-800 backdrop-blur-xl border-b border-white/10 py-3 px-6 flex justify-between items-center z-50';
+                    mainNav.className = 'fixed top-0 left-0 right-0 bg-slate-900/70 backdrop-blur-xl border-b border-white/10 py-3 px-6 flex justify-between items-center z-50';
                 }
                 break;
             case 'teacher':
                 currentUserDisplay.innerHTML = `<i class="fa-solid fa-chalkboard-user mr-2"></i>${user.name}`;
-                // 教师：深蓝渐变背景
+                // 教师：半透明深蓝
                 if (mainNav) {
-                    mainNav.className = 'fixed top-0 left-0 right-0 bg-gradient-to-r from-indigo-900 to-slate-900 backdrop-blur-xl border-b border-white/10 py-3 px-6 flex justify-between items-center z-50';
+                    mainNav.className = 'fixed top-0 left-0 right-0 bg-indigo-900/70 backdrop-blur-xl border-b border-white/10 py-3 px-6 flex justify-between items-center z-50';
                 }
                 break;
             case 'student':
                 currentUserDisplay.innerText = `${user.class} ${user.name}`;
                 studentAssets.classList.remove('hidden');
                 this.updateStudentNav(user);
-                // 学生：翡翠绿渐变背景
+                // 学生：半透明翡翠绿
                 if (mainNav) {
-                    mainNav.className = 'fixed top-0 left-0 right-0 bg-gradient-to-r from-emerald-900 to-teal-900 backdrop-blur-xl border-b border-white/10 py-3 px-6 flex justify-between items-center z-50';
+                    mainNav.className = 'fixed top-0 left-0 right-0 bg-emerald-900/70 backdrop-blur-xl border-b border-white/10 py-3 px-6 flex justify-between items-center z-50';
                 }
                 break;
         }

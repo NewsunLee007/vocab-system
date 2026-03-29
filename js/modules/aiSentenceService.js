@@ -102,13 +102,20 @@ const aiSentenceService = {
                         const correctMeaning = result.matching.meaning;
                         let options = result.matching.options;
                         
-                        // 检查并移除重复选项
-                        const uniqueOptions = [...new Set(options)];
-                        if (uniqueOptions.length < options.length) {
-                            console.warn('AI 返回的 matching 选项有重复，正在补充干扰项');
-                            // 补充干扰释义
+                        // 检查无效选项（占位符、词性标注等）
+                        const hasInvalidOptions = options.some(opt => this.isInvalidOption(opt));
+                        if (hasInvalidOptions) {
+                            console.warn('AI 返回的 matching 选项包含无效占位符，正在补充干扰项');
                             const distractors = this.generateMeaningDistractors(correctMeaning);
                             options = [correctMeaning, ...distractors];
+                        } else {
+                            // 检查并移除重复选项
+                            const uniqueOptions = [...new Set(options)];
+                            if (uniqueOptions.length < options.length) {
+                                console.warn('AI 返回的 matching 选项有重复，正在补充干扰项');
+                                const distractors = this.generateMeaningDistractors(correctMeaning);
+                                options = [correctMeaning, ...distractors];
+                            }
                         }
                         
                         for (let i = options.length - 1; i > 0; i--) {
@@ -183,6 +190,11 @@ ${wordListStr}
 7. **关键**：options 数组中的4个选项必须完全不同，不能有任何重复！
    - matching 的 options（中文释义选项）必须4个完全不相同的释义
    - 每个选项应该是不同单词的释义，具有迷惑性但可区分
+8. **禁止占位符**：选项内容必须是真实的中文释义，禁止使用以下形式：
+   - 禁止 "n. 单词或短语"、"v. 动作" 等词性标注+占位符
+   - 禁止 "干扰项1"、"干扰释义1" 等示例占位符
+   - 禁止空白或无意义的内容
+   - 每个选项必须是具体的中文含义，如 "苹果"、"快乐地"、"跑步"
 
 请为每个单词返回以下JSON格式：
 {
@@ -546,6 +558,40 @@ ${wordListStr}
         }
         
         return result.slice(0, needed);
+    },
+
+    /**
+     * 检测选项是否为无效占位符
+     */
+    isInvalidOption(option) {
+        if (!option || typeof option !== 'string') return true;
+        
+        const opt = option.trim();
+        if (!opt) return true;
+        
+        // 检测常见占位符模式
+        const invalidPatterns = [
+            /^(n\.|v\.|adj\.|adv\.|prep\.|conj\.|int\.|pron\.)\s*(单词|短语|动词|名词|形容词|副词|介词|连词|感叹词|代词|word|phrase)/i,
+            /^干扰(项|释义|选项)[0-9]*$/i,
+            /^选项[0-9]*$/i,
+            /^option[0-9]*$/i,
+            /^distractor[0-9]*$/i,
+            /^[a-z]\.\s*(单词|短语|动作|行为)/i,
+            /^[0-9]+$/,
+        ];
+        
+        for (const pattern of invalidPatterns) {
+            if (pattern.test(opt)) {
+                return true;
+            }
+        }
+        
+        // 检测纯英文词性标注（没有实际中文释义）
+        if (/^(n\.|v\.|adj\.|adv\.|prep\.|conj\.|int\.|pron\.)\s*[a-z\s]*$/i.test(opt) && !/[\u4e00-\u9fa5]/.test(opt)) {
+            return true;
+        }
+        
+        return false;
     },
 
     /**

@@ -1046,15 +1046,35 @@ const student = {
         try {
             const state = this.spellingState;
             const currentWord = state.words[state.currentIndex];
+            
+            console.log('尝试播放单词:', currentWord);
+            
             if (typeof speech !== 'undefined') {
-                speech.speakWord(currentWord);
+                speech.speakWord(currentWord).catch(err => {
+                    console.warn('语音播放失败:', err);
+                    // 如果是浏览器自动播放策略阻止，给用户提示
+                    if (err?.name === 'NotAllowedError' || err?.message?.includes('allowed')) {
+                        helpers.showToast('请点击页面任意位置后再试', 'warning');
+                    }
+                });
             } else if (window.speechSynthesis) {
+                // 先取消之前的播放
+                window.speechSynthesis.cancel();
+                
                 const utterance = new SpeechSynthesisUtterance(currentWord);
                 utterance.lang = 'en-US';
                 utterance.rate = 0.8;
+                
+                utterance.onerror = (e) => {
+                    console.warn('语音合成错误:', e);
+                };
+                
                 window.speechSynthesis.speak(utterance);
+            } else {
+                helpers.showToast('您的浏览器不支持语音播放', 'error');
             }
         } catch (error) {
+            console.error('播放单词发音错误:', error);
             errorHandler.handle(error, '播放单词发音');
         }
     },

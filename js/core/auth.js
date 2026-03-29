@@ -538,15 +538,35 @@ const auth = {
         
         // 清理所有全屏测试/学习视图
         const fullScreenViews = [
+            // 测试视图
             'matching-test-view',
+            'spelling-test-view',
+            'context-test-view',
+            // 学习视图
             'flashcard-learning-view',
             'word-learning-view',
+            'flexible-learning-view',
+            // 模式视图
             'spelling-mode',
             'spelling-completion',
             'quiz-mode',
             'quiz-completion',
+            'game-mode',
             'self-learning-mode-choice',
-            'flashcard-mode'
+            'flashcard-mode',
+            // 任务引擎视图
+            'task-engine-view',
+            'multi-mode-view',
+            'task-intro',
+            'learning-choice',
+            'test-phase',
+            'mode-transition',
+            'mode-complete',
+            'task-complete',
+            // 模态框
+            'save-exit-modal',
+            'pause-modal',
+            'learning-complete'
         ];
         fullScreenViews.forEach(id => {
             const el = document.getElementById(id);

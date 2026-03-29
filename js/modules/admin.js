@@ -986,8 +986,8 @@ const admin = {
         },
         qwen: {
             name: 'Alibaba Qwen (通义千问)',
-            defaultEndpoint: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
-            models: ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen-72b-chat'],
+            defaultEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            models: ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen-long'],
             keyPlaceholder: 'sk-...'
         },
         zhipu: {

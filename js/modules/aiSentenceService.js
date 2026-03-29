@@ -160,27 +160,27 @@ ${wordListStr}
 }`;
 
         const endpoint = config.endpoint || admin.AI_PROVIDERS[config.provider]?.defaultEndpoint;
-        
-        const requestBody = {
-            model: config.model || 'gpt-3.5-turbo',
-            messages: [
-                { 
-                    role: 'system', 
-                    content: '你是一位专业的英语教育专家，擅长为不同年级学生设计英语练习题。' 
-                },
-                { role: 'user', content: prompt }
-            ],
-            temperature: 0.7,
-            max_tokens: 4000
-        };
 
-        const response = await fetch(endpoint, {
+        // 通过后端代理请求，避免 CORS 问题
+        const response = await fetch('/api/ai/proxy', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${config.apiKey}`
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify({
+                endpoint,
+                apiKey: config.apiKey,
+                model: config.model || 'qwen-turbo',
+                messages: [
+                    { 
+                        role: 'system', 
+                        content: config.systemPrompt || '你是一位专业的英语教育专家，擅长为不同年级学生设计英语练习题。' 
+                    },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: config.temperature ?? 0.7,
+                max_tokens: config.maxTokens ?? 4000
+            })
         });
 
         if (!response.ok) {

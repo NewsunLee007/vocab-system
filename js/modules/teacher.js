@@ -2636,24 +2636,23 @@ const teacher = {
             throw new Error('未配置API端点');
         }
 
-        // 构建请求体（兼容OpenAI格式）
-        const requestBody = {
-            model: config.model || 'gpt-3.5-turbo',
-            messages: [
-                { role: 'system', content: config.systemPrompt || '你是一位专业的英语教育专家。' },
-                { role: 'user', content: prompt }
-            ],
-            temperature: config.temperature || 0.7,
-            max_tokens: config.maxTokens || 2000
-        };
-
-        const response = await fetch(endpoint, {
+        // 构建请求体，通过后端代理转发，避免 CORS 问题
+        const response = await fetch('/api/ai/proxy', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${config.apiKey}`
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify({
+                endpoint,
+                apiKey: config.apiKey,
+                model: config.model || 'qwen-turbo',
+                messages: [
+                    { role: 'system', content: config.systemPrompt || '你是一位专业的英语教育专家。' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: config.temperature ?? 0.7,
+                max_tokens: config.maxTokens ?? 2000
+            })
         });
 
         if (!response.ok) {

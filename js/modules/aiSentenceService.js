@@ -126,6 +126,8 @@ ${wordListStr}
 2. 例句必须真实、自然、有语境
 3. 干扰项必须与正确答案词性相同，但意思不同
 4. 确保干扰项不会造成歧义
+5. **重要**：正确答案必须随机分布在 A/B/C/D 四个选项中，不要总是放在第一个位置
+6. correctIndex 表示正确答案在 options 数组中的索引（0=A, 1=B, 2=C, 3=D）
 
 请为每个单词返回以下JSON格式：
 {
@@ -135,8 +137,8 @@ ${wordListStr}
       "context": {
         "word": "单词",
         "sentence": "包含___的例句",
-        "options": ["正确选项", "干扰项1", "干扰项2", "干扰项3"],
-        "correctIndex": 0
+        "options": ["干扰项1", "正确选项", "干扰项2", "干扰项3"],
+        "correctIndex": 1
       },
       "spelling": {
         "word": "单词",
@@ -146,8 +148,8 @@ ${wordListStr}
       "matching": {
         "word": "单词",
         "meaning": "中文释义",
-        "options": ["正确释义", "干扰释义1", "干扰释义2", "干扰释义3"],
-        "correctIndex": 0
+        "options": ["干扰释义1", "正确释义", "干扰释义2", "干扰释义3"],
+        "correctIndex": 1
       },
       "flashcard": {
         "word": "单词",

@@ -70,7 +70,10 @@ const db = {
             this.ensureCurrentStudentRecord();
         } catch (e) {
             console.warn('Failed to fetch school data:', e);
-            if (helpers && typeof helpers.showToast === 'function') {
+            // 401 表示未登录，这是正常情况，不需要弹出错误提示
+            if (e.message?.includes('401') || e.message?.includes('No token')) {
+                // 未登录状态，静默失败
+            } else if (helpers && typeof helpers.showToast === 'function') {
                 helpers.showToast(`云端数据加载失败：${e.message || '未知错误'}`, 'warning');
             }
         } finally {

@@ -5,6 +5,10 @@
   "outputDirectory": ".",
   "rewrites": [
     {
+      "source": "/api/auth/:action",
+      "destination": "/api/auth/index"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

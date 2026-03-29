@@ -116,11 +116,21 @@ const app = {
      * 显示教务处登录模态框
      */
     showAdminLogin() {
+        // 先强制关闭教师登录弹框，防止两框叠加导致点击事件被拦截
+        const teacherModal = document.getElementById('modal-teacher-login');
+        if (teacherModal) {
+            teacherModal.classList.add('opacity-0');
+            teacherModal.classList.add('hidden');
+        }
+
         const modal = document.getElementById('modal-admin-login');
         if (modal) {
             modal.classList.remove('hidden');
             modal.offsetHeight;
             modal.classList.remove('opacity-0');
+            // 清空密码框，避免残留
+            const pwdInput = document.getElementById('modal-admin-pwd');
+            if (pwdInput) pwdInput.value = '';
         }
     },
 

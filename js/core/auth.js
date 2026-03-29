@@ -81,6 +81,10 @@ const auth = {
     async performAdminLogin(pwd) {
         try {
             helpers.showLoading('正在登录...');
+
+            // 切换账号前先清除旧 session，避免带着教师 token 请求
+            this.currentUser = null;
+            api.clearToken();
             
             // 尝试 API 登录
             // Admin username is 'admin' by default
@@ -281,13 +285,11 @@ const auth = {
     async performTeacherLogin(input, pwd) {
         try {
             helpers.showLoading('正在登录...');
-            // API expects username, but input could be ID or Name.
-            // My backend currently only supports 'username'.
-            // If input is ID, it might fail if backend doesn't handle it.
-            // But let's assume 'username' matches 'name' or 'id' in backend logic?
-            // Actually, backend `login` route queries `username`.
-            // So if teacher registered with ID as username, it works.
-            
+
+            // 切换账号前先清除旧 session
+            this.currentUser = null;
+            api.clearToken();
+
             const result = await api.login({ username: input, password: pwd, role: 'teacher' });
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 

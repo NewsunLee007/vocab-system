@@ -2365,72 +2365,15 @@ const admin = {
     // ==================== 教务处 AI 生成练习和例句 ====================
 
     /**
-     * 触发 AI 生成练习和例句（教务处词表管理）
+     * 触发 AI 生成练习和例句（直接调用教师端完整流程）
      */
-    async triggerAIGenerate(wordlistId) {
-        const wordlist = db.findWordList(wordlistId);
-        if (!wordlist) {
-            helpers.showToast('词表不存在', 'error');
-            return;
+    triggerAIGenerate(wordlistId) {
+        // 直接复用教师端的完整 AI 生成流程（含进度条、预览页面、确认对话框）
+        if (typeof teacher !== 'undefined' && typeof teacher.triggerAI === 'function') {
+            teacher.triggerAI(wordlistId);
+        } else {
+            helpers.showToast('AI 生成模块未就绪，请刷新页面重试', 'error');
         }
-
-        // 检查是否已有草稿
-        const existingDraft = db.getAIDraft(wordlistId);
-        if (existingDraft) {
-            const confirm = window.confirm(
-                `词表「${wordlist.title}」已有 AI 生成数据（生成于 ${new Date(existingDraft.generatedAt || Date.now()).toLocaleString('zh-CN')}）。\n\n是否重新生成？（将覆盖原有数据）`
-            );
-            if (!confirm) return;
-        }
-
-        // 检查 AI 配置
-        const aiConfig = db.getAIConfig();
-        if (!aiConfig || aiConfig.provider === 'builtin' || !aiConfig.apiKey) {
-            helpers.showToast('请先在「设置 → AI生成设置」中配置 AI 服务商和 API Key', 'warning');
-            return;
-        }
-
-        helpers.showLoading(`正在调用 AI 生成「${wordlist.title}」的练习和例句... (0/${wordlist.words.length})`);
-
-        try {
-            // 调用 aiSentenceService（与教师端共用）
-            if (typeof aiSentenceService === 'undefined') {
-                throw new Error('AI 服务模块未加载，请刷新页面重试');
-            }
-
-            const grade = wordlist.grade || 'middle';
-
-            // 正确调用签名：generateMaterials(words, grade, onProgress)
-            const materials = await aiSentenceService.generateMaterials(
-                wordlist.words,
-                grade,
-                (progress, completed, total) => {
-                    helpers.showLoading(`正在 AI 生成「${wordlist.title}」... ${completed}/${total} 个单词 (${progress}%)`);
-                }
-            );
-            
-            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
-
-            // 保存到数据库
-            const currentUser = auth.getCurrentUser();
-            if (currentUser) {
-                db.saveAIDraft(wordlistId, {
-                    materials: materials,
-                    generatedAt: Date.now(),
-                    generatedBy: currentUser.id
-                }, currentUser.id);
-            }
-
-            // 刷新词表列表（更新 AI 已生成标记）
-            this.renderWordlists();
-
-            const wordCount = (materials.context || []).length;
-            helpers.showToast(`✅ AI 生成成功！「${wordlist.title}」共 ${wordCount} 个单词已生成例句和练习`, 'success');
-
-        } catch (err) {
-            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
-            console.error('AI 生成失败:', err);
-            helpers.showToast(`AI 生成失败：${err.message || '未知错误'}`, 'error');
-        }
+    }
     }
 };

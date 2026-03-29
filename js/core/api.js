@@ -177,6 +177,25 @@ const api = {
         }
         return this._readSuccessData(response);
     },
+
+    /**
+     * 重置指定学生密码（教师/教务处权限）
+     * @param {string} username - 学生姓名
+     * @param {string} className - 班级
+     * @param {string} newPassword - 新密码（默认 123456）
+     */
+    async resetStudentPassword(username, className, newPassword = '123456') {
+        const response = await fetch(this._url('/auth/reset-password'), {
+            method: 'POST',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ username, className, newPassword })
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || '重置密码失败');
+        }
+        return this._readSuccessData(response);
+    },
     
     async syncPull() {
         const response = await fetch(this._url('/sync'), {

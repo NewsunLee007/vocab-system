@@ -312,6 +312,9 @@ const teacher = {
                         <button onclick="event.stopPropagation(); teacher.editStudent('${student.id}')" class="text-xs text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded hover:bg-indigo-500/20 transition" title="编辑">
                             <i class="fa-solid fa-pen"></i>
                         </button>
+                        <button onclick="event.stopPropagation(); teacher.resetStudentPwd('${student.id}')" class="text-xs text-amber-400 hover:text-amber-300 px-2 py-1 rounded hover:bg-amber-500/20 transition" title="重置密码为123456">
+                            <i class="fa-solid fa-key"></i>
+                        </button>
                         <button onclick="event.stopPropagation(); teacher.deleteStudent('${student.id}')" class="text-xs text-rose-400 hover:text-rose-300 px-2 py-1 rounded hover:bg-rose-500/20 transition" title="删除">
                             <i class="fa-solid fa-trash"></i>
                         </button>
@@ -626,6 +629,23 @@ const teacher = {
         
         this.renderStudents();
         helpers.showToast('学生已删除！', 'success');
+    },
+
+    /**
+     * 重置学生密码为 123456
+     */
+    async resetStudentPwd(studentId) {
+        const student = db.findStudent(studentId);
+        if (!student) return;
+
+        if (!confirm(`确定要将 "${student.name}" 的密码重置为 123456 吗？`)) return;
+
+        try {
+            await api.resetStudentPassword(student.name, student.class, '123456');
+            helpers.showToast(`✅ ${student.name} 的密码已重置为 123456`, 'success');
+        } catch (err) {
+            helpers.showToast(`重置密码失败：${err.message}`, 'error');
+        }
     },
 
     /**
@@ -1717,7 +1737,7 @@ const teacher = {
                     username: name,
                     className: className,
                     role: 'student',
-                    password: name  // 默认密码=姓名
+                    password: '123456'  // 默认密码=123456
                 });
                 db.addStudent({
                     id: regResult.id || ('s_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)),
@@ -4011,7 +4031,7 @@ const teacher = {
                     username: name,
                     className: className,
                     role: 'student',
-                    password: name  // 默认密码=姓名，首次登录要求修改
+                    password: '123456'  // 默认密码=123456
                 });
 
                 // 用数据库返回的真实 ID 存入本地

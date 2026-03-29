@@ -72,7 +72,16 @@ const aiSentenceService = {
                     // 强制打乱 context 选项顺序，确保随机分布
                     if (result.context && result.context.options) {
                         const correctWord = result.context.word;
-                        const options = result.context.options;
+                        let options = result.context.options;
+                        
+                        // 检查并移除重复选项
+                        const uniqueOptions = [...new Set(options.map(o => o.toLowerCase()))];
+                        if (uniqueOptions.length < options.length) {
+                            console.warn('AI 返回的 context 选项有重复，正在补充干扰项');
+                            // 补充干扰项
+                            const distractors = this.generateDistractors(correctWord, 'noun', '');
+                            options = [correctWord, ...distractors];
+                        }
                         
                         // Fisher-Yates 洗牌算法
                         for (let i = options.length - 1; i > 0; i--) {
@@ -80,6 +89,7 @@ const aiSentenceService = {
                             [options[i], options[j]] = [options[j], options[i]];
                         }
                         
+                        result.context.options = options;
                         // 更新 correctIndex
                         result.context.correctIndex = options.findIndex(opt => 
                             typeof opt === 'string' && opt.toLowerCase() === correctWord.toLowerCase()
@@ -90,13 +100,23 @@ const aiSentenceService = {
                     // 强制打乱 matching 选项顺序
                     if (result.matching && result.matching.options) {
                         const correctMeaning = result.matching.meaning;
-                        const options = result.matching.options;
+                        let options = result.matching.options;
+                        
+                        // 检查并移除重复选项
+                        const uniqueOptions = [...new Set(options)];
+                        if (uniqueOptions.length < options.length) {
+                            console.warn('AI 返回的 matching 选项有重复，正在补充干扰项');
+                            // 补充干扰释义
+                            const distractors = this.generateMeaningDistractors(correctMeaning);
+                            options = [correctMeaning, ...distractors];
+                        }
                         
                         for (let i = options.length - 1; i > 0; i--) {
                             const j = Math.floor(Math.random() * (i + 1));
                             [options[i], options[j]] = [options[j], options[i]];
                         }
                         
+                        result.matching.options = options;
                         result.matching.correctIndex = options.findIndex(opt => opt === correctMeaning);
                         if (result.matching.correctIndex === -1) result.matching.correctIndex = 0;
                     }
@@ -160,6 +180,9 @@ ${wordListStr}
 4. 确保干扰项不会造成歧义
 5. **重要**：正确答案必须随机分布在 A/B/C/D 四个选项中，不要总是放在第一个位置
 6. correctIndex 表示正确答案在 options 数组中的索引（0=A, 1=B, 2=C, 3=D）
+7. **关键**：options 数组中的4个选项必须完全不同，不能有任何重复！
+   - matching 的 options（中文释义选项）必须4个完全不相同的释义
+   - 每个选项应该是不同单词的释义，具有迷惑性但可区分
 
 请为每个单词返回以下JSON格式：
 {

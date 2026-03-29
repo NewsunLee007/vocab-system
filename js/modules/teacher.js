@@ -470,8 +470,12 @@ const teacher = {
     /**
      * 查看学生详情
      */
-    viewStudentDetail(studentId) {
+    async viewStudentDetail(studentId) {
         this.currentDetailStudentId = studentId;
+        
+        // 先刷新云端数据，确保获取最新的学生积分
+        await this.refreshStudentData();
+        
         const student = db.findStudent(studentId);
         if (!student) return;
 
@@ -588,6 +592,33 @@ const teacher = {
             modal.classList.add('hidden');
             this.currentDetailStudentId = null;
         }, 300);
+    },
+
+    /**
+     * 刷新学生数据（从云端拉取最新数据）
+     */
+    async refreshStudentData() {
+        try {
+            await db.init();
+            console.log('教师端数据已刷新');
+        } catch (e) {
+            console.warn('刷新数据失败:', e);
+        }
+    },
+
+    /**
+     * 手动刷新所有数据
+     */
+    async refreshAllData() {
+        helpers.showToast('正在刷新数据...', 'info');
+        try {
+            await db.init();
+            this.renderStats();
+            this.renderStudents();
+            helpers.showToast('数据已刷新！', 'success');
+        } catch (e) {
+            helpers.showToast('刷新失败：' + e.message, 'error');
+        }
     },
 
     /**

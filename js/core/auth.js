@@ -535,6 +535,29 @@ const auth = {
         } catch (e) {}
         this.currentUser = null;
         this._pendingPasswordChange = null;
+        
+        // 清理所有全屏测试/学习视图
+        const fullScreenViews = [
+            'matching-test-view',
+            'flashcard-learning-view',
+            'word-learning-view',
+            'spelling-mode',
+            'spelling-completion',
+            'quiz-mode',
+            'quiz-completion',
+            'self-learning-mode-choice',
+            'flashcard-mode'
+        ];
+        fullScreenViews.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        });
+        
+        // 取消所有正在播放的语音
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+        
         router.navigate('login');
         app.updateNav();
         helpers.showToast('已安全退出', 'info');

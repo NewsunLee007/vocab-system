@@ -31,14 +31,18 @@ const app = {
      */
     updateNav() {
         const navUserInfo = document.getElementById('nav-user-info');
+        const navLoginLinks = document.getElementById('nav-login-links');
         const currentUserDisplay = document.getElementById('current-user-display');
         const studentAssets = document.getElementById('student-assets');
         
         if (!auth.isLoggedIn()) {
             navUserInfo.classList.add('hidden');
+            if (navLoginLinks) navLoginLinks.classList.remove('hidden');
             return;
         }
         
+        // 已登录：隐藏登录按钮组，显示用户信息
+        if (navLoginLinks) navLoginLinks.classList.add('hidden');
         navUserInfo.classList.remove('hidden');
         studentAssets.classList.add('hidden');
         
@@ -91,6 +95,11 @@ const app = {
      * 显示教师登录模态框
      */
     showTeacherLogin() {
+        // 已以教师身份登录，直接跳转
+        if (auth.isLoggedIn() && auth.getCurrentUser()?.role === 'teacher') {
+            router.navigate('teacher');
+            return;
+        }
         const modal = document.getElementById('modal-teacher-login');
         if (modal) {
             modal.classList.remove('hidden');
@@ -116,6 +125,12 @@ const app = {
      * 显示教务处登录模态框
      */
     showAdminLogin() {
+        // 已以管理员身份登录，直接跳转
+        if (auth.isLoggedIn() && auth.getCurrentUser()?.role === 'admin') {
+            router.navigate('admin');
+            return;
+        }
+
         // 先强制关闭教师登录弹框，防止两框叠加导致点击事件被拦截
         const teacherModal = document.getElementById('modal-teacher-login');
         if (teacherModal) {
@@ -138,9 +153,7 @@ const app = {
      * 隐藏教务处登录模态框
      */
     hideAdminLogin() {
-        console.log('hideAdminLogin called');
         const modal = document.getElementById('modal-admin-login');
-        console.log('modal element:', modal);
         if (modal) {
             modal.classList.add('opacity-0');
             modal.classList.add('hidden');

@@ -12,9 +12,9 @@ const admin = {
     /**
      * 渲染教务处总控台
      */
-    render() {
+    async render() {
         this.renderStats();
-        this.renderTeacherList();
+        await this.renderTeacherList();
         this.renderAIConfigStatus();
         this.renderWordlists();
     },
@@ -37,48 +37,54 @@ const admin = {
     },
 
     /**
-     * 渲染教师列表
+     * 渲染教师列表（从数据库拉取真实账户）
      */
-    renderTeacherList() {
+    async renderTeacherList() {
         const tbody = document.getElementById('admin-teachers-table');
-        const teachers = db.getTeachers();
-        
-        console.log('renderTeacherList called, tbody:', tbody, 'teachers:', teachers);
         
         if (!tbody) {
             console.error('admin-teachers-table not found!');
             return;
         }
         
-        tbody.innerHTML = '';
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>加载中...</td></tr>';
         
-        if (!teachers || teachers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">暂无教师数据</td></tr>';
-            return;
-        }
-        
-        teachers.forEach(teacher => {
-            const students = db.getStudentsByTeacher(teacher.id);
-            const classes = [...new Set(students.map(s => s.class))];
+        try {
+            const teachers = await api.fetchTeacherAccounts();
+            // 同步到 db 缓存（供其他功能使用）
+            db._data.teachers = teachers.map(t => ({ id: t.id, name: t.username, dbId: t.id }));
             
-            const row = document.createElement('tr');
-            row.className = 'hover:bg-white/10 transition border-b border-white/10';
-            row.innerHTML = `
-                <td class="py-3 px-4 font-medium">${teacher.id}</td>
-                <td class="py-3 px-4">${teacher.name}</td>
-                <td class="py-3 px-4">${classes.length}</td>
-                <td class="py-3 px-4">${students.length}</td>
-                <td class="py-3 px-4">
-                    <button class="text-indigo-400 hover:text-indigo-300 text-sm mr-3" onclick="admin.viewTeacherDetail('${teacher.id}')">
-                        <i class="fa-solid fa-eye mr-1"></i>查看
-                    </button>
-                    <button class="text-rose-400 hover:text-rose-300 text-sm" onclick="admin.deleteTeacher('${teacher.id}')">
-                        <i class="fa-solid fa-trash mr-1"></i>删除
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
+            tbody.innerHTML = '';
+            
+            if (!teachers || teachers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">暂无教师账户，请点击"添加教师"创建</td></tr>';
+                return;
+            }
+            
+            teachers.forEach(teacher => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-white/10 transition border-b border-white/10';
+                const statusBadge = teacher.passwordChanged
+                    ? '<span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">已激活</span>'
+                    : '<span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">待激活</span>';
+                row.innerHTML = `
+                    <td class="py-3 px-4 font-medium font-mono">${teacher.username}</td>
+                    <td class="py-3 px-4">${statusBadge}</td>
+                    <td class="py-3 px-4 text-slate-400 text-sm">${new Date(teacher.createdAt).toLocaleDateString('zh-CN')}</td>
+                    <td class="py-3 px-4">
+                        <button class="text-rose-400 hover:text-rose-300 text-sm" onclick="admin.deleteTeacher('${teacher.id}', '${teacher.username}')">
+                            <i class="fa-solid fa-trash mr-1"></i>删除
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            this.renderStats();
+        } catch (err) {
+            console.error('Failed to load teachers:', err);
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-400"><i class="fa-solid fa-triangle-exclamation mr-2"></i>加载失败：${err.message}</td></tr>`;
+        }
     },
 
     /**
@@ -175,96 +181,94 @@ const admin = {
     /**
      * 删除当前查看的教师
      */
-    deleteCurrentTeacher() {
+    async deleteCurrentTeacher() {
         if (!this.currentTeacherId) return;
         
-        if (confirm('确定要删除该教师吗？此操作将同时删除该教师的所有学生、词表和任务数据，不可恢复！')) {
-            this.deleteTeacher(this.currentTeacherId);
+        const teacher = db.findTeacher(this.currentTeacherId);
+        const username = teacher ? teacher.name : this.currentTeacherId;
+        
+        if (confirm('确定要删除该教师账户吗？此操作不可恢复！')) {
+            await this.deleteTeacher(this.currentTeacherId, username);
             this.closeTeacherDetail();
         }
     },
 
     /**
-     * 删除教师
+     * 删除教师（同时删除数据库 User 账户）
      */
-    deleteTeacher(teacherId) {
-        const teacher = db.findTeacher(teacherId);
-        if (!teacher) return;
-        
-        if (!confirm(`确定要删除教师 "${teacher.name}" 吗？此操作不可恢复！`)) {
+    async deleteTeacher(userId, username) {
+        const displayName = username || userId;
+        if (!confirm(`确定要删除教师账户 "${displayName}" 吗？\n\n该账户将无法再登录系统，此操作不可恢复！`)) {
             return;
         }
         
-        // 从数据库中删除教师
-        db._data.teachers = db._data.teachers.filter(t => t.id !== teacherId);
-        
-        // 删除该教师的所有学生
-        db._data.students = db._data.students.filter(s => s.teacherId !== teacherId);
-        
-        // 删除该教师的词表
-        db._data.wordLists = db._data.wordLists.filter(wl => wl.teacherId !== teacherId);
-        
-        // 删除该教师的任务
-        db._data.tasks = db._data.tasks.filter(t => t.teacherId !== teacherId);
-        
-        // 删除该教师的学习日志
-        db._data.learningLogs = db._data.learningLogs.filter(l => l.teacherId !== teacherId);
-        
-        db.save();
-        
-        this.renderStats();
-        this.renderTeacherList();
-        helpers.showToast('教师删除成功！', 'success');
+        try {
+            helpers.showLoading('正在删除...');
+            await api.deleteTeacherAccount(userId);
+            helpers.hideLoading();
+            await this.renderTeacherList();
+            helpers.showToast(`教师账户 "${displayName}" 已删除`, 'success');
+        } catch (err) {
+            helpers.hideLoading();
+            helpers.showToast(err.message || '删除失败', 'error');
+        }
     },
 
     /**
      * 显示批量删除模态框
      */
-    showBatchDeleteModal() {
-        const teachers = db.getTeachers();
-        if (teachers.length === 0) {
-            helpers.showToast('暂无可删除的教师！', 'warning');
-            return;
-        }
-        
+    async showBatchDeleteModal() {
         this.selectedTeachersForDelete = [];
         
         const container = document.getElementById('batch-delete-list');
-        container.innerHTML = '';
-        
-        teachers.forEach(teacher => {
-            const students = db.getStudentsByTeacher(teacher.id);
-            const item = document.createElement('div');
-            item.className = 'flex items-center p-2 hover:bg-slate-50 rounded cursor-pointer';
-            item.innerHTML = `
-                <input type="checkbox" id="delete-${teacher.id}" value="${teacher.id}" 
-                    class="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500 mr-3"
-                    onchange="admin.toggleTeacherForDelete('${teacher.id}')">
-                <label for="delete-${teacher.id}" class="flex-1 cursor-pointer">
-                    <span class="font-medium">${teacher.name}</span>
-                    <span class="text-xs text-slate-500 ml-2">(${teacher.id} · ${students.length}名学生)</span>
-                </label>
-            `;
-            container.appendChild(item);
-        });
-        
-        // 全选按钮
-        const selectAllDiv = document.createElement('div');
-        selectAllDiv.className = 'border-t pt-2 mt-2';
-        selectAllDiv.innerHTML = `
-            <button onclick="admin.selectAllTeachersForDelete()" class="text-sm text-slate-600 hover:text-slate-800 mr-4">
-                <i class="fa-solid fa-check-double mr-1"></i>全选
-            </button>
-            <button onclick="admin.deselectAllTeachersForDelete()" class="text-sm text-slate-600 hover:text-slate-800">
-                <i class="fa-solid fa-xmark mr-1"></i>取消全选
-            </button>
-        `;
-        container.appendChild(selectAllDiv);
+        container.innerHTML = '<div class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>加载中...</div>';
         
         const modal = document.getElementById('modal-batch-delete');
         modal.classList.remove('hidden');
         modal.offsetHeight;
         modal.classList.remove('opacity-0');
+        
+        try {
+            const teachers = await api.fetchTeacherAccounts();
+            container.innerHTML = '';
+            
+            if (teachers.length === 0) {
+                helpers.showToast('暂无可删除的教师！', 'warning');
+                this.closeBatchDeleteModal();
+                return;
+            }
+        
+            teachers.forEach(teacher => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center p-2 hover:bg-slate-50 rounded cursor-pointer';
+                const statusText = teacher.passwordChanged ? '已激活' : '待激活';
+                item.innerHTML = `
+                    <input type="checkbox" id="delete-${teacher.id}" value="${teacher.id}" 
+                        class="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500 mr-3"
+                        onchange="admin.toggleTeacherForDelete('${teacher.id}')">
+                    <label for="delete-${teacher.id}" class="flex-1 cursor-pointer">
+                        <span class="font-medium font-mono">${teacher.username}</span>
+                        <span class="text-xs text-slate-500 ml-2">(${statusText})</span>
+                    </label>
+                `;
+                container.appendChild(item);
+            });
+        
+            // 全选按钮
+            const selectAllDiv = document.createElement('div');
+            selectAllDiv.className = 'border-t pt-2 mt-2';
+            selectAllDiv.innerHTML = `
+                <button onclick="admin.selectAllTeachersForDelete()" class="text-sm text-slate-600 hover:text-slate-800 mr-4">
+                    <i class="fa-solid fa-check-double mr-1"></i>全选
+                </button>
+                <button onclick="admin.deselectAllTeachersForDelete()" class="text-sm text-slate-600 hover:text-slate-800">
+                    <i class="fa-solid fa-xmark mr-1"></i>取消全选
+                </button>
+            `;
+            container.appendChild(selectAllDiv);
+        } catch (err) {
+            container.innerHTML = `<div class="p-4 text-center text-rose-400">加载失败：${err.message}</div>`;
+        }
     },
 
     /**
@@ -292,15 +296,14 @@ const admin = {
     },
 
     /**
-     * 全选
+     * 全选（使用当前列表中的 checkbox）
      */
     selectAllTeachersForDelete() {
-        const teachers = db.getTeachers();
-        this.selectedTeachersForDelete = teachers.map(t => t.id);
-        
-        teachers.forEach(t => {
-            const checkbox = document.getElementById(`delete-${t.id}`);
-            if (checkbox) checkbox.checked = true;
+        const checkboxes = document.querySelectorAll('#batch-delete-list input[type="checkbox"]');
+        this.selectedTeachersForDelete = [];
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            this.selectedTeachersForDelete.push(cb.value);
         });
     },
 
@@ -316,7 +319,7 @@ const admin = {
     /**
      * 确认批量删除
      */
-    confirmBatchDelete() {
+    async confirmBatchDelete() {
         if (this.selectedTeachersForDelete.length === 0) {
             helpers.showToast('请至少选择一位教师！', 'warning');
             return;
@@ -326,23 +329,24 @@ const admin = {
             return;
         }
         
-        // 批量删除
-        this.selectedTeachersForDelete.forEach(teacherId => {
-            // 删除教师
-            db._data.teachers = db._data.teachers.filter(t => t.id !== teacherId);
-            // 删除相关数据
-            db._data.students = db._data.students.filter(s => s.teacherId !== teacherId);
-            db._data.wordLists = db._data.wordLists.filter(wl => wl.teacherId !== teacherId);
-            db._data.tasks = db._data.tasks.filter(t => t.teacherId !== teacherId);
-            db._data.learningLogs = db._data.learningLogs.filter(l => l.teacherId !== teacherId);
-        });
+        const count = this.selectedTeachersForDelete.length;
         
-        db.save();
-        
-        this.closeBatchDeleteModal();
-        this.renderStats();
-        this.renderTeacherList();
-        helpers.showToast(`成功删除 ${this.selectedTeachersForDelete.length} 位教师！`, 'success');
+        try {
+            helpers.showLoading(`正在删除 ${count} 位教师...`);
+            
+            // 逐个调用 API 删除
+            for (const userId of this.selectedTeachersForDelete) {
+                await api.deleteTeacherAccount(userId);
+            }
+            
+            helpers.hideLoading();
+            this.closeBatchDeleteModal();
+            await this.renderTeacherList();
+            helpers.showToast(`成功删除 ${count} 位教师账户！`, 'success');
+        } catch (err) {
+            helpers.hideLoading();
+            helpers.showToast(err.message || '批量删除失败', 'error');
+        }
     },
 
     /**
@@ -746,9 +750,9 @@ const admin = {
     },
 
     /**
-     * 确认批量导入
+     * 确认批量导入（通过 API 批量创建教师账户）
      */
-    confirmBatchImport() {
+    async confirmBatchImport() {
         const text = document.getElementById('batch-import-textarea').value.trim();
         if (!text) {
             helpers.showToast('请输入要导入的教师信息！', 'warning');
@@ -756,8 +760,7 @@ const admin = {
         }
 
         const lines = text.split('\n');
-        let added = 0;
-        let skipped = 0;
+        const toCreate = [];
         let errors = [];
 
         lines.forEach((line, index) => {
@@ -770,56 +773,72 @@ const admin = {
             if (line.includes(',')) {
                 // 逗号分隔格式
                 const parts = line.split(',').map(p => p.trim());
-                if (parts.length >= 2) {
+                if (parts.length >= 1) {
                     id = parts[0];
-                    name = parts[1];
-                    pwd = parts[2] || '123';
+                    name = parts[1] || parts[0];
+                    pwd = parts[2] || '123456';
                 }
             } else if (line.includes(' ')) {
                 // 空格分隔格式
                 const parts = line.split(/\s+/).map(p => p.trim());
-                if (parts.length >= 2) {
+                if (parts.length >= 1) {
                     id = parts[0];
-                    name = parts[1];
-                    pwd = parts[2] || '123';
+                    name = parts[1] || parts[0];
+                    pwd = parts[2] || '123456';
                 }
             } else if (line.includes('\t')) {
                 // Tab分隔格式
                 const parts = line.split('\t').map(p => p.trim());
-                if (parts.length >= 2) {
+                if (parts.length >= 1) {
                     id = parts[0];
-                    name = parts[1];
-                    pwd = parts[2] || '123';
+                    name = parts[1] || parts[0];
+                    pwd = parts[2] || '123456';
                 }
+            } else {
+                // 单列，仅工号
+                id = line;
+                name = line;
+                pwd = '123456';
             }
 
-            if (!id || !name) {
+            if (!id) {
                 errors.push(`第 ${index + 1} 行格式不正确`);
                 return;
             }
 
-            // 检查工号是否已存在
-            if (db.findTeacher(id)) {
-                skipped++;
-                return;
-            }
-
-            // 添加教师
-            db.addTeacher({
-                id: id,
-                name: name,
-                pwd: pwd
-            });
-            added++;
+            toCreate.push({ username: id, password: pwd });
         });
 
+        if (toCreate.length === 0) {
+            helpers.showToast('没有可导入的数据！', 'warning');
+            return;
+        }
+
+        helpers.showLoading(`正在批量创建 ${toCreate.length} 个教师账户...`);
+        
+        let added = 0;
+        let skipped = 0;
+        
+        for (const item of toCreate) {
+            try {
+                await api.createTeacherAccount(item);
+                added++;
+            } catch (err) {
+                if (err.message && err.message.includes('已存在')) {
+                    skipped++;
+                } else {
+                    errors.push(`${item.username}: ${err.message}`);
+                }
+            }
+        }
+        
+        helpers.hideLoading();
         this.closeBatchImportModal();
-        this.renderStats();
-        this.renderTeacherList();
+        await this.renderTeacherList();
 
         let msg = `成功导入 ${added} 位教师！`;
-        if (skipped > 0) msg += ` (${skipped} 位已存在)`;
-        if (errors.length > 0) msg += ` (${errors.length} 行格式错误)`;
+        if (skipped > 0) msg += ` (${skipped} 位已存在跳过)`;
+        if (errors.length > 0) msg += ` (${errors.length} 个失败)`;
         
         helpers.showToast(msg, added > 0 ? 'success' : 'warning');
     },
@@ -851,34 +870,41 @@ const admin = {
     },
 
     /**
-     * 保存新教师
+     * 保存新教师（写入数据库 User 表）
      */
-    saveNewTeacher() {
+    async saveNewTeacher() {
         const id = document.getElementById('new-teacher-id').value.trim();
         const name = document.getElementById('new-teacher-name').value.trim();
         const pwd = document.getElementById('new-teacher-pwd').value.trim();
         
-        if (!id || !name) {
-            helpers.showToast('请填写完整信息！', 'warning');
+        if (!id) {
+            helpers.showToast('请填写教师工号/登录名！', 'warning');
             return;
         }
         
-        // 检查工号是否已存在
-        if (db.findTeacher(id)) {
-            helpers.showToast('该工号已存在！', 'error');
-            return;
+        try {
+            helpers.showLoading('正在创建教师账户...');
+            
+            // 使用工号作为登录用户名，默认密码 123456
+            await api.createTeacherAccount({
+                username: id,
+                password: pwd || '123456'
+            });
+            
+            helpers.hideLoading();
+            this.hideAddTeacherModal();
+            
+            // 清空表单
+            document.getElementById('new-teacher-id').value = '';
+            if (document.getElementById('new-teacher-name')) document.getElementById('new-teacher-name').value = '';
+            if (document.getElementById('new-teacher-pwd')) document.getElementById('new-teacher-pwd').value = '';
+            
+            await this.renderTeacherList();
+            helpers.showToast(`教师账户 "${id}" 创建成功！默认密码：${pwd || '123456'}`, 'success');
+        } catch (err) {
+            helpers.hideLoading();
+            helpers.showToast(err.message || '创建失败，请重试', 'error');
         }
-        
-        db.addTeacher({
-            id: id,
-            name: name,
-            pwd: pwd || '123'
-        });
-        
-        this.hideAddTeacherModal();
-        this.renderTeacherList();
-        this.renderStats();
-        helpers.showToast('教师添加成功！', 'success');
     },
 
     /**

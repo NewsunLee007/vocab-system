@@ -281,6 +281,48 @@ const api = {
             throw new Error(message || 'Delete vocabulary failed');
         }
         return this._readSuccessData(response);
+    },
+
+    // ── 教师账户管理 ──────────────────────────────────────────────────────────
+
+    /** 拉取所有教师账户列表（仅管理员） */
+    async fetchTeacherAccounts() {
+        const response = await fetch(this._url('/admin/teachers'), {
+            headers: this._headers()
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Fetch teachers failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    /** 创建教师账户（仅管理员） */
+    async createTeacherAccount({ username, password }) {
+        const response = await fetch(this._url('/admin/teachers'), {
+            method: 'POST',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ username, password })
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Create teacher failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    /** 删除教师账户（仅管理员） */
+    async deleteTeacherAccount(userId) {
+        const response = await fetch(this._url('/admin/teachers'), {
+            method: 'DELETE',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ userId })
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Delete teacher failed');
+        }
+        return this._readSuccessData(response);
     }
 };
 

@@ -2462,6 +2462,19 @@ const teacher = {
                 conditions: this.computeAIConditions(materials, wordlist)
             };
             
+            // 立即持久化到数据库（防止刷新后丢失）
+            const currentUser = auth.getCurrentUser();
+            if (currentUser) {
+                db.saveAIDraft(wordlist.id, {
+                    materials: materials,
+                    analysis: analysisResult,
+                    verification: {},
+                    verificationSimple: {},
+                    generatedAt: Date.now()
+                }, currentUser.id);
+                console.log('AI素材已保存到数据库，wordlistId:', wordlist.id);
+            }
+            
             // 设置年级级别
             const levelMap = { easy: 'primary', medium: 'middle', hard: 'high' };
             if (contextTest && typeof contextTest.setGradeLevel === 'function') {

@@ -23,6 +23,7 @@ const db = {
             learningLogs: [],
             studentStates: {},
             dict: {},
+            aiDrafts: {},
             system: {
                 mockCurrentIP: helpers.generateMockIP(),
                 lastLoginIP: '',
@@ -42,6 +43,7 @@ const db = {
                 this._data.studentStates = d.studentStates || {};
                 this._data.admins = d.admins || [];
                 this._data.dict = d.dict || {};
+                this._data.aiDrafts = d.aiDrafts || {};
             }
         } catch (e) {
             console.warn('Failed to fetch school data:', e);
@@ -93,7 +95,8 @@ const db = {
                      teachers: this._data.teachers,
                      students: this._data.students,
                      wordlists: this._data.wordLists,
-                     tasks: this._data.tasks
+                     tasks: this._data.tasks,
+                     aiDrafts: this._data.aiDrafts || {}
                  };
                  await api.updateSchoolData(schoolData);
                  console.log('School data pushed to cloud.');

@@ -69,6 +69,38 @@ const aiSentenceService = {
                 const batchResults = await this.callAIBatch(batch, grade, aiConfig);
                 
                 batchResults.forEach(result => {
+                    // 强制打乱 context 选项顺序，确保随机分布
+                    if (result.context && result.context.options) {
+                        const correctWord = result.context.word;
+                        const options = result.context.options;
+                        
+                        // Fisher-Yates 洗牌算法
+                        for (let i = options.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [options[i], options[j]] = [options[j], options[i]];
+                        }
+                        
+                        // 更新 correctIndex
+                        result.context.correctIndex = options.findIndex(opt => 
+                            typeof opt === 'string' && opt.toLowerCase() === correctWord.toLowerCase()
+                        );
+                        if (result.context.correctIndex === -1) result.context.correctIndex = 0;
+                    }
+                    
+                    // 强制打乱 matching 选项顺序
+                    if (result.matching && result.matching.options) {
+                        const correctMeaning = result.matching.meaning;
+                        const options = result.matching.options;
+                        
+                        for (let i = options.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [options[i], options[j]] = [options[j], options[i]];
+                        }
+                        
+                        result.matching.correctIndex = options.findIndex(opt => opt === correctMeaning);
+                        if (result.matching.correctIndex === -1) result.matching.correctIndex = 0;
+                    }
+                    
                     materials.context.push(result.context);
                     materials.spelling.push(result.spelling);
                     materials.matching.push(result.matching);

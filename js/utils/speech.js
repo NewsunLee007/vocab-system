@@ -116,9 +116,14 @@ const speech = {
             // 获取错误类型
             const errorType = error?.error || error?.message || 'unknown';
             
-            // interrupted 是正常中断（如连续点击），不需要重试也不需要报错
+            // interrupted 通常是连续点击导致的正常中断，尝试重新播放
+            // 但限制重试次数避免无限循环
             if (errorType === 'interrupted' || errorType === 'canceled') {
-                console.log('语音播放被中断（正常行为）');
+                console.log('语音播放被中断，尝试重新播放...');
+                if (retryCount < 1) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    return this.speakWord(word, retryCount + 1);
+                }
                 return;
             }
             

@@ -2390,7 +2390,7 @@ const admin = {
             return;
         }
 
-        helpers.showLoading(`正在调用 AI 生成「${wordlist.title}」的练习和例句...`);
+        helpers.showLoading(`正在调用 AI 生成「${wordlist.title}」的练习和例句... (0/${wordlist.words.length})`);
 
         try {
             // 调用 aiSentenceService（与教师端共用）
@@ -2398,7 +2398,16 @@ const admin = {
                 throw new Error('AI 服务模块未加载，请刷新页面重试');
             }
 
-            const materials = await aiSentenceService.generateMaterials(wordlist, aiConfig);
+            const grade = wordlist.grade || 'middle';
+
+            // 正确调用签名：generateMaterials(words, grade, onProgress)
+            const materials = await aiSentenceService.generateMaterials(
+                wordlist.words,
+                grade,
+                (progress, completed, total) => {
+                    helpers.showLoading(`正在 AI 生成「${wordlist.title}」... ${completed}/${total} 个单词 (${progress}%)`);
+                }
+            );
             
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
@@ -2415,7 +2424,8 @@ const admin = {
             // 刷新词表列表（更新 AI 已生成标记）
             this.renderWordlists();
 
-            helpers.showToast(`✅ AI 生成成功！「${wordlist.title}」共 ${Object.keys(materials || {}).length} 个单词已生成例句和练习`, 'success');
+            const wordCount = (materials.context || []).length;
+            helpers.showToast(`✅ AI 生成成功！「${wordlist.title}」共 ${wordCount} 个单词已生成例句和练习`, 'success');
 
         } catch (err) {
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();

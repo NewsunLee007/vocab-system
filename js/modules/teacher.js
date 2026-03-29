@@ -474,45 +474,103 @@ const teacher = {
         this.currentDetailStudentId = studentId;
         const student = db.findStudent(studentId);
         if (!student) return;
-        
+
         const logs = db.getLearningLogsByStudent(studentId);
-        
-        // 填充基本信息
-        document.getElementById('student-detail-name').innerText = student.name;
-        document.getElementById('student-detail-class').innerText = `班级: ${student.class}`;
-        document.getElementById('student-detail-coins').innerText = student.coins;
-        document.getElementById('student-detail-learned').innerText = student.totalLearned;
-        document.getElementById('student-detail-streak').innerText = student.streak + '天';
-        
-        // 计算正确率
-        const accuracy = student.totalQuestions > 0 
+        const accuracy = student.totalQuestions > 0
             ? Math.round((student.totalCorrect / student.totalQuestions) * 100)
             : 0;
-        document.getElementById('student-detail-accuracy').innerText = accuracy + '%';
-        
-        // 渲染学习记录
-        const logsContainer = document.getElementById('student-detail-logs');
-        logsContainer.innerHTML = '';
-        
-        if (logs.length === 0) {
-            logsContainer.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">暂无学习记录</td></tr>';
-        } else {
-            logs.slice(0, 20).forEach(log => {
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-slate-50';
+
+        // 密码修改记录
+        const pwdLogs = (student.passwordChangeLogs || []);
+        const pwdLogsHtml = pwdLogs.length > 0
+            ? pwdLogs.slice(-5).reverse().map(r =>
+                `<div class="text-xs text-amber-300/70 flex justify-between">
+                    <span>${r.changedAt}</span>
+                    <span>已修改密码</span>
+                </div>`
+            ).join('')
+            : '<div class="text-xs text-slate-500">暂无修改记录</div>';
+
+        // 学习记录
+        const logsHtml = logs.length === 0
+            ? '<tr><td colspan="5" class="p-4 text-center text-slate-400">暂无学习记录</td></tr>'
+            : logs.slice(0, 20).map(log => {
                 const typeText = log.taskType === 'test' ? '检测' : '学习';
-                const typeClass = log.taskType === 'test' ? 'text-rose-600' : 'text-indigo-600';
-                row.innerHTML = `
-                    <td class="p-3 border-b">${log.date}</td>
-                    <td class="p-3 border-b ${typeClass}">${typeText}</td>
-                    <td class="p-3 border-b">${log.learnedCount > 0 ? '+' + log.learnedCount : log.reviewCount}</td>
-                    <td class="p-3 border-b ${log.correctRate >= 80 ? 'text-emerald-600' : log.correctRate >= 60 ? 'text-amber-600' : 'text-rose-600'}">${log.correctRate}%</td>
-                    <td class="p-3 border-b text-rose-500">${log.weakWord}</td>
-                `;
-                logsContainer.appendChild(row);
-            });
-        }
-        
+                const typeClass = log.taskType === 'test' ? 'text-rose-400' : 'text-indigo-400';
+                const rateClass = log.correctRate >= 80 ? 'text-emerald-400' : log.correctRate >= 60 ? 'text-amber-400' : 'text-rose-400';
+                return `<tr class="hover:bg-slate-700/30">
+                    <td class="p-3 border-b border-white/5 text-slate-300">${log.date}</td>
+                    <td class="p-3 border-b border-white/5 ${typeClass}">${typeText}</td>
+                    <td class="p-3 border-b border-white/5 text-slate-300">${log.learnedCount > 0 ? '+' + log.learnedCount : log.reviewCount}</td>
+                    <td class="p-3 border-b border-white/5 ${rateClass}">${log.correctRate}%</td>
+                    <td class="p-3 border-b border-white/5 text-rose-400">${log.weakWord || '-'}</td>
+                </tr>`;
+            }).join('');
+
+        const content = document.getElementById('student-detail-content');
+        content.innerHTML = `
+            <!-- 基本信息 -->
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+                    ${student.name.charAt(0)}
+                </div>
+                <div>
+                    <div class="text-xl font-bold text-white">${student.name}</div>
+                    <div class="text-sm text-slate-400">班级：${student.class || '-'}</div>
+                </div>
+                <div class="ml-auto flex gap-2">
+                    <button onclick="teacher.editStudentFromDetail()" class="px-3 py-1.5 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 rounded-lg text-sm transition">
+                        <i class="fa-solid fa-pen mr-1"></i>编辑
+                    </button>
+                    <button onclick="teacher.resetStudentPwd('${student.id}', true)" class="px-3 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 rounded-lg text-sm transition">
+                        <i class="fa-solid fa-key mr-1"></i>重置密码
+                    </button>
+                </div>
+            </div>
+            <!-- 统计数据 -->
+            <div class="grid grid-cols-4 gap-3 mb-4">
+                <div class="bg-slate-700/50 rounded-xl p-3 text-center">
+                    <div class="text-2xl font-bold text-amber-400">${student.coins || 0}</div>
+                    <div class="text-xs text-slate-400 mt-1">金币</div>
+                </div>
+                <div class="bg-slate-700/50 rounded-xl p-3 text-center">
+                    <div class="text-2xl font-bold text-emerald-400">${student.totalLearned || 0}</div>
+                    <div class="text-xs text-slate-400 mt-1">已学单词</div>
+                </div>
+                <div class="bg-slate-700/50 rounded-xl p-3 text-center">
+                    <div class="text-2xl font-bold text-indigo-400">${student.streak || 0}天</div>
+                    <div class="text-xs text-slate-400 mt-1">连续学习</div>
+                </div>
+                <div class="bg-slate-700/50 rounded-xl p-3 text-center">
+                    <div class="text-2xl font-bold text-purple-400">${accuracy}%</div>
+                    <div class="text-xs text-slate-400 mt-1">正确率</div>
+                </div>
+            </div>
+            <!-- 密码修改记录 -->
+            <details class="mb-4 bg-slate-700/30 rounded-xl p-3">
+                <summary class="text-sm text-amber-400 cursor-pointer font-medium">
+                    <i class="fa-solid fa-key mr-1"></i>密码修改记录
+                </summary>
+                <div class="mt-2 space-y-1">${pwdLogsHtml}</div>
+            </details>
+            <!-- 学习记录 -->
+            <div class="text-sm font-medium text-slate-300 mb-2">学习记录（最近20条）</div>
+            <div class="overflow-x-auto rounded-xl">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-700/50">
+                            <th class="p-3 text-left text-slate-400 font-medium">日期</th>
+                            <th class="p-3 text-left text-slate-400 font-medium">类型</th>
+                            <th class="p-3 text-left text-slate-400 font-medium">单词数</th>
+                            <th class="p-3 text-left text-slate-400 font-medium">正确率</th>
+                            <th class="p-3 text-left text-slate-400 font-medium">薄弱词</th>
+                        </tr>
+                    </thead>
+                    <tbody>${logsHtml}</tbody>
+                </table>
+            </div>
+        `;
+
         // 显示模态框
         const modal = document.getElementById('modal-student-detail');
         modal.classList.remove('hidden');
@@ -550,7 +608,6 @@ const teacher = {
         const student = db.findStudent(studentId);
         if (!student) return;
         
-        document.getElementById('edit-student-id').value = studentId;
         document.getElementById('edit-student-name').value = student.name;
         document.getElementById('edit-student-class').value = student.class;
         
@@ -633,8 +690,10 @@ const teacher = {
 
     /**
      * 重置学生密码为 123456
+     * @param {string} studentId
+     * @param {boolean} [fromDetail=false] - 是否从详情页调用（刷新详情）
      */
-    async resetStudentPwd(studentId) {
+    async resetStudentPwd(studentId, fromDetail = false) {
         const student = db.findStudent(studentId);
         if (!student) return;
 
@@ -643,9 +702,46 @@ const teacher = {
         try {
             await api.resetStudentPassword(student.name, student.class, '123456');
             helpers.showToast(`✅ ${student.name} 的密码已重置为 123456`, 'success');
+            if (fromDetail) this.viewStudentDetail(studentId);
         } catch (err) {
             helpers.showToast(`重置密码失败：${err.message}`, 'error');
         }
+    },
+
+    /**
+     * 批量重置密码为 123456
+     */
+    async confirmBatchResetPassword() {
+        const count = this._selectedStudentsForDelete?.length || 0;
+        if (count === 0) {
+            helpers.showToast('请先选择要重置密码的学生！', 'warning');
+            return;
+        }
+
+        if (!confirm(`确定要将选中的 ${count} 名学生密码全部重置为 123456 吗？`)) return;
+
+        helpers.showLoading(`正在重置密码... (0/${count})`);
+        let success = 0, fail = 0;
+
+        const user = auth.getCurrentUser();
+        const students = db.getStudentsByTeacher(user.id);
+
+        for (let i = 0; i < this._selectedStudentsForDelete.length; i++) {
+            const sid = this._selectedStudentsForDelete[i];
+            const student = students.find(s => s.id === sid);
+            if (!student) continue;
+            try {
+                await api.resetStudentPassword(student.name, student.class, '123456');
+                success++;
+            } catch (e) {
+                fail++;
+            }
+            helpers.showLoading(`正在重置密码... ${i + 1}/${count}`);
+        }
+
+        helpers.hideLoading();
+        helpers.showToast(`✅ 批量重置完成：成功 ${success} 人${fail > 0 ? `，失败 ${fail} 人` : ''}`, fail > 0 ? 'warning' : 'success');
+        this.cancelBatchDelete();
     },
 
     /**

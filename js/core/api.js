@@ -196,6 +196,24 @@ const api = {
         }
         return this._readSuccessData(response);
     },
+
+    /**
+     * 学生修改自己的密码
+     * @param {string} currentPassword - 当前密码
+     * @param {string} newPassword - 新密码
+     */
+    async changeStudentPassword(currentPassword, newPassword) {
+        const response = await fetch(this._url('/auth/change-password'), {
+            method: 'POST',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || '修改密码失败');
+        }
+        return this._readSuccessData(response);
+    },
     
     async syncPull() {
         const response = await fetch(this._url('/sync'), {

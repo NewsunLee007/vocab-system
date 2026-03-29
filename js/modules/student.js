@@ -3887,5 +3887,75 @@ const student = {
             errorHandler.handle(error, '从词表启动学习模式');
             helpers.showToast('启动学习模式失败', 'error');
         }
+    },
+
+    // ==================== 修改密码 ====================
+
+    /**
+     * 显示修改密码模态框
+     */
+    showChangePasswordModal() {
+        const modal = document.getElementById('modal-student-change-password');
+        if (!modal) return;
+        document.getElementById('student-pwd-current').value = '';
+        document.getElementById('student-pwd-new').value = '';
+        document.getElementById('student-pwd-confirm').value = '';
+        modal.classList.remove('hidden');
+        modal.offsetHeight;
+        modal.classList.remove('opacity-0');
+    },
+
+    /**
+     * 隐藏修改密码模态框
+     */
+    hideChangePasswordModal() {
+        const modal = document.getElementById('modal-student-change-password');
+        if (!modal) return;
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    },
+
+    /**
+     * 确认修改密码
+     */
+    async confirmChangePassword() {
+        const currentPwd = document.getElementById('student-pwd-current').value.trim();
+        const newPwd = document.getElementById('student-pwd-new').value.trim();
+        const confirmPwd = document.getElementById('student-pwd-confirm').value.trim();
+
+        if (!currentPwd || !newPwd || !confirmPwd) {
+            helpers.showToast('请填写全部密码字段', 'warning');
+            return;
+        }
+        if (newPwd !== confirmPwd) {
+            helpers.showToast('两次输入的新密码不一致', 'error');
+            return;
+        }
+        if (newPwd.length < 4) {
+            helpers.showToast('新密码长度至少 4 位', 'warning');
+            return;
+        }
+
+        try {
+            const result = await api.changeStudentPassword(currentPwd, newPwd);
+            // 记录密码修改时间到本地学生数据（教师端可查看）
+            const user = auth.getCurrentUser();
+            if (user) {
+                const student = db.findStudent(user.id);
+                if (student) {
+                    if (!student.passwordChangeLogs) student.passwordChangeLogs = [];
+                    student.passwordChangeLogs.push({
+                        changedAt: result.changedAt
+                            ? new Date(result.changedAt).toLocaleString('zh-CN')
+                            : new Date().toLocaleString('zh-CN')
+                    });
+                    db.save();
+                }
+            }
+            this.hideChangePasswordModal();
+            helpers.showToast('✅ 密码修改成功！下次登录请使用新密码', 'success');
+        } catch (err) {
+            helpers.showToast(`修改失败：${err.message}`, 'error');
+        }
     }
 };

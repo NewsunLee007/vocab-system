@@ -90,7 +90,8 @@ const router = {
                 console.log('Admin check:', isAdmin);
                 return isAdmin;
             case 'teacher':
-                const isTeacher = user.role === 'teacher';
+                // admin 也可以访问教师视图
+                const isTeacher = user.role === 'teacher' || user.role === 'admin';
                 console.log('Teacher check:', isTeacher);
                 return isTeacher;
             case 'student':
@@ -118,6 +119,18 @@ const router = {
             case 'teacher':
                 if (typeof teacher !== 'undefined' && teacher.render) {
                     teacher.render();
+                }
+                // admin 进入教师视图时显示"返回教务处"按钮
+                {
+                    const backBtn = document.getElementById('teacher-admin-back-btn');
+                    if (backBtn) {
+                        const user = auth.getCurrentUser();
+                        if (user && user.role === 'admin') {
+                            backBtn.classList.remove('hidden');
+                        } else {
+                            backBtn.classList.add('hidden');
+                        }
+                    }
                 }
                 break;
             case 'student':
@@ -150,6 +163,7 @@ const router = {
         } else if (auth.hasRole('teacher')) {
             this.navigate('teacher');
         } else if (auth.hasRole('admin')) {
+            // admin 从任意页面返回教务处
             this.navigate('admin');
         } else {
             this.navigate('login');

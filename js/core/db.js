@@ -241,6 +241,8 @@ const db = {
     },
 
     getStudentsByTeacher(teacherId) {
+        // admin 能看到全部学生
+        if (teacherId === 'admin') return this._data.students;
         return this._data.students.filter(s => s.teacherId === teacherId);
     },
 
@@ -351,6 +353,8 @@ const db = {
     },
 
     getWordListsByTeacher(teacherId) {
+        // admin 能看到全部词表
+        if (teacherId === 'admin') return this._data.wordLists;
         return this._data.wordLists.filter(wl => wl.teacherId === teacherId);
     },
 
@@ -480,6 +484,8 @@ const db = {
     },
 
     getTasksByTeacher(teacherId) {
+        // admin 能看到全部任务
+        if (teacherId === 'admin') return this._data.tasks;
         return this._data.tasks.filter(t => t.teacherId === teacherId);
     },
 
@@ -548,6 +554,8 @@ const db = {
     },
 
     getLearningLogsByTeacher(teacherId) {
+        // admin 能看到全部记录
+        if (teacherId === 'admin') return this._data.learningLogs;
         return this._data.learningLogs.filter(l => l.teacherId === teacherId);
     },
 

@@ -531,19 +531,19 @@ const teacher = {
             <div class="grid grid-cols-4 gap-3 mb-4">
                 <div class="bg-slate-700/50 rounded-xl p-3 text-center">
                     <div class="text-2xl font-bold text-amber-400">${student.coins || 0}</div>
-                    <div class="text-xs text-slate-400 mt-1">金币</div>
+                    <div class="text-xs text-slate-200 mt-1">金币</div>
                 </div>
                 <div class="bg-slate-700/50 rounded-xl p-3 text-center">
                     <div class="text-2xl font-bold text-emerald-400">${student.totalLearned || 0}</div>
-                    <div class="text-xs text-slate-400 mt-1">已学单词</div>
+                    <div class="text-xs text-slate-200 mt-1">已学单词</div>
                 </div>
                 <div class="bg-slate-700/50 rounded-xl p-3 text-center">
                     <div class="text-2xl font-bold text-indigo-400">${student.streak || 0}天</div>
-                    <div class="text-xs text-slate-400 mt-1">连续学习</div>
+                    <div class="text-xs text-slate-200 mt-1">连续学习</div>
                 </div>
                 <div class="bg-slate-700/50 rounded-xl p-3 text-center">
                     <div class="text-2xl font-bold text-purple-400">${accuracy}%</div>
-                    <div class="text-xs text-slate-400 mt-1">正确率</div>
+                    <div class="text-xs text-slate-200 mt-1">正确率</div>
                 </div>
             </div>
             <!-- 密码修改记录 -->
@@ -559,11 +559,11 @@ const teacher = {
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-slate-700/50">
-                            <th class="p-3 text-left text-slate-400 font-medium">日期</th>
-                            <th class="p-3 text-left text-slate-400 font-medium">类型</th>
-                            <th class="p-3 text-left text-slate-400 font-medium">单词数</th>
-                            <th class="p-3 text-left text-slate-400 font-medium">正确率</th>
-                            <th class="p-3 text-left text-slate-400 font-medium">薄弱词</th>
+                            <th class="p-3 text-left text-slate-200 font-medium">日期</th>
+                            <th class="p-3 text-left text-slate-200 font-medium">类型</th>
+                            <th class="p-3 text-left text-slate-200 font-medium">单词数</th>
+                            <th class="p-3 text-left text-slate-200 font-medium">正确率</th>
+                            <th class="p-3 text-left text-slate-200 font-medium">薄弱词</th>
                         </tr>
                     </thead>
                     <tbody>${logsHtml}</tbody>

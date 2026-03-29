@@ -1480,6 +1480,8 @@ const admin = {
         document.getElementById('excel-column-mapping').classList.add('hidden');
         document.getElementById('btn-confirm-import').disabled = true;
         document.getElementById('excel-file-input').value = '';
+        const previewDiv = document.getElementById('import-preview');
+        if (previewDiv) previewDiv.classList.add('hidden');
         
         // 清空下拉框
         ['col-textbook', 'col-grade', 'col-volume', 'col-unit', 'col-word', 'col-meaning', 'col-phonetic', 'col-pos'].forEach(id => {
@@ -1660,6 +1662,10 @@ const admin = {
         const headerRow = document.getElementById('preview-header');
         const tbody = document.getElementById('preview-body');
         const countSpan = document.getElementById('preview-count');
+        const previewDiv = document.getElementById('import-preview');
+
+        // 显示预览区域
+        if (previewDiv) previewDiv.classList.remove('hidden');
 
         // 显示前5行
         const previewData = data.slice(0, 5);

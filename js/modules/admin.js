@@ -1698,13 +1698,13 @@ const admin = {
             return;
         }
 
-        const textbookCol = document.getElementById('col-textbook').value;
-        const gradeCol = document.getElementById('col-grade').value;
-        const volumeCol = document.getElementById('col-volume').value;
-        const unitCol = document.getElementById('col-unit').value;
-        const meaningCol = document.getElementById('col-meaning').value;
-        const phoneticCol = document.getElementById('col-phonetic').value;
-        const posCol = document.getElementById('col-pos').value;
+        const textbookCol = document.getElementById('col-textbook')?.value ?? '';
+        const gradeCol = document.getElementById('col-grade')?.value ?? '';
+        const volumeCol = document.getElementById('col-volume')?.value ?? '';
+        const unitCol = document.getElementById('col-unit')?.value ?? '';
+        const meaningCol = document.getElementById('col-meaning')?.value ?? '';
+        const phoneticCol = document.getElementById('col-phonetic')?.value ?? '';
+        const posCol = document.getElementById('col-pos')?.value ?? '';
 
         // 按教材+年级+册别+单元分组
         const groups = {};

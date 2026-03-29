@@ -17,7 +17,9 @@ module.exports = async function handler(req, res) {
       return ok(res, { id: school.id, data: school.payload, updatedAt: school.updatedAt });
     }
 
-    if (user.role !== 'ADMIN' && user.role !== 'TEACHER') {
+    // 允许 ADMIN、TEACHER、STUDENT 都可以同步数据
+    // 学生需要同步学习记录、积分等数据
+    if (user.role !== 'ADMIN' && user.role !== 'TEACHER' && user.role !== 'STUDENT') {
       return fail(res, 403, '权限不足');
     }
 

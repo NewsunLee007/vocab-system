@@ -24,6 +24,9 @@ const db = {
             studentStates: {},
             dict: {},
             aiDrafts: {},
+            difficultWords: {},
+            learningHistory: {},
+            teacherReviewedSentences: {},
             system: {
                 mockCurrentIP: helpers.generateMockIP(),
                 lastLoginIP: '',
@@ -35,15 +38,24 @@ const db = {
             const cloudData = await api.fetchSchoolData();
             if (cloudData) {
                 const d = cloudData.data || cloudData;
-                this._data.teachers = d.teachers || [];
-                this._data.students = d.students || [];
-                this._data.wordLists = d.wordlists || d.wordLists || [];
+                this._data.teachers = (d.teachers || []).map(teacher => ({
+                    ...teacher,
+                    name: teacher?.name || teacher?.username || ''
+                }));
+                this._data.students = (d.students || []).map(student => this.normalizeStudent(student));
+                this._data.wordLists = (d.wordlists || d.wordLists || []).map(wordList => ({
+                    ...wordList,
+                    words: Array.isArray(wordList?.words) ? wordList.words : []
+                }));
                 this._data.tasks = d.tasks || [];
                 this._data.learningLogs = d.learningLogs || [];
                 this._data.studentStates = d.studentStates || {};
                 this._data.admins = d.admins || [];
-                this._data.dict = d.dict || {};
+                this._data.dict = this.normalizeDict(d.dict || {});
                 this._data.aiDrafts = d.aiDrafts || {};
+                this._data.difficultWords = d.difficultWords || {};
+                this._data.learningHistory = d.learningHistory || {};
+                this._data.teacherReviewedSentences = d.teacherReviewedSentences || {};
                 // 恢复加密的 AI 配置（全局共享，仅含加密 apiKey）
                 if (d.aiConfig) {
                     this._data.aiConfig = d.aiConfig;
@@ -54,6 +66,8 @@ const db = {
                     }
                 }
             }
+            this.hydrateTaskMaterials();
+            this.ensureCurrentStudentRecord();
         } catch (e) {
             console.warn('Failed to fetch school data:', e);
             if (helpers && typeof helpers.showToast === 'function') {
@@ -105,8 +119,14 @@ const db = {
                      students: this._data.students,
                      wordlists: this._data.wordLists,
                      tasks: this._data.tasks,
+                     learningLogs: this._data.learningLogs,
+                     studentStates: this._data.studentStates,
+                     dict: this._data.dict,
                      aiDrafts: this._data.aiDrafts || {},
-                     aiConfig: this._data.aiConfig || null  // 已加密的 AI 配置
+                     aiConfig: this._data.aiConfig || null,
+                     difficultWords: this._data.difficultWords || {},
+                     learningHistory: this._data.learningHistory || {},
+                     teacherReviewedSentences: this._data.teacherReviewedSentences || {}
                  };
                  await api.updateSchoolData(schoolData);
                  console.log('School data pushed to cloud.');
@@ -131,6 +151,11 @@ const db = {
             tasks: [],
             learningLogs: [],
             studentStates: {},
+            dict: {},
+            aiDrafts: {},
+            difficultWords: {},
+            learningHistory: {},
+            teacherReviewedSentences: {},
             system: {
                 mockCurrentIP: helpers.generateMockIP(),
                 lastLoginIP: '',
@@ -146,6 +171,133 @@ const db = {
      */
     getAll() {
         return this._data;
+    },
+
+    normalizeStudent(student) {
+        if (!student) return null;
+        return {
+            ...student,
+            name: student.name || student.username || '',
+            class: student.class || student.className || '',
+            coins: Number(student.coins || 0),
+            badges: Array.isArray(student.badges) ? student.badges : [],
+            streak: Number(student.streak || 0),
+            totalLearned: Number(student.totalLearned || 0),
+            totalTests: Number(student.totalTests || 0),
+            totalCorrect: Number(student.totalCorrect || 0),
+            totalQuestions: Number(student.totalQuestions || 0)
+        };
+    },
+
+    normalizeDict(dict) {
+        const normalized = {};
+        Object.entries(dict || {}).forEach(([key, value]) => {
+            if (!value) return;
+            const word = value.word || key;
+            normalized[String(word).toLowerCase()] = {
+                ...value,
+                word: word,
+                phonetic: value.phonetic || '',
+                meaning: value.meaning || '',
+                sentence: value.sentence || '',
+                options: Array.isArray(value.options) ? value.options : value.options || undefined
+            };
+        });
+        return normalized;
+    },
+
+    ensureCurrentStudentRecord() {
+        const currentUser = typeof auth !== 'undefined' && auth.getCurrentUser ? auth.getCurrentUser() : null;
+        if (!currentUser || currentUser.role !== 'student') return null;
+
+        let student = this.findStudent(currentUser.id);
+        const fallbackStudent = this.findStudentByClassAndName(currentUser.class, currentUser.name);
+        const merged = this.normalizeStudent({
+            ...fallbackStudent,
+            ...student,
+            id: currentUser.id,
+            name: currentUser.name,
+            class: currentUser.class,
+            passwordChanged: currentUser.passwordChanged
+        });
+
+        if (!merged) return null;
+
+        if (student) {
+            Object.assign(student, merged);
+        } else if (fallbackStudent) {
+            fallbackStudent.id = currentUser.id;
+            Object.assign(fallbackStudent, merged);
+            student = fallbackStudent;
+        } else {
+            student = merged;
+            this._data.students.push(student);
+        }
+
+        if (!this._data.studentStates[currentUser.id]) {
+            this._data.studentStates[currentUser.id] = {
+                learned: [],
+                queue: {}
+            };
+        }
+
+        return student;
+    },
+
+    hydrateTaskMaterials() {
+        const materialMap = new Map();
+        const mergeMaterial = (word, payload) => {
+            if (!word) return;
+            const key = String(word).toLowerCase();
+            const existing = materialMap.get(key) || { word: word };
+            materialMap.set(key, {
+                ...existing,
+                word: existing.word || word,
+                phonetic: payload.phonetic || existing.phonetic,
+                meaning: payload.meaning || existing.meaning,
+                sentence: payload.sentence || existing.sentence,
+                options: Array.isArray(payload.options) && payload.options.length ? payload.options : existing.options,
+                answerIndex: payload.answerIndex !== undefined ? payload.answerIndex : existing.answerIndex
+            });
+        };
+
+        (this._data.tasks || []).forEach(task => {
+            const materials = task?.aiMaterials || {};
+            (materials.flashcard || []).forEach(item => {
+                mergeMaterial(item.word, {
+                    phonetic: item.phonetic,
+                    meaning: item.meaning,
+                    sentence: item.sentence
+                });
+            });
+            (materials.context || []).forEach(item => {
+                mergeMaterial(item.word, {
+                    sentence: item.sentence,
+                    options: item.options,
+                    answerIndex: item.correctIndex
+                });
+            });
+            (materials.matching || []).forEach(item => {
+                mergeMaterial(item.word, {
+                    phonetic: item.phonetic,
+                    meaning: item.meaning
+                });
+            });
+        });
+
+        materialMap.forEach(item => {
+            const key = String(item.word).toLowerCase();
+            const existing = this._data.dict[key] || { word: item.word };
+            this._data.dict[key] = {
+                ...existing,
+                word: existing.word || item.word,
+                phonetic: item.phonetic || existing.phonetic || '',
+                meaning: item.meaning || existing.meaning || '',
+                sentence: item.sentence || existing.sentence || '',
+                options: Array.isArray(item.options) && item.options.length ? item.options : existing.options,
+                answerIndex: item.answerIndex !== undefined ? item.answerIndex : existing.answerIndex
+            };
+        });
     },
 
     // ==================== 管理员操作 ====================

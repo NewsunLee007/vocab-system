@@ -149,7 +149,7 @@ const contextTest = {
         
         // 检查是否有教师审核过的句子
         let teacherReviewData = null;
-        const wl = taskEngine?.state?.wordlist;
+        const wl = taskEngine?.state?.wordlist || testEngine?.state?.wordlist || (typeof student !== 'undefined' && student.currentWordlistId ? db.findWordList(student.currentWordlistId) : null);
         if (wl && wl.id && wl.teacherId) {
             const teacherReview = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
             if (teacherReview && teacherReview.sentences && teacherReview.sentences[word]) {
@@ -210,7 +210,7 @@ const contextTest = {
         // 确保例句中有填空位置
         if (!sentence) {
             // 没有例句，使用新的例句生成器
-            const grade = taskEngine?.state?.wordlist?.grade || 'middle';
+            const grade = wl?.grade || 'middle';
             const generated = sentenceGenerator.generateSentence(word, wordData.meaning, grade);
             sentence = generated.sentence;
         }
@@ -227,7 +227,7 @@ const contextTest = {
                 sentence = sentence.substring(0, index) + '___' + sentence.substring(index + word.length);
             } else {
                 // 单词不在例句中，使用新的例句生成器
-                const grade = taskEngine?.state?.wordlist?.grade || 'middle';
+                const grade = wl?.grade || 'middle';
                 const generated = sentenceGenerator.generateSentence(word, wordData.meaning, grade);
                 sentence = generated.sentence;
             }
@@ -240,11 +240,11 @@ const contextTest = {
         const actualPos = targetPos || this.detectPosFromMeaning(wordData.meaning);
 
         if (!this.validateContextSentence(sentence, (wordData.meaning || '').toLowerCase())) {
-            const grade = taskEngine?.state?.wordlist?.grade || 'middle';
+            const grade = wl?.grade || 'middle';
             const generated = sentenceGenerator.generateSentence(word, wordData.meaning, grade);
             sentence = generated.sentence;
         } else if (expectedPos && actualPos && expectedPos !== actualPos) {
-            const grade = taskEngine?.state?.wordlist?.grade || 'middle';
+            const grade = wl?.grade || 'middle';
             const generated = sentenceGenerator.generateSentence(word, wordData.meaning, grade);
             sentence = generated.sentence;
         }

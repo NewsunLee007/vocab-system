@@ -18,14 +18,19 @@ const student = {
             console.warn('student.render: No stats found for user', user.id);
             return;
         }
+
+        auth.updateCurrentUser({
+            ...stats,
+            role: 'student'
+        });
         
         // 更新统计数据
         const learnedCount = document.getElementById('student-learned-count');
         const streakCount = document.getElementById('student-streak-count');
         const coinsCount = document.getElementById('student-coins-count');
         if (learnedCount) learnedCount.innerText = stats.totalLearned || 0;
-        if (streakCount) streakCount.innerText = user.streak || 0;
-        if (coinsCount) coinsCount.innerText = user.coins || 0;
+        if (streakCount) streakCount.innerText = stats.streak || 0;
+        if (coinsCount) coinsCount.innerText = stats.coins || 0;
         
         // 渲染任务列表
         this.renderTasks();
@@ -3075,20 +3080,20 @@ const student = {
         const difficultWords = db.getDifficultWords(user.id) || [];
         const difficultWordList = difficultWords.map(dw => dw.word);
         const allWords = [...new Set([...words, ...difficultWordList])];
-        
-        // 设置检测模式：听音拼写为必选，其他两个任选其一
-        const modes = ['spelling']; // 听音拼写为必选
-        
-        // 显示检测模式选择界面
-        this.showTestModeChoice(allWords, modes, taskId);
+
+        const supportedModes = ['spelling', 'context', 'matching'];
+        const taskModes = Array.isArray(task.taskTypes) && task.taskTypes.length
+            ? task.taskTypes.filter(mode => supportedModes.includes(mode))
+            : supportedModes;
+
+        this.showTestModeChoice(allWords, taskModes, taskId);
     },
 
     /**
      * 显示检测模式选择界面
      */
     showTestModeChoice(words, modes, taskId) {
-        // 定义模式配置，按特定顺序排列：听音拼写 -> 场景语境 -> 词义匹配
-        const modeOrder = ['spelling', 'context', 'matching'];
+        const modeOrder = ['spelling', 'context', 'matching'].filter(mode => modes.includes(mode));
         const modeConfig = {
             'spelling': { name: '听音拼写填空', description: '考查发音与拼写的绝对准确率', icon: 'fa-headphones', color: 'amber', required: true },
             'context': { name: '场景语境选择', description: '锻炼结合上下文推断词义的能力', icon: 'fa-book-open', color: 'indigo' },
@@ -3119,7 +3124,7 @@ const student = {
                                 const checkedAttr = (modes.includes(mode) || isRequired) ? 'checked' : '';
                                 
                                 return `
-                                    <label class="group flex items-center p-4 rounded-xl cursor-pointer transition-all duration-200 ${isRequired ? 'bg-orange-50 border border-orange-200' : 'hover:bg-white border border-transparent hover:border-slate-200'}" data-mode="${mode}">
+                                    <label class="test-mode-option group flex items-center p-4 rounded-xl cursor-pointer transition-all duration-200 ${isRequired ? 'bg-orange-50 border border-orange-200' : 'hover:bg-white border border-transparent hover:border-slate-200'}" data-mode="${mode}">
                                         <div class="relative flex items-center justify-center mr-4">
                                             <input type="checkbox" value="${mode}" 
                                                 ${checkedAttr} 
@@ -3148,7 +3153,7 @@ const student = {
 
                     <div id="test-mode-error" class="hidden mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center text-rose-600 text-sm animate-shake">
                         <i class="fa-solid fa-circle-exclamation mr-2 text-rose-500"></i>
-                        <span>请至少选择一个可选模式</span>
+                        <span>请至少选择一个检测模式</span>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
@@ -3167,8 +3172,7 @@ const student = {
         // 保存状态
         this._testWords = words;
         this._testTaskId = taskId;
-        // 初始化选中状态：确保必选项在列表中
-        this._selectedTestModes = [...new Set([...modes, 'spelling'])]; 
+        this._selectedTestModes = [...new Set(modes)];
     },
 
     /**
@@ -3201,9 +3205,7 @@ const student = {
      * 确认检测模式选择
      */
     confirmTestModeSelection() {
-        // 验证选择：听音拼写已必选，需要至少再选一个模式
-        const hasOptionalMode = this._selectedTestModes.some(mode => mode !== 'spelling');
-        if (!hasOptionalMode) {
+        if (!this._selectedTestModes.length) {
             const errorEl = document.getElementById('test-mode-error');
             if (errorEl) errorEl.classList.remove('hidden');
             return;
@@ -3288,27 +3290,29 @@ const student = {
      */
     updateDashboardStats() {
         const user = auth.getCurrentUser();
+        const stats = db.getStudentStats(user.id);
+        if (!stats) return;
+        auth.updateCurrentUser({
+            ...stats,
+            role: 'student'
+        });
         
-        // 更新已学单词数
-        const learnedEl = document.getElementById('stu-learned-count');
+        const learnedEl = document.getElementById('student-learned-count');
         if (learnedEl) {
-            learnedEl.innerText = user.totalLearned || 0;
+            learnedEl.innerText = stats.totalLearned || 0;
         }
         
-        // 更新正确率
-        const accuracyEl = document.getElementById('stu-accuracy');
-        if (accuracyEl) {
-            const accuracy = user.totalQuestions > 0 
-                ? Math.round((user.totalCorrect / user.totalQuestions) * 100) 
-                : 0;
-            accuracyEl.innerText = accuracy + '%';
-        }
-        
-        // 更新连续学习天数
-        const streakEl = document.getElementById('stu-streak');
+        const streakEl = document.getElementById('student-streak-count');
         if (streakEl) {
-            streakEl.innerText = (user.streak || 0) + ' 天';
+            streakEl.innerText = stats.streak || 0;
         }
+
+        const coinsEl = document.getElementById('student-coins-count');
+        if (coinsEl) {
+            coinsEl.innerText = stats.coins || 0;
+        }
+
+        app.updateNav();
     },
 
     /**
@@ -3722,26 +3726,76 @@ const student = {
      */
     startLearningMode() {
         const user = auth.getCurrentUser();
-        const student = db.findStudent(user.id);
+        const student = db.ensureCurrentStudentRecord ? db.ensureCurrentStudentRecord() : db.findStudent(user.id);
         
         if (!student) {
             helpers.showToast('学生信息不存在', 'error');
             return;
         }
 
-        // 获取学生的学习任务
-        const tasks = db.getTasks().filter(t => {
-            const taskStudents = t.assignedStudents || [];
-            return taskStudents.includes(user.id) && t.status === 'active';
+        const tasks = db.getTasksByStudent(user.id).filter(task => task.status === 'active');
+        const wordlists = [];
+        const seenWordlists = new Set();
+
+        tasks.forEach(task => {
+            const wordlist = db.findWordList(task.wordListId);
+            if (!wordlist || seenWordlists.has(wordlist.id)) return;
+            seenWordlists.add(wordlist.id);
+            wordlists.push({
+                ...wordlist,
+                taskTitle: task.title
+            });
         });
 
-        if (tasks.length === 0) {
+        if (wordlists.length === 0) {
             helpers.showToast('暂时没有学习任务，请联系老师分配', 'info');
             return;
         }
 
-        // 显示自主学习模式选择界面
-        this.showSelfLearningModeChoice(tasks[0].wordListId);
+        if (wordlists.length === 1) {
+            this.showSelfLearningModeChoice(wordlists[0].id);
+            return;
+        }
+
+        const selectorHtml = `
+            <div id="student-learning-selector" class="fixed inset-0 bg-slate-900/75 flex items-center justify-center z-50">
+                <div class="w-full max-w-2xl mx-4 rounded-3xl bg-white shadow-2xl overflow-hidden">
+                    <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-800">选择学习词表</h3>
+                            <p class="text-sm text-slate-500 mt-1">从老师布置的任务中选择一份开始学习</p>
+                        </div>
+                        <button onclick="document.getElementById('student-learning-selector').remove()" class="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
+                        ${wordlists.map(wordlist => `
+                            <button onclick="student.openLearningWordlist('${wordlist.id}')" class="w-full text-left rounded-2xl border border-slate-200 p-5 hover:border-indigo-300 hover:bg-indigo-50 transition">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <div class="text-lg font-bold text-slate-800">${wordlist.title || '未命名词表'}</div>
+                                        <div class="text-sm text-slate-500 mt-1">${wordlist.taskTitle || '学习任务'}</div>
+                                    </div>
+                                    <div class="text-right shrink-0">
+                                        <div class="text-sm font-bold text-indigo-600">${(wordlist.words || []).length} 个单词</div>
+                                        <div class="text-xs text-slate-400 mt-1">${[wordlist.grade, wordlist.volume, helpers.formatUnitLabel(wordlist.unit || '')].filter(Boolean).join(' · ') || '任务词表'}</div>
+                                    </div>
+                                </div>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', selectorHtml);
+    },
+
+    openLearningWordlist(wordlistId) {
+        const selector = document.getElementById('student-learning-selector');
+        if (selector) selector.remove();
+        this.showSelfLearningModeChoice(wordlistId);
     },
 
     startGameMode() {

@@ -40,6 +40,46 @@ const auth = {
         }
     },
 
+    buildStudentSession(apiUser) {
+        const dbStudent = db?.findStudent?.(apiUser.id) || db?.findStudentByClassAndName?.(apiUser.className, apiUser.username);
+        const stats = dbStudent ? db.getStudentStats(dbStudent.id) : null;
+        return {
+            id: apiUser.id,
+            name: apiUser.username,
+            class: apiUser.className,
+            role: 'student',
+            passwordChanged: apiUser.passwordChanged,
+            coins: stats?.coins ?? dbStudent?.coins ?? 0,
+            badges: stats?.badges ?? dbStudent?.badges ?? [],
+            streak: stats?.streak ?? dbStudent?.streak ?? 0,
+            totalLearned: stats?.totalLearned ?? dbStudent?.totalLearned ?? 0,
+            totalTests: stats?.totalTests ?? dbStudent?.totalTests ?? 0,
+            totalCorrect: stats?.totalCorrect ?? dbStudent?.totalCorrect ?? 0,
+            totalQuestions: stats?.totalQuestions ?? dbStudent?.totalQuestions ?? 0,
+            title: stats?.title ?? helpers.getTitle(stats?.coins ?? dbStudent?.coins ?? 0),
+            teacherId: stats?.teacherId ?? dbStudent?.teacherId ?? null
+        };
+    },
+
+    refreshCurrentUserProfile() {
+        if (!this.currentUser) return null;
+
+        if (this.currentUser.role === 'student') {
+            const refreshed = this.buildStudentSession({
+                id: this.currentUser.id,
+                username: this.currentUser.name,
+                className: this.currentUser.class,
+                passwordChanged: this.currentUser.passwordChanged
+            });
+            this.currentUser = {
+                ...this.currentUser,
+                ...refreshed
+            };
+        }
+
+        return this.currentUser;
+    },
+
     /**
      * 教务处登录
      */
@@ -317,6 +357,7 @@ const auth = {
                 }
                 
                 this.currentUser = teacher;
+                await db.init();
                 
                 // 关闭模态框
                 app.hideTeacherLogin();
@@ -349,41 +390,30 @@ const auth = {
         try {
             helpers.showLoading('正在登录...');
             const result = await api.login({ username: name, className, password: pwd, role: 'student' });
-            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
             if (result && result.user) {
-                // 登录成功，尝试拉取云端数据
                 try {
-                    const syncData = await api.syncPull();
-                    if (syncData && syncData.data) {
-                        // TODO: 合并数据逻辑
-                        console.log('Synced data:', syncData);
-                    }
+                    await db.init();
                 } catch (e) {
-                    console.warn('Sync failed:', e);
+                    console.warn('Failed to refresh school data after student login:', e);
                 }
 
-                // 构造本地用户对象
-                const student = {
-                    id: result.user.id,
-                    name: result.user.username,
-                    class: result.user.className,
-                    role: 'student',
-                    passwordChanged: result.user.passwordChanged
-                };
+                const student = this.buildStudentSession(result.user);
                 
-                // 检查是否需要强制修改密码
                 if (!student.passwordChanged) {
                      this.currentUser = student;
                      this._pendingPasswordChange = { ...student, oldPassword: pwd };
+                     if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
                      this.showForceChangePasswordModal();
                      app.updateNav();
                      return true;
                 }
 
+                if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
                 this.completeStudentLogin(student);
                 return true;
             }
+            if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
         } catch (err) {
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
             helpers.showToast(err.message || '登录失败', 'error');
@@ -398,15 +428,22 @@ const auth = {
         console.log('=== completeStudentLogin ===');
         console.log('Student:', student);
         
+        const hydratedStudent = this.buildStudentSession({
+            id: student.id,
+            username: student.name,
+            className: student.class,
+            passwordChanged: student.passwordChanged
+        });
+
         // 更新系统登录记录
         db.updateSystem({
             lastLoginIP: db.getSystem().mockCurrentIP,
-            lastLoginStudentId: student.id
+            lastLoginStudentId: hydratedStudent.id
         });
         
         this.currentUser = {
             role: 'student',
-            ...student
+            ...hydratedStudent
         };
         
         console.log('currentUser set:', this.currentUser);
@@ -416,7 +453,7 @@ const auth = {
         console.log('Navigation result:', result);
         
         app.updateNav();
-        helpers.showToast(`欢迎回来，${student.name}！`, 'success');
+        helpers.showToast(`欢迎回来，${hydratedStudent.name}！`, 'success');
     },
 
     /**

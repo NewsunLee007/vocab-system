@@ -9,6 +9,7 @@ const app = {
     async init() {
         await auth.init();
         await db.init();
+        auth.refreshCurrentUserProfile();
         
         const hasSession = auth.isLoggedIn();
         
@@ -69,12 +70,13 @@ const app = {
     updateStudentNav(student) {
         const navCoins = document.getElementById('nav-coins');
         const navTitle = document.getElementById('nav-title');
+        const coins = Number(student?.coins || 0);
         
-        navCoins.innerText = student.coins;
-        navTitle.innerText = helpers.getTitle(student.coins);
+        navCoins.innerText = coins;
+        navTitle.innerText = helpers.getTitle(coins);
         
         // 更新头衔颜色
-        navTitle.className = `text-xs ${helpers.getTitleColor(student.coins)} text-white px-2 py-0.5 rounded-full`;
+        navTitle.className = `text-xs ${helpers.getTitleColor(coins)} text-white px-2 py-0.5 rounded-full`;
     },
 
     /**

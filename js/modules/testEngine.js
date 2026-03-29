@@ -26,6 +26,7 @@ const testEngine = {
      * 开始检测
      */
     start(words, modes, taskId, onComplete) {
+        const task = taskId ? db._data.tasks.find(item => item.id === taskId) : null;
         this.state.words = helpers.shuffle([...words]);
         this.state.modes = modes;
         this.state.currentModeIndex = 0;
@@ -33,6 +34,8 @@ const testEngine = {
         this.state.completedModes = [];
         this.state.totalCoins = 0;
         this.state.taskId = taskId;
+        this.state.task = task;
+        this.state.wordlist = task ? db.findWordList(task.wordListId) : null;
         this.state.onComplete = onComplete;
 
         this.startCurrentMode();

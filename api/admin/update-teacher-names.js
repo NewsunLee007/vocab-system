@@ -20,23 +20,14 @@ module.exports = async (req, res) => {
 
     const results = [];
 
+    // 使用原始 SQL 更新
     for (const teacher of teachers) {
-      // 先找到用户
-      const user = await prisma.user.findFirst({
-        where: {
-          username: teacher.username,
-          role: 'TEACHER'
-        }
-      });
-
-      if (user) {
-        const updated = await prisma.user.update({
-          where: { id: user.id },
-          data: { name: teacher.name },
-          select: { username: true, name: true }
-        });
-        results.push(updated);
-      }
+      const result = await prisma.$executeRaw`
+        UPDATE "User" 
+        SET name = ${teacher.name}
+        WHERE username = ${teacher.username} AND role = 'TEACHER'
+      `;
+      results.push({ username: teacher.username, name: teacher.name, updated: result });
     }
 
     res.status(200).json({ success: true, updated: results });

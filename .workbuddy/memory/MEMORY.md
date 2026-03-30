@@ -31,3 +31,17 @@
 - **不要**添加 `/api/(.*)` → `/api/$1` 的 rewrite，会干扰原生 API 路由导致 404
 - 只对非 API 路由重写到 index.html：`/((?!api/).*)`
 
+## 智能随机分布算法（aiSentenceService.js）
+- smartShuffle(): 智能位置平衡洗牌，70%概率加权随机选择正确答案位置
+- 追踪 context 和 matching 的 ABCD 位置分布
+- resetPositionTracker(): 重置追踪器
+- getPositionStats(): 获取位置分布统计
+
+## 基础题库机制（db.js）
+- testQuestionBank: 存储 AI 生成的题目，按 teacherId/wordlistId/word 组织
+- studentTestHistory: 记录每个学生已做过的题目ID
+- saveQuestionToBank(): 保存题目到题库
+- getUnusedQuestions(): 获取学生未做过的题目
+- recordStudentTestHistory(): 记录测试历史
+- _incrementQuestionUsage(): 更新题目使用次数（优先抽取使用少的）
+

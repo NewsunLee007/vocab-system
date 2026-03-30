@@ -17,6 +17,104 @@ const aiSentenceService = {
         completedWords: 0
     },
 
+    // 当前位置分布追踪器（用于平衡ABCD位置）
+    _positionTracker: {
+        context: [0, 0, 0, 0], // A,B,C,D 各位置正确次数
+        matching: [0, 0, 0, 0]
+    },
+
+    /**
+     * 智能位置平衡洗牌算法
+     * 确保正确答案在各位置分布均匀，同时保持随机性
+     * @param {Array} options - 选项数组（第一个为正确答案）
+     * @param {string} type - 'context' 或 'matching'
+     * @returns {Object} { options: 打乱后的选项, correctIndex: 正确答案新位置 }
+     */
+    smartShuffle(options, type = 'context') {
+        if (options.length < 4) {
+            return { options, correctIndex: 0 };
+        }
+
+        const correctAnswer = options[0];
+        const distractors = options.slice(1);
+        
+        // 统计当前各位置的"负载"
+        const tracker = this._positionTracker[type];
+        const total = tracker.reduce((a, b) => a + b, 0) || 1;
+        
+        // 计算每个位置的目标概率（倾向于选择使用较少的位置）
+        // 使用加权随机，给使用较少的位置更高权重
+        const weights = tracker.map(count => Math.max(1, total - count));
+        const totalWeight = weights.reduce((a, b) => a + b, 0);
+        
+        // 70%概率使用平衡算法，30%概率完全随机（保持一定随机性）
+        let correctPosition;
+        if (Math.random() < 0.7) {
+            // 加权随机选择位置
+            let random = Math.random() * totalWeight;
+            for (let i = 0; i < weights.length; i++) {
+                random -= weights[i];
+                if (random <= 0) {
+                    correctPosition = i;
+                    break;
+                }
+            }
+            if (correctPosition === undefined) correctPosition = Math.floor(Math.random() * 4);
+        } else {
+            // 完全随机
+            correctPosition = Math.floor(Math.random() * 4);
+        }
+        
+        // 更新追踪器
+        tracker[correctPosition]++;
+        
+        // 构建新的选项数组
+        const newOptions = [...distractors];
+        
+        // 将正确答案插入目标位置
+        // Fisher-Yates 洗牌其他选项，但保证正确答案在指定位置
+        for (let i = newOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newOptions[i], newOptions[j]] = [newOptions[j], newOptions[i]];
+        }
+        
+        newOptions.splice(correctPosition, 0, correctAnswer);
+        
+        // 确保数组长度为4
+        while (newOptions.length < 4) {
+            newOptions.push('选项' + newOptions.length);
+        }
+        
+        return {
+            options: newOptions.slice(0, 4),
+            correctIndex: correctPosition
+        };
+    },
+
+    /**
+     * 重置位置追踪器（每次开始新测试时调用）
+     */
+    resetPositionTracker() {
+        this._positionTracker = {
+            context: [0, 0, 0, 0],
+            matching: [0, 0, 0, 0]
+        };
+    },
+
+    /**
+     * 获取位置分布统计
+     */
+    getPositionStats(type = 'context') {
+        const tracker = this._positionTracker[type];
+        const total = tracker.reduce((a, b) => a + b, 0) || 1;
+        return {
+            A: { count: tracker[0], percent: Math.round(tracker[0] / total * 100) },
+            B: { count: tracker[1], percent: Math.round(tracker[1] / total * 100) },
+            C: { count: tracker[2], percent: Math.round(tracker[2] / total * 100) },
+            D: { count: tracker[3], percent: Math.round(tracker[3] / total * 100) }
+        };
+    },
+
     /**
      * 批量生成单词的例句和题目
      * @param {Array} words - 单词列表
@@ -83,18 +181,10 @@ const aiSentenceService = {
                             options = [correctWord, ...distractors];
                         }
                         
-                        // Fisher-Yates 洗牌算法
-                        for (let i = options.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [options[i], options[j]] = [options[j], options[i]];
-                        }
-                        
-                        result.context.options = options;
-                        // 更新 correctIndex
-                        result.context.correctIndex = options.findIndex(opt => 
-                            typeof opt === 'string' && opt.toLowerCase() === correctWord.toLowerCase()
-                        );
-                        if (result.context.correctIndex === -1) result.context.correctIndex = 0;
+                        // 使用智能位置平衡洗牌算法
+                        const shuffled = this.smartShuffle(options, 'context');
+                        result.context.options = shuffled.options;
+                        result.context.correctIndex = shuffled.correctIndex;
                     }
                     
                     // 强制打乱 matching 选项顺序
@@ -118,14 +208,10 @@ const aiSentenceService = {
                             }
                         }
                         
-                        for (let i = options.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [options[i], options[j]] = [options[j], options[i]];
-                        }
-                        
-                        result.matching.options = options;
-                        result.matching.correctIndex = options.findIndex(opt => opt === correctMeaning);
-                        if (result.matching.correctIndex === -1) result.matching.correctIndex = 0;
+                        // 使用智能位置平衡洗牌算法
+                        const shuffled = this.smartShuffle(options, 'matching');
+                        result.matching.options = shuffled.options;
+                        result.matching.correctIndex = shuffled.correctIndex;
                     }
                     
                     materials.context.push(result.context);
@@ -351,46 +437,22 @@ ${wordListStr}
         const distractors = this.generateDistractors(word, generated.pos, meaning);
         const options = [word, ...distractors];
         
-        // 打乱选项顺序（Fisher-Yates 洗牌算法）
-        for (let i = options.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [options[i], options[j]] = [options[j], options[i]];
-        }
-        
-        // 查找正确答案位置（确保能找到）
-        let correctIndex = options.findIndex(opt => 
-            typeof opt === 'string' && opt.toLowerCase() === word.toLowerCase()
-        );
-        
-        // 如果找不到（不应该发生），强制设为 0
-        if (correctIndex === -1) {
-            console.warn(`正确答案 "${word}" 在选项中未找到，强制设为第一个选项`);
-            correctIndex = 0;
-        }
+        // 使用智能位置平衡洗牌算法
+        const shuffledContext = this.smartShuffle(options, 'context');
         
         // 生成释义干扰项
         const meaningDistractors = this.generateMeaningDistractors(meaning);
         const allMeanings = [meaning, ...meaningDistractors];
         
-        // 打乱释义选项顺序
-        for (let i = allMeanings.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [allMeanings[i], allMeanings[j]] = [allMeanings[j], allMeanings[i]];
-        }
-        
-        // 查找正确释义位置
-        let meaningCorrectIndex = allMeanings.findIndex(m => m === meaning);
-        if (meaningCorrectIndex === -1) {
-            console.warn(`正确释义在选项中未找到，强制设为第一个选项`);
-            meaningCorrectIndex = 0;
-        }
+        // 使用智能位置平衡洗牌算法
+        const shuffledMatching = this.smartShuffle(allMeanings, 'matching');
         
         return {
             context: {
                 word: word,
                 sentence: generated.sentence,
-                options: options,
-                correctIndex: correctIndex
+                options: shuffledContext.options,
+                correctIndex: shuffledContext.correctIndex
             },
             spelling: {
                 word: word,
@@ -400,8 +462,8 @@ ${wordListStr}
             matching: {
                 word: word,
                 meaning: meaning,
-                options: allMeanings,
-                correctIndex: meaningCorrectIndex
+                options: shuffledMatching.options,
+                correctIndex: shuffledMatching.correctIndex
             },
             flashcard: {
                 word: word,

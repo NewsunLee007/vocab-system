@@ -9,7 +9,11 @@ const spellingTest = {
         currentIndex: 0,
         score: 0,
         weakWords: [],
-        onComplete: null
+        onComplete: null,
+        questionIds: [],
+        teacherId: null,
+        wordlistId: null,
+        studentId: null
     },
     
     getWordDataWithReview(word) {
@@ -32,12 +36,21 @@ const spellingTest = {
         return data;
     },
 
-    start(words, onComplete) {
+    start(words, onComplete, options = {}) {
+        // 重置智能洗牌的位置追踪器
+        if (typeof aiSentenceService !== 'undefined') {
+            aiSentenceService.resetPositionTracker();
+        }
+        
         this.session.words = helpers.shuffle([...words]);
         this.session.currentIndex = 0;
         this.session.score = 0;
         this.session.weakWords = [];
         this.session.onComplete = onComplete;
+        this.session.questionIds = [];
+        this.session.teacherId = options.teacherId || null;
+        this.session.wordlistId = options.wordlistId || null;
+        this.session.studentId = options.studentId || (typeof student !== 'undefined' && student.currentUser?.id);
 
         this.showTestView();
         this.renderQuestion();
@@ -231,6 +244,16 @@ const spellingTest = {
     finish() {
         const accuracy = Math.round((this.session.score / this.session.words.length) * 100);
         const coins = this.session.score * 15;
+
+        // 记录测试历史
+        if (this.session.questionIds.length > 0 && this.session.studentId && this.session.teacherId && this.session.wordlistId) {
+            db.recordStudentTestHistory(
+                this.session.studentId,
+                this.session.teacherId,
+                this.session.wordlistId,
+                this.session.questionIds
+            );
+        }
 
         const view = document.getElementById('spelling-test-view');
         if (view) view.remove();

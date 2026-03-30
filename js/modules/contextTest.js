@@ -11,7 +11,11 @@ const contextTest = {
         score: 0,
         answers: [],
         weakWords: [],
-        onComplete: null
+        onComplete: null,
+        questionIds: [],
+        teacherId: null,
+        wordlistId: null,
+        studentId: null
     },
     gradeLevel: 'middle',
     setGradeLevel(level) {
@@ -22,13 +26,22 @@ const contextTest = {
     /**
      * 开始测试
      */
-    start(words, onComplete) {
+    start(words, onComplete, options = {}) {
+        // 重置智能洗牌的位置追踪器
+        if (typeof aiSentenceService !== 'undefined') {
+            aiSentenceService.resetPositionTracker();
+        }
+        
         this.session.words = helpers.shuffle([...words]);
         this.session.currentIndex = 0;
         this.session.score = 0;
         this.session.answers = [];
         this.session.weakWords = [];
         this.session.onComplete = onComplete;
+        this.session.questionIds = [];
+        this.session.teacherId = options.teacherId || null;
+        this.session.wordlistId = options.wordlistId || null;
+        this.session.studentId = options.studentId || (typeof student !== 'undefined' && student.currentUser?.id);
 
         // 显示测试视图
         this.showTestView();
@@ -176,6 +189,21 @@ const contextTest = {
             if (teacherReviewData.options && teacherReviewData.options.length >= 4) {
                 options = teacherReviewData.options.map(opt => ({ word: opt }));
                 correctIndex = teacherReviewData.correctIndex || 0;
+                
+                // 保存到题库并跟踪ID
+                const teacherId = this.session.teacherId || wl?.teacherId;
+                const wordlistId = this.session.wordlistId || wl?.id;
+                if (teacherId && wordlistId) {
+                    const plainOptions = teacherReviewData.options;
+                    const qid = db.saveQuestionToBank(teacherId, wordlistId, word, {
+                        options: plainOptions,
+                        correctIndex: correctIndex,
+                        meaning: teacherReviewData.meaning,
+                        sentence: sentence,
+                        type: 'context'
+                    });
+                    this.session.questionIds.push(qid);
+                }
             } else {
                 // 如果没有选项，生成默认选项
                 const generated = this.generateSmartOptions(word, wordData || { meaning: teacherReviewData.meaning }, 
@@ -250,18 +278,34 @@ const contextTest = {
         }
 
         // 使用预定义的选项，如果没有则智能生成
-        let options, correctIndex;
+        let options, correctIndex, plainOptions = [];
         if (wordData.options && wordData.options.length >= 4 && wordData.answerIndex !== undefined) {
             // 使用预定义选项
             options = wordData.options.map((opt, idx) => {
                 return { word: opt };
             });
+            plainOptions = wordData.options;
             correctIndex = wordData.answerIndex;
         } else {
             // 智能生成选项
             const generated = this.generateSmartOptions(word, wordData, targetPos || expectedPos || actualPos);
             options = generated.options.map(o => ({ word: o.word }));
+            plainOptions = generated.options.map(o => o.word);
             correctIndex = generated.correctIndex;
+        }
+        
+        // 保存到题库
+        const teacherId = this.session.teacherId || wl?.teacherId;
+        const wordlistId = this.session.wordlistId || wl?.id;
+        if (teacherId && wordlistId && plainOptions.length >= 4) {
+            const qid = db.saveQuestionToBank(teacherId, wordlistId, word, {
+                options: plainOptions,
+                correctIndex: correctIndex,
+                meaning: wordData.meaning,
+                sentence: sentence,
+                type: 'context'
+            });
+            this.session.questionIds.push(qid);
         }
 
         return {
@@ -1252,6 +1296,16 @@ const contextTest = {
     finish() {
         const accuracy = Math.round((this.session.score / this.session.words.length) * 100);
         const coins = this.session.score * 10;
+
+        // 记录测试历史
+        if (this.session.questionIds.length > 0 && this.session.studentId && this.session.teacherId && this.session.wordlistId) {
+            db.recordStudentTestHistory(
+                this.session.studentId,
+                this.session.teacherId,
+                this.session.wordlistId,
+                this.session.questionIds
+            );
+        }
 
         // 移除视图
         const view = document.getElementById('context-test-view');

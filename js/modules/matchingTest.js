@@ -9,15 +9,28 @@ const matchingTest = {
         currentIndex: 0,
         score: 0,
         weakWords: [],
-        onComplete: null
+        onComplete: null,
+        questionIds: [],
+        teacherId: null,
+        wordlistId: null,
+        studentId: null
     },
 
-    start(words, onComplete) {
+    start(words, onComplete, options = {}) {
+        // 重置智能洗牌的位置追踪器
+        if (typeof aiSentenceService !== 'undefined') {
+            aiSentenceService.resetPositionTracker();
+        }
+        
         this.session.words = helpers.shuffle([...words]);
         this.session.currentIndex = 0;
         this.session.score = 0;
         this.session.weakWords = [];
         this.session.onComplete = onComplete;
+        this.session.questionIds = [];
+        this.session.teacherId = options.teacherId || null;
+        this.session.wordlistId = options.wordlistId || null;
+        this.session.studentId = options.studentId || (typeof student !== 'undefined' && student.currentUser?.id);
 
         this.showTestView();
         this.renderQuestion();
@@ -114,15 +127,46 @@ const matchingTest = {
 
     generateQuestion(word, wordData) {
         const wl = taskEngine?.state?.wordlist || testEngine?.state?.wordlist || (typeof student !== 'undefined' && student.currentWordlistId ? db.findWordList(student.currentWordlistId) : null);
+        const teacherId = this.session.teacherId || wl?.teacherId;
+        const wordlistId = this.session.wordlistId || wl?.id;
+        const studentId = this.session.studentId;
+        
+        // 优先从题库获取未使用过的题目
+        if (teacherId && wordlistId && studentId) {
+            const unusedQuestions = db.getUnusedQuestions(studentId, teacherId, wordlistId, [word]);
+            if (unusedQuestions[word] && unusedQuestions[word].length > 0) {
+                const q = unusedQuestions[word][0];
+                this.session.questionIds.push(q.id);
+                return { 
+                    options: q.options, 
+                    correctIndex: q.correctIndex,
+                    questionId: q.id
+                };
+            }
+        }
+        
+        // 使用教师审核通过的题目
         if (wl && wl.id && wl.teacherId) {
             const review = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
             const r = review?.sentences?.[word];
             if (r && (r.status === 'approved' || r.status === 'modified') && Array.isArray(r.options) && r.options.length >= 4) {
                 const opts = r.options;
                 const corrIdx = r.correctIndex || 0;
+                // 保存到题库
+                if (teacherId && wordlistId) {
+                    const qid = db.saveQuestionToBank(teacherId, wordlistId, word, {
+                        options: opts,
+                        correctIndex: corrIdx,
+                        meaning: r.meaning || wordData.meaning,
+                        type: 'matching'
+                    });
+                    this.session.questionIds.push(qid);
+                }
                 return { options: opts, correctIndex: corrIdx };
             }
         }
+        
+        // 生成新题目（使用智能洗牌确保位置分布均匀）
         const correctMeaning = wordData.meaning || word;
         const allWords = db.getAllWords ? db.getAllWords() : [];
         const distractorMeanings = allWords
@@ -131,9 +175,30 @@ const matchingTest = {
             .slice(0, 10);
         const shuffledDistractors = helpers.shuffle(distractorMeanings).slice(0, 3);
         const options = [correctMeaning, ...shuffledDistractors];
-        const shuffledOptions = helpers.shuffle(options);
-        const correctIndex = shuffledOptions.indexOf(correctMeaning);
-        return { options: shuffledOptions, correctIndex };
+        
+        // 使用智能位置平衡洗牌
+        let correctIndex, finalOptions;
+        if (typeof aiSentenceService !== 'undefined' && aiSentenceService.smartShuffle) {
+            const shuffled = aiSentenceService.smartShuffle(options, 'matching');
+            correctIndex = shuffled.correctIndex;
+            finalOptions = shuffled.options;
+        } else {
+            finalOptions = helpers.shuffle(options);
+            correctIndex = finalOptions.indexOf(correctMeaning);
+        }
+        
+        // 保存到题库
+        if (teacherId && wordlistId) {
+            const qid = db.saveQuestionToBank(teacherId, wordlistId, word, {
+                options: finalOptions,
+                correctIndex: correctIndex,
+                meaning: correctMeaning,
+                type: 'matching'
+            });
+            this.session.questionIds.push(qid);
+        }
+        
+        return { options: finalOptions, correctIndex };
     },
     
     getWordDataWithReview(word) {
@@ -226,6 +291,16 @@ const matchingTest = {
     finish() {
         const accuracy = Math.round((this.session.score / this.session.words.length) * 100);
         const coins = this.session.score * 10;
+
+        // 记录测试历史
+        if (this.session.questionIds.length > 0 && this.session.studentId && this.session.teacherId && this.session.wordlistId) {
+            db.recordStudentTestHistory(
+                this.session.studentId,
+                this.session.teacherId,
+                this.session.wordlistId,
+                this.session.questionIds
+            );
+        }
 
         const view = document.getElementById('matching-test-view');
         if (view) view.remove();

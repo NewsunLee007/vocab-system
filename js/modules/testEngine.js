@@ -91,21 +91,27 @@ const testEngine = {
      * 启动具体检测模式
      */
     launchMode(mode) {
+        const options = {
+            teacherId: this.state.wordlist?.teacherId,
+            wordlistId: this.state.wordlist?.id,
+            studentId: typeof student !== 'undefined' && student.currentUser?.id
+        };
+        
         switch (mode) {
             case 'context':
-                contextTest.start(this.state.words, (result) => this.onModeComplete(result));
+                contextTest.start(this.state.words, (result) => this.onModeComplete(result), options);
                 break;
             case 'spelling':
-                spellingTest.start(this.state.words, (result) => this.onModeComplete(result));
+                spellingTest.start(this.state.words, (result) => this.onModeComplete(result), options);
                 break;
             case 'matching':
-                matchingTest.start(this.state.words, (result) => this.onModeComplete(result));
+                matchingTest.start(this.state.words, (result) => this.onModeComplete(result), options);
                 break;
             case 'flashcard':
                 flashcardLearning.start(this.state.words, (result) => this.onModeComplete(result), { teacherId: this.state.wordlist?.teacherId, wordlistId: this.state.wordlist?.id });
                 break;
             default:
-                contextTest.start(this.state.words, (result) => this.onModeComplete(result));
+                contextTest.start(this.state.words, (result) => this.onModeComplete(result), options);
         }
     },
 

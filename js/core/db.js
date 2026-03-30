@@ -27,6 +27,8 @@ const db = {
             difficultWords: {},
             learningHistory: {},
             teacherReviewedSentences: {},
+            testQuestionBank: {},      // 基础题库：存储AI生成的题目
+            studentTestHistory: {},   // 学生测试历史：记录学生已做过的题目
             system: {
                 mockCurrentIP: helpers.generateMockIP(),
                 lastLoginIP: '',
@@ -119,7 +121,9 @@ const db = {
                 aiConfig: this._data.aiConfig || null,
                 difficultWords: this._data.difficultWords || {},
                 learningHistory: this._data.learningHistory || {},
-                teacherReviewedSentences: this._data.teacherReviewedSentences || {}
+                teacherReviewedSentences: this._data.teacherReviewedSentences || {},
+                testQuestionBank: this._data.testQuestionBank || {},
+                studentTestHistory: this._data.studentTestHistory || {}
             };
 
             // 所有角色都可以同步学校数据（包括学生产生的学习记录）
@@ -150,6 +154,8 @@ const db = {
             difficultWords: {},
             learningHistory: {},
             teacherReviewedSentences: {},
+            testQuestionBank: {},
+            studentTestHistory: {},
             system: {
                 mockCurrentIP: helpers.generateMockIP(),
                 lastLoginIP: '',
@@ -1170,6 +1176,164 @@ const db = {
     hasTeacherReviewedSentences(teacherId, wordlistId) {
         const review = this.getTeacherReviewedSentences(teacherId, wordlistId);
         return review && review.sentences && Object.keys(review.sentences).length > 0;
+    },
+
+    // ==================== 测试题库管理 ====================
+
+    /**
+     * 保存题目到基础题库
+     * @param {string} teacherId - 教师ID
+     * @param {string} wordlistId - 词表ID
+     * @param {string} word - 单词
+     * @param {Object} questionData - 题目数据（包含 options, correctIndex, meaning 等）
+     */
+    saveQuestionToBank(teacherId, wordlistId, word, questionData) {
+        if (!this._data.testQuestionBank[teacherId]) {
+            this._data.testQuestionBank[teacherId] = {};
+        }
+        if (!this._data.testQuestionBank[teacherId][wordlistId]) {
+            this._data.testQuestionBank[teacherId][wordlistId] = {};
+        }
+        
+        const bank = this._data.testQuestionBank[teacherId][wordlistId];
+        if (!bank[word]) {
+            bank[word] = [];
+        }
+        
+        // 生成题目唯一ID
+        const questionId = `${teacherId}_${wordlistId}_${word}_${Date.now()}`;
+        
+        bank[word].push({
+            id: questionId,
+            word: word,
+            ...questionData,
+            createdAt: Date.now(),
+            usedCount: 0
+        });
+        
+        this.save();
+        return questionId;
+    },
+
+    /**
+     * 从题库获取指定数量的题目（优先获取使用次数最少的）
+     * @param {string} teacherId - 教师ID
+     * @param {string} wordlistId - 词表ID
+     * @param {Array} words - 需要的单词列表
+     * @param {number} count - 每个单词需要的题目数量
+     * @returns {Object} 单词->题目列表的映射
+     */
+    getQuestionsFromBank(teacherId, wordlistId, words, count = 1) {
+        const bank = this._data.testQuestionBank[teacherId]?.[wordlistId] || {};
+        const result = {};
+        
+        for (const word of words) {
+            const questions = bank[word] || [];
+            if (questions.length > 0) {
+                // 按使用次数排序，优先选择使用次数少的
+                const sorted = [...questions].sort((a, b) => a.usedCount - b.usedCount);
+                result[word] = sorted.slice(0, count);
+            }
+        }
+        
+        return result;
+    },
+
+    /**
+     * 获取题库中可用的题目数量
+     * @param {string} teacherId - 教师ID
+     * @param {string} wordlistId - 词表ID
+     * @param {Array} words - 单词列表
+     * @returns {number} 可用的题目数量
+     */
+    getAvailableQuestionCount(teacherId, wordlistId, words) {
+        const bank = this._data.testQuestionBank[teacherId]?.[wordlistId] || {};
+        let count = 0;
+        
+        for (const word of words) {
+            count += (bank[word] || []).length;
+        }
+        
+        return count;
+    },
+
+    /**
+     * 记录学生测试历史
+     * @param {string} studentId - 学生ID
+     * @param {string} teacherId - 教师ID
+     * @param {string} wordlistId - 词表ID
+     * @param {Array} questionIds - 本次测试使用的题目ID列表
+     */
+    recordStudentTestHistory(studentId, teacherId, wordlistId, questionIds) {
+        if (!this._data.studentTestHistory[studentId]) {
+            this._data.studentTestHistory[studentId] = {};
+        }
+        if (!this._data.studentTestHistory[studentId][teacherId]) {
+            this._data.studentTestHistory[studentId][teacherId] = {};
+        }
+        if (!this._data.studentTestHistory[studentId][teacherId][wordlistId]) {
+            this._data.studentTestHistory[studentId][teacherId][wordlistId] = [];
+        }
+        
+        // 合并新的题目ID（去重）
+        const history = this._data.studentTestHistory[studentId][teacherId][wordlistId];
+        const newIds = questionIds.filter(id => !history.includes(id));
+        history.push(...newIds);
+        
+        // 更新题库中题目的使用次数
+        this._incrementQuestionUsage(teacherId, wordlistId, questionIds);
+        
+        this.save();
+    },
+
+    /**
+     * 增加题目的使用次数
+     */
+    _incrementQuestionUsage(teacherId, wordlistId, questionIds) {
+        const bank = this._data.testQuestionBank[teacherId]?.[wordlistId];
+        if (!bank) return;
+        
+        for (const word in bank) {
+            for (const q of bank[word]) {
+                if (questionIds.includes(q.id)) {
+                    q.usedCount = (q.usedCount || 0) + 1;
+                }
+            }
+        }
+    },
+
+    /**
+     * 获取学生已做过的题目ID列表
+     * @param {string} studentId - 学生ID
+     * @param {string} teacherId - 教师ID
+     * @param {string} wordlistId - 词表ID
+     * @returns {Array} 题目ID列表
+     */
+    getStudentTestHistory(studentId, teacherId, wordlistId) {
+        return this._data.studentTestHistory[studentId]?.[teacherId]?.[wordlistId] || [];
+    },
+
+    /**
+     * 获取学生未做过的题目（从题库中筛选）
+     * @param {string} studentId - 学生ID
+     * @param {string} teacherId - 教师ID
+     * @param {string} wordlistId - 词表ID
+     * @param {Array} words - 单词列表
+     * @returns {Object} 未做过的题目映射
+     */
+    getUnusedQuestions(studentId, teacherId, wordlistId, words) {
+        const usedIds = this.getStudentTestHistory(studentId, teacherId, wordlistId);
+        const allQuestions = this.getQuestionsFromBank(teacherId, wordlistId, words, 10);
+        const result = {};
+        
+        for (const word in allQuestions) {
+            const unused = allQuestions[word].filter(q => !usedIds.includes(q.id));
+            if (unused.length > 0) {
+                result[word] = unused;
+            }
+        }
+        
+        return result;
     },
 
     // ==================== 数据备份与恢复 ====================

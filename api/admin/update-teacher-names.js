@@ -22,7 +22,13 @@ module.exports = async (req, res) => {
 
     for (const teacher of teachers) {
       const updated = await prisma.user.update({
-        where: { username: teacher.username },
+        where: {
+          username_className_role: {
+            username: teacher.username,
+            className: null,
+            role: 'TEACHER'
+          }
+        },
         data: { name: teacher.name },
         select: { username: true, name: true }
       });

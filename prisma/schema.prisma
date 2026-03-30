@@ -17,6 +17,7 @@ enum UserRole {
 model User {
   id              String           @id @default(cuid())
   username        String
+  name            String?          // 教师真实姓名
   className       String?
   role            UserRole
   passwordHash    String

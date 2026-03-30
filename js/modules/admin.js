@@ -47,7 +47,7 @@ const admin = {
             return;
         }
         
-        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>加载中...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>加载中...</td></tr>';
         
         try {
             const teachers = await api.fetchTeacherAccounts();
@@ -57,7 +57,7 @@ const admin = {
             tbody.innerHTML = '';
             
             if (!teachers || teachers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">暂无教师账户，请点击"添加教师"创建</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">暂无教师账户，请点击"添加教师"创建</td></tr>';
                 return;
             }
             
@@ -69,6 +69,7 @@ const admin = {
                     : '<span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">待激活</span>';
                 row.innerHTML = `
                     <td class="py-3 px-4 font-medium font-mono">${teacher.username}</td>
+                    <td class="py-3 px-4 font-medium">${teacher.name || '-'}</td>
                     <td class="py-3 px-4">${statusBadge}</td>
                     <td class="py-3 px-4 text-slate-400 text-sm">${new Date(teacher.createdAt).toLocaleDateString('zh-CN')}</td>
                     <td class="py-3 px-4">
@@ -83,7 +84,7 @@ const admin = {
             this.renderStats();
         } catch (err) {
             console.error('Failed to load teachers:', err);
-            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-400"><i class="fa-solid fa-triangle-exclamation mr-2"></i>加载失败：${err.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-400"><i class="fa-solid fa-triangle-exclamation mr-2"></i>加载失败：${err.message}</td></tr>`;
         }
     },
 
@@ -888,7 +889,8 @@ const admin = {
             // 使用工号作为登录用户名，默认密码 123456
             await api.createTeacherAccount({
                 username: id,
-                password: pwd || '123456'
+                password: pwd || '123456',
+                name: name || null
             });
             
             helpers.hideLoading();
@@ -1933,13 +1935,20 @@ const admin = {
         const wordlist = db.findWordList(wordlistId);
         if (!wordlist) return;
 
-        // 构建详情HTML
+        // 收集该词表的所有AI材料（来自所有教师）
+        const allMaterials = this.collectWordlistMaterials(wordlistId);
+        
+        // 构建详情HTML - 单词卡片
         let wordsHtml = '<div class="grid grid-cols-2 md:grid-cols-4 gap-2">';
         wordlist.words.forEach(word => {
             const wordData = db.findWord(word);
+            const hasMaterials = allMaterials.materialsByWord && allMaterials.materialsByWord[word.toLowerCase()];
+            const materialBadge = hasMaterials 
+                ? '<span class="ml-1 text-xs bg-emerald-100 text-emerald-700 px-1 rounded">AI</span>' 
+                : '';
             wordsHtml += `
                 <div class="p-2 bg-slate-50 rounded border">
-                    <div class="font-bold text-slate-800">${word}</div>
+                    <div class="font-bold text-slate-800">${word}${materialBadge}</div>
                     ${wordData ? `
                         <div class="text-xs text-slate-500">${wordData.phonetic || ''}</div>
                         <div class="text-xs text-emerald-600">${wordData.meaning || ''}</div>
@@ -1949,10 +1958,95 @@ const admin = {
         });
         wordsHtml += '</div>';
 
+        // 构建AI材料HTML
+        let aiMaterialsHtml = '';
+        if (allMaterials.teachers.length > 0) {
+            aiMaterialsHtml = `
+                <div class="mt-6">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-bold text-slate-700">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1 text-purple-600"></i>AI生成材料
+                        </h4>
+                        <div class="flex gap-2">
+                            <button onclick="admin.exportAIMaterials('${wordlistId}')" class="text-xs text-indigo-600 hover:text-indigo-800 px-2 py-1 border border-indigo-300 rounded hover:bg-indigo-50">
+                                <i class="fa-solid fa-download mr-1"></i>导出
+                            </button>
+                            <button onclick="admin.deleteAllAIMaterialsForWordlist('${wordlistId}')" class="text-xs text-rose-600 hover:text-rose-800 px-2 py-1 border border-rose-300 rounded hover:bg-rose-50">
+                                <i class="fa-solid fa-trash mr-1"></i>清空全部
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-4 max-h-64 overflow-y-auto">
+            `;
+            
+            allMaterials.teachers.forEach(teacherInfo => {
+                aiMaterialsHtml += `
+                    <div class="border border-purple-200 rounded-lg bg-purple-50/50 p-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-purple-700">
+                                <i class="fa-solid fa-user mr-1"></i>${teacherInfo.teacherName}
+                            </span>
+                            <div class="flex gap-2">
+                                <button onclick="admin.deleteTeacherAIMaterials('${wordlistId}', '${teacherInfo.teacherId}')" 
+                                    class="text-xs text-rose-500 hover:text-rose-700 px-2 py-0.5 rounded hover:bg-rose-100">
+                                    <i class="fa-solid fa-trash mr-1"></i>删除
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-500 space-y-2">
+                `;
+                
+                teacherInfo.words.forEach(w => {
+                    const mat = w.materials;
+                    aiMaterialsHtml += `
+                        <div class="bg-white rounded p-2 border border-purple-100">
+                            <div class="font-medium text-slate-800">${w.word}</div>
+                            ${mat.context ? `
+                                <div class="mt-1 text-slate-600">
+                                    <span class="text-purple-600 text-xs">[语境]</span> 
+                                    ${mat.context.sentence || '无例句'}
+                                </div>
+                            ` : ''}
+                            ${mat.matching ? `
+                                <div class="mt-1 text-slate-600">
+                                    <span class="text-purple-600 text-xs">[匹配]</span> 
+                                    正确: ${mat.matching.correctIndex !== undefined ? ['A','B','C','D'][mat.matching.correctIndex] : '?'}
+                                </div>
+                            ` : ''}
+                            ${mat.spelling ? `
+                                <div class="mt-1 text-slate-600">
+                                    <span class="text-purple-600 text-xs">[拼写]</span> 
+                                    ${mat.spelling.hint || '有提示'}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                
+                aiMaterialsHtml += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            aiMaterialsHtml += `
+                    </div>
+                </div>
+            `;
+        } else {
+            aiMaterialsHtml = `
+                <div class="mt-6 p-4 bg-slate-50 rounded-lg text-center text-slate-500">
+                    <i class="fa-solid fa-wand-magic-sparkles text-2xl mb-2 text-slate-300"></i>
+                    <p>暂无AI生成材料</p>
+                    <p class="text-xs mt-1">点击词表管理中的"AI生成"按钮为单词生成练习</p>
+                </div>
+            `;
+        }
+
         // 使用模态框显示
         const modalHtml = `
-            <div id="modal-wordlist-detail-temp" class="fixed inset-0 bg-slate-900 bg-opacity-60 flex items-center justify-center z-50">
-                <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden m-4">
+            <div id="modal-wordlist-detail-temp" class="fixed inset-0 bg-slate-900 bg-opacity-60 flex items-center justify-center z-[200]">
+                <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden m-4">
                     <div class="p-6 border-b flex justify-between items-center bg-gradient-to-r from-emerald-50 to-teal-50">
                         <h3 class="text-xl font-bold text-slate-800">
                             <i class="fa-solid fa-book mr-2 text-emerald-600"></i>${wordlist.title}
@@ -1961,7 +2055,7 @@ const admin = {
                             <i class="fa-solid fa-xmark text-xl"></i>
                         </button>
                     </div>
-                    <div class="p-6 overflow-y-auto max-h-[60vh]">
+                    <div class="p-6 overflow-y-auto max-h-[70vh]">
                         <div class="mb-4 flex flex-wrap gap-4 text-sm text-slate-600">
                             <span><strong>教材:</strong> ${wordlist.textbook || '-'}</span>
                             <span><strong>年级:</strong> ${wordlist.grade || '-'}</span>
@@ -1969,7 +2063,13 @@ const admin = {
                             <span><strong>单元:</strong> ${helpers.formatUnitLabel(wordlist.unit || '') || '-'}</span>
                             <span><strong>单词数:</strong> ${wordlist.words.length}</span>
                         </div>
+                        
+                        <h4 class="font-bold text-slate-700 mb-3">
+                            <i class="fa-solid fa-spellcheck mr-1 text-emerald-600"></i>单词列表
+                        </h4>
                         ${wordsHtml}
+                        
+                        ${aiMaterialsHtml}
                     </div>
                 </div>
             </div>
@@ -2025,9 +2125,162 @@ const admin = {
 
         db._data.wordLists = db._data.wordLists.filter(wl => wl.id !== wordlistId);
         db.save();
-        
+
         this.renderWordlists();
         helpers.showToast('词表已删除', 'success');
+    },
+
+    // ==================== AI材料管理（词表详情页） ====================
+
+    /**
+     * 收集词表的所有AI材料（来自所有教师）
+     * @param {string} wordlistId - 词表ID
+     * @returns {Object} 包含teachers数组和materialsByWord索引
+     */
+    collectWordlistMaterials(wordlistId) {
+        const result = {
+            teachers: [],
+            materialsByWord: {}
+        };
+        
+        const teachers = db.getTeachers();
+        
+        teachers.forEach(teacher => {
+            // 检查AI草稿
+            const draft = db.getAIDraft(wordlistId, teacher.id);
+            // 检查审核后的材料
+            const reviewed = db.getTeacherReviewedSentences(teacher.id, wordlistId);
+            
+            const materials = draft?.materials || reviewed?.sentences || {};
+            
+            // 收集有材料的单词
+            const wordsWithMaterials = [];
+            Object.entries(materials).forEach(([word, mat]) => {
+                if (mat && (mat.context || mat.matching || mat.spelling)) {
+                    wordsWithMaterials.push({ word, materials: mat });
+                    result.materialsByWord[word.toLowerCase()] = mat;
+                }
+            });
+            
+            if (wordsWithMaterials.length > 0) {
+                result.teachers.push({
+                    teacherId: teacher.id,
+                    teacherName: teacher.name || teacher.id,
+                    words: wordsWithMaterials
+                });
+            }
+        });
+        
+        return result;
+    },
+
+    /**
+     * 删除指定教师的AI材料
+     * @param {string} wordlistId - 词表ID
+     * @param {string} teacherId - 教师ID
+     */
+    deleteTeacherAIMaterials(wordlistId, teacherId) {
+        if (!confirm('确定要删除该教师的AI材料吗？')) {
+            return;
+        }
+        
+        // 删除草稿
+        if (db._data.aiDrafts && db._data.aiDrafts[teacherId]) {
+            delete db._data.aiDrafts[teacherId][wordlistId];
+        }
+        
+        // 删除审核记录
+        if (db._data.teacherReviewedSentences && db._data.teacherReviewedSentences[teacherId]) {
+            delete db._data.teacherReviewedSentences[teacherId][wordlistId];
+        }
+        
+        db.save();
+        
+        // 关闭当前详情弹窗并重新打开
+        document.getElementById('modal-wordlist-detail-temp')?.remove();
+        this.viewWordlistDetail(wordlistId);
+        helpers.showToast('AI材料已删除', 'success');
+    },
+
+    /**
+     * 删除词表的所有AI材料
+     * @param {string} wordlistId - 词表ID
+     */
+    deleteAllAIMaterialsForWordlist(wordlistId) {
+        if (!confirm('确定要清空该词表的所有AI材料吗？此操作不可恢复！')) {
+            return;
+        }
+        
+        const teachers = db.getTeachers();
+        
+        teachers.forEach(teacher => {
+            // 删除草稿
+            if (db._data.aiDrafts && db._data.aiDrafts[teacher.id]) {
+                delete db._data.aiDrafts[teacher.id][wordlistId];
+            }
+            
+            // 删除审核记录
+            if (db._data.teacherReviewedSentences && db._data.teacherReviewedSentences[teacher.id]) {
+                delete db._data.teacherReviewedSentences[teacher.id][wordlistId];
+            }
+        });
+        
+        db.save();
+        
+        // 关闭当前详情弹窗并重新打开
+        document.getElementById('modal-wordlist-detail-temp')?.remove();
+        this.viewWordlistDetail(wordlistId);
+        helpers.showToast('所有AI材料已清空', 'success');
+    },
+
+    /**
+     * 导出词表的AI材料为JSON
+     * @param {string} wordlistId - 词表ID
+     */
+    exportAIMaterials(wordlistId) {
+        const wordlist = db.findWordList(wordlistId);
+        if (!wordlist) return;
+        
+        const materials = this.collectWordlistMaterials(wordlistId);
+        
+        if (materials.teachers.length === 0) {
+            helpers.showToast('暂无AI材料可导出', 'warning');
+            return;
+        }
+        
+        const exportData = {
+            wordlist: {
+                id: wordlist.id,
+                title: wordlist.title,
+                wordCount: wordlist.words.length
+            },
+            exportedAt: new Date().toISOString(),
+            teachers: materials.teachers.map(t => ({
+                teacher: t.teacherName,
+                words: t.words.map(w => ({
+                    word: w.word,
+                    context: w.materials.context ? {
+                        sentence: w.materials.context.sentence,
+                        options: w.materials.context.options,
+                        correctIndex: w.materials.context.correctIndex
+                    } : null,
+                    matching: w.materials.matching ? {
+                        correctIndex: w.materials.matching.correctIndex
+                    } : null,
+                    spelling: w.materials.spelling ? {
+                        hint: w.materials.spelling.hint
+                    } : null
+                }))
+            }))
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `AI材料_${wordlist.title}_${helpers.getTodayDate()}.json`;
+        link.click();
+        
+        helpers.showToast('AI材料导出成功', 'success');
     },
 
     /**

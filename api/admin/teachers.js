@@ -26,6 +26,7 @@ module.exports = async function handler(req, res) {
         select: {
           id: true,
           username: true,
+          name: true,
           passwordChanged: true,
           createdAt: true,
         },
@@ -39,7 +40,7 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       if (operator.role !== 'ADMIN') return fail(res, 403, '权限不足');
 
-      const { username, password } = req.body || {};
+      const { username, password, name } = req.body || {};
       if (!username) return fail(res, 400, '请提供工号/用户名');
 
       const passwordHash = await hashPassword(String(password || '123456'));
@@ -47,6 +48,7 @@ module.exports = async function handler(req, res) {
       const user = await prisma.user.create({
         data: {
           username: String(username).trim(),
+          name: name ? String(name).trim() : null,
           role: 'TEACHER',
           passwordHash,
           passwordChanged: false,
@@ -56,6 +58,7 @@ module.exports = async function handler(req, res) {
       return created(res, {
         id: user.id,
         username: user.username,
+        name: user.name,
         role: 'teacher',
         passwordChanged: user.passwordChanged,
       });

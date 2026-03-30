@@ -22,10 +22,17 @@
 ## 账户管理架构（重要）
 - **User 表（PostgreSQL）**：唯一的真实账户存储，所有登录都查这里
   - 教务处（ADMIN）：username='admin'，由 `api/auth/login.js` 自动创建
-  - 教师（TEACHER）：由 `api/admin/teachers.js` POST 创建，以工号为 username，className=null
+  - 教师（TEACHER）：由 `api/admin/teachers.js` POST 创建，以工号为 username，**新增可选 `name` 字段存真实姓名**
   - 学生（STUDENT）：由 `api/auth/register.js` 创建，有 className 字段
 - **SchoolData 表**：存储学校业务数据（词表、任务、学生进度），不存账户
 - **教师账户 API**：`api/admin/teachers.js`（GET/POST/DELETE），需 ADMIN 角色
+
+## AI材料管理（admin.js）
+- `collectWordlistMaterials(wordlistId)`: 收集词表的所有AI材料（来自所有教师）
+- `deleteTeacherAIMaterials(wordlistId, teacherId)`: 删除指定教师的AI材料
+- `deleteAllAIMaterialsForWordlist(wordlistId)`: 清空词表所有AI材料
+- `exportAIMaterials(wordlistId)`: 导出AI材料为JSON
+- AI材料存储位置：`db._data.aiDrafts[teacherId][wordlistId]` 和 `db._data.teacherReviewedSentences[teacherId][wordlistId]`
 
 ## vercel.json 路由规范
 - **不要**添加 `/api/(.*)` → `/api/$1` 的 rewrite，会干扰原生 API 路由导致 404

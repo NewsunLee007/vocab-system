@@ -807,7 +807,7 @@ const admin = {
                 return;
             }
 
-            toCreate.push({ username: id, password: pwd });
+            toCreate.push({ username: id, password: pwd, name: name });
         });
 
         if (toCreate.length === 0) {

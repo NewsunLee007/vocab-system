@@ -21,18 +21,22 @@ module.exports = async (req, res) => {
     const results = [];
 
     for (const teacher of teachers) {
-      const updated = await prisma.user.update({
+      // 先找到用户
+      const user = await prisma.user.findFirst({
         where: {
-          username_className_role: {
-            username: teacher.username,
-            className: null,
-            role: 'TEACHER'
-          }
-        },
-        data: { name: teacher.name },
-        select: { username: true, name: true }
+          username: teacher.username,
+          role: 'TEACHER'
+        }
       });
-      results.push(updated);
+
+      if (user) {
+        const updated = await prisma.user.update({
+          where: { id: user.id },
+          data: { name: teacher.name },
+          select: { username: true, name: true }
+        });
+        results.push(updated);
+      }
     }
 
     res.status(200).json({ success: true, updated: results });

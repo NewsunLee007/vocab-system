@@ -53,23 +53,26 @@ async function handleLogin(req, res) {
     const user = await prisma.user.findFirst({ where: query });
     if (!user) return fail(res, 404, '用户不存在');
 
-    if (user.lockUntil && user.lockUntil > new Date()) {
-      return fail(res, 403, '账号已锁定，请稍后重试');
-    }
+    // 暂时禁用账号锁定功能
+    // if (user.lockUntil && user.lockUntil > new Date()) {
+    //   return fail(res, 403, '账号已锁定，请稍后重试');
+    // }
 
     const matched = await verifyPassword(String(password), user.passwordHash);
     if (!matched) {
-      const attempts = user.loginAttempts + 1;
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          loginAttempts: attempts,
-          lockUntil: attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null,
-        },
-      });
-      return fail(res, 401, `密码错误（${attempts}/5）`);
+      // 暂时禁用登录尝试次数限制
+      // const attempts = user.loginAttempts + 1;
+      // await prisma.user.update({
+      //   where: { id: user.id },
+      //   data: {
+      //     loginAttempts: attempts,
+      //     lockUntil: attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null,
+      //   },
+      // });
+      return fail(res, 401, '密码错误');
     }
 
+    // 重置登录尝试次数
     if (user.loginAttempts > 0 || user.lockUntil) {
       await prisma.user.update({
         where: { id: user.id },

@@ -12,7 +12,15 @@ module.exports = async function handler(req, res) {
     if (!user) return fail(res, 401, 'No token provided');
 
     if (req.method === 'GET') {
-      // 直接从User表读取教师和学生数据
+      // 先尝试从SchoolData表读取旧数据
+      let schoolData = null;
+      try {
+        schoolData = await prisma.schoolData.findUnique({ where: { id: 'school' } });
+      } catch (e) {
+        console.log('SchoolData表不存在或读取失败，将使用新数据结构');
+      }
+      
+      // 从User表读取教师和学生数据
       let teachers = [];
       let students = [];
       
@@ -60,22 +68,30 @@ module.exports = async function handler(req, res) {
         totalQuestions: 0
       }));
       
+      // 从SchoolData获取词表、任务等其他数据（如果存在）
+      const oldPayload = schoolData?.payload || {};
+      
       const payload = {
         teachers: normalizedTeachers,
         students: normalizedStudents,
-        wordlists: [],
-        tasks: [],
-        learningLogs: [],
-        studentStates: {},
-        admins: []
+        wordlists: oldPayload.wordlists || oldPayload.wordLists || [],
+        tasks: oldPayload.tasks || [],
+        learningLogs: oldPayload.learningLogs || [],
+        studentStates: oldPayload.studentStates || {},
+        admins: oldPayload.admins || []
       };
       
       console.log('=== 返回学校数据 ===', { 
         teacherCount: normalizedTeachers.length, 
-        studentCount: normalizedStudents.length 
+        studentCount: normalizedStudents.length,
+        wordlistCount: payload.wordlists.length
       });
       
-      return ok(res, { id: 'school', data: payload, updatedAt: new Date() });
+      return ok(res, { 
+        id: 'school', 
+        data: payload, 
+        updatedAt: schoolData?.updatedAt || new Date() 
+      });
     }
 
     // 允许 ADMIN、TEACHER、STUDENT 都可以同步数据

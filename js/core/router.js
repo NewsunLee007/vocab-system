@@ -180,9 +180,13 @@ const router = {
         if (!isLoggedIn) return false;
         
         const user = auth.getCurrentUser();
+        
+        // 密码未修改时，只允许登录页，其他页面让auth模块处理强制改密码流程
+        // 注意：这里不能直接返回false，否则会导致无限重定向
+        // 当用户密码未修改时，auth模块应该已经显示强制改密码模态框了
         if (user && user.passwordChanged === false) {
-            // 密码未修改，需重新登录才能走强制改密码流程（登录时有 oldPassword）
-            return false;
+            console.log('Password not changed, but allowing navigation (auth module should handle force change)');
+            // 继续往下执行角色检查，因为强制改密码模态框应该已经显示了
         }
         
         // 角色权限检查

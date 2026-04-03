@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>新纪元英语词汇学习系统</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <style>
+        * {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .floating-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+        
+        .mesh-bg {
+            background: 
+                radial-gradient(at 40% 20%, hsla(253,100%,76%,1) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, hsla(340,100%,76%,1) 0px, transparent 50%),
+                radial-gradient(at 80% 50%, hsla(266,100%,76%,1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(22,100%,77%,1) 0px, transparent 50%),
+                radial-gradient(at 80% 100%, hsla(242,100%,70%,1) 0px, transparent 50%),
+                radial-gradient(at 0% 0%, hsla(343,100%,76%,1) 0px, transparent 50%);
+            background-color: #0f0f23;
+        }
+        
+        .input-focus:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+        }
+        
+        .card-hover {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-shine::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-shine:hover::before {
+            left: 100%;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: particle-float 10s infinite;
+        }
+        
+        @keyframes particle-float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+
+<body class="mesh-bg min-h-screen text-slate-800 overflow-x-hidden">
+    <!-- 浮动粒子背景 -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden" id="particles"></div>
+
+    <!-- 顶部导航栏 - 现代透明设计 -->
+    <nav id="main-nav" class="fixed top-0 left-0 right-0 bg-white/10 backdrop-blur-xl border-b border-white/20 py-3 px-6 flex justify-between items-center z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center shadow-lg">
+                <i class="fa-solid fa-graduation-cap text-white text-lg"></i>
+            </div>
+            <div>
+                <span class="text-lg font-bold text-white tracking-tight">新纪元英语</span>
+                <span class="text-xs text-white/70 block -mt-1">词汇学习系统</span>
+            </div>
+        </div>
+        
+        <!-- 顶部管理入口 -->
+        <div id="nav-login-links" class="flex items-center space-x-2">
+            <button onclick="app.showTeacherLogin()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition flex items-center space-x-2">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="hidden sm:inline">教师端</span>
+            </button>
+            <button onclick="app.showAdminLogin()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition flex items-center space-x-2">
+                <i class="fa-solid fa-building-columns"></i>
+                <span class="hidden sm:inline">教务处</span>
+            </button>
+        </div>
+        
+        <div id="nav-user-info" class="hidden flex items-center space-x-4">
+            <div id="student-assets" class="hidden flex items-center bg-white/20 backdrop-blur rounded-full px-4 py-1.5 border border-white/30">
+                <span class="text-amber-300 mr-2"><i class="fa-solid fa-coins"></i></span>
+                <span id="nav-coins" class="font-bold text-white mr-3">0</span>
+                <span class="text-xs bg-white/30 text-white px-3 py-0.5 rounded-full" id="nav-title">词汇新手</span>
+            </div>
+            <span id="current-user-display" class="font-medium text-white/90 text-sm hidden sm:block"></span>
+            <button onclick="app.logout()" class="text-white/70 hover:text-white transition p-2 rounded-full hover:bg-white/20">
+                <i class="fa-solid fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main id="main-container" class="flex-grow flex flex-col items-center justify-center p-6 w-full max-w-7xl mx-auto relative min-h-screen">
+        
+        <!-- ==================== 视图 1：学生登录页（主界面） ==================== -->
+        <div id="view-login" class="w-full max-w-4xl fade-in pt-16">
+            <!-- 标题区域 -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">
+                    开启词汇<span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400">新纪元</span>
+                </h1>
+                <p class="text-lg text-white/70 max-w-xl mx-auto">
+                    游戏化学习，让背单词变得有趣
+                </p>
+            </div>
+
+            <!-- 学生登录卡片 - 居中突出 -->
+            <div class="glass-card rounded-3xl p-8 md:p-10 max-w-md mx-auto relative overflow-hidden shadow-2xl">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full blur-3xl opacity-30 -mr-20 -mt-20"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-cyan-400 to-blue-500 rounded-full blur-3xl opacity-20 -ml-16 -mb-16"></div>
+                
+                <div class="relative z-10">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4 shadow-xl pulse-glow">
+                            <i class="fa-solid fa-user-graduate text-white text-3xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800">学生登录</h2>
+                        <p class="text-slate-500 text-sm mt-1">输入班级和姓名开始学习</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <i class="fa-solid fa-school absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                            <input type="text" id="student-class" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-emerald-500 outline-none transition input-focus text-slate-700 placeholder-slate-400" placeholder="班级 (如: 七年级1班)">
+                        </div>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                            <input type="text" id="student-name" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-emerald-500 outline-none transition input-focus text-slate-700 placeholder-slate-400" placeholder="姓名">
+                        </div>
+                        <div class="relative">
+                            <i class="fa-solid fa-key absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                            <input type="password" id="student-pwd" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-emerald-500 outline-none transition input-focus text-slate-700 placeholder-slate-400" placeholder="密码 (默认123456)">
+                        </div>
+                        <button onclick="auth.loginStudent()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-4 rounded-xl hover:shadow-2xl transition btn-shine flex items-center justify-center space-x-2 text-lg">
+                            <span>开始学习</span>
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部特性展示 -->
+            <div class="mt-8 grid grid-cols-4 gap-4 text-center max-w-2xl mx-auto">
+                <div class="text-white/80">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fa-solid fa-robot text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium">AI智能</p>
+                </div>
+                <div class="text-white/80">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fa-solid fa-gamepad text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium">游戏闯关</p>
+                </div>
+                <div class="text-white/80">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fa-solid fa-trophy text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium">积分排行</p>
+                </div>
+                <div class="text-white/80">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fa-solid fa-mobile-screen text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium">随时学习</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 教师登录模态框 ==================== -->
+        <div id="modal-teacher-login" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+            <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <i class="fa-solid fa-chalkboard-user text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800">教师登录</h3>
+                    <p class="text-slate-500 text-sm mt-1">智能词表定制与检测分发</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <i class="fa-solid fa-id-card absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="modal-teacher-id" class="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="工号或姓名">
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-key absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="password" id="modal-teacher-pwd" class="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="密码">
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="app.hideTeacherLogin()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                        取消
+                    </button>
+                    <button onclick="auth.loginTeacherFromModal()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                        登录
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 教务处登录模态框 ==================== -->
+        <div id="modal-admin-login" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+            <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+                        <i class="fa-solid fa-building-columns text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800">教务处登录</h3>
+                    <p class="text-slate-500 text-sm mt-1">全校数据管理中心</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="password" id="modal-admin-pwd" class="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-slate-800 outline-none transition" placeholder="管理密码">
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="app.hideAdminLogin()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                        取消
+                    </button>
+                    <button onclick="auth.loginAdminFromModal()" class="flex-1 py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-xl hover:shadow-lg transition font-medium">
+                        登录
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 视图 2：教务处总控台 ==================== -->
+        <div id="view-admin" class="hidden w-full fade-in space-y-6 pt-20">
+            <!-- 头部信息 -->
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center space-x-4">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-2xl shadow-xl">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">教务处总控台</h1>
+                        <p class="text-white/60">全校教师与数据管理中心</p>
+                    </div>
+                </div>
+                <button onclick="admin.showChangePasswordModal()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition flex items-center space-x-2">
+                    <i class="fa-solid fa-key"></i>
+                    <span>修改密码</span>
+                </button>
+                <div class="flex space-x-2">
+                    <button onclick="router.navigate('teacher')" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                        <span>教师工作台</span>
+                    </button>
+                    <button onclick="admin.backupSystemData()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-download"></i>
+                        <span>数据备份</span>
+                    </button>
+                    <button onclick="admin.triggerRestoreData()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>数据恢复</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-800/80 backdrop-blur-xl p-6 rounded-2xl cursor-pointer hover:bg-slate-700/80 transition border border-white/10" onclick="admin.showTeachersDetail()">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">在职教师</p>
+                            <p class="text-4xl font-bold text-white" id="admin-teacher-count">0</p>
+                        </div>
+                        <div class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <i class="fa-solid fa-chalkboard-user text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800/80 backdrop-blur-xl p-6 rounded-2xl cursor-pointer hover:bg-slate-700/80 transition border border-white/10" onclick="admin.showStudentsDetail()">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">注册学生</p>
+                            <p class="text-4xl font-bold text-white" id="admin-student-count">0</p>
+                        </div>
+                        <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <i class="fa-solid fa-users text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800/80 backdrop-blur-xl p-6 rounded-2xl cursor-pointer hover:bg-slate-700/80 transition border border-white/10" onclick="admin.showWordlistsDetail()">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">词表数量</p>
+                            <p class="text-4xl font-bold text-white" id="admin-wordlist-count">0</p>
+                        </div>
+                        <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <i class="fa-solid fa-book text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 教师管理 -->
+            <div class="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                    <h3 class="text-xl font-bold text-white">教师管理</h3>
+                    <div class="flex space-x-2 flex-wrap gap-2">
+                        <button onclick="admin.showBatchImportModal()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-file-import mr-2"></i>批量导入
+                        </button>
+                        <button onclick="admin.showBatchDeleteModal()" class="px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-trash-alt mr-2"></i>批量删除
+                        </button>
+                        <button onclick="admin.showAddTeacherModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-plus mr-2"></i>添加教师
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-slate-300">
+                        <thead class="border-b border-white/20">
+                            <tr>
+                                <th class="text-left py-3 px-4 text-slate-400">工号/用户名</th>
+                                <th class="text-left py-3 px-4 text-slate-400">姓名</th>
+                                <th class="text-left py-3 px-4 text-slate-400">账户状态</th>
+                                <th class="text-left py-3 px-4 text-slate-400">创建日期</th>
+                                <th class="text-left py-3 px-4 text-slate-400">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-teachers-table">
+                            <!-- JS动态渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 词表管理 -->
+            <div class="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">词表管理</h3>
+                    <div class="flex space-x-2">
+                        <button onclick="admin.showImportWordlistModal()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-file-import mr-2"></i>导入词表
+                        </button>
+                        <button onclick="admin.showAddWordlistModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-plus mr-2"></i>新建词表
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 词表筛选 -->
+                <div class="flex flex-wrap gap-3 mb-4 p-4 bg-slate-700/50 rounded-xl">
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-slate-300">类型:</label>
+                        <select id="admin-wordlist-type-filter" onchange="admin.renderWordlists()" class="px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-sm text-white">
+                            <option value="">全部</option>
+                            <option value="教材">教材词表</option>
+                            <option value="课外">课外词表</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-slate-300">年级:</label>
+                        <select id="admin-wordlist-grade-filter" onchange="admin.renderWordlists()" class="px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-sm text-white">
+                            <option value="">全部年级</option>
+                            <option value="七年级">七年级</option>
+                            <option value="八年级">八年级</option>
+                            <option value="九年级">九年级</option>
+                        </select>
+                    </div>
+                    <div class="flex-1"></div>
+                    <span class="text-sm text-slate-400">共 <span id="admin-wordlist-total-count">0</span> 个词表</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-slate-300">
+                        <thead class="border-b border-white/20">
+                            <tr>
+                                <th class="text-left py-3 px-4 text-slate-400">词表名称</th>
+                                <th class="text-left py-3 px-4 text-slate-400">类型</th>
+                                <th class="text-left py-3 px-4 text-slate-400">年级</th>
+                                <th class="text-left py-3 px-4 text-slate-400">单词数</th>
+                                <th class="text-left py-3 px-4 text-slate-400">例句</th>
+                                <th class="text-left py-3 px-4 text-slate-400">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-wordlist-tbody">
+                            <!-- JS动态渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- AI设置 -->
+            <div class="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-xl font-bold text-white">AI生成设置</h3>
+                        <p class="text-slate-400 text-sm mt-1">配置AI例句生成参数</p>
+                    </div>
+                    <button onclick="admin.openAISettingsModal()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition">
+                        <i class="fa-solid fa-robot mr-2"></i>配置AI
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 视图 3：教师控制台 ==================== -->
+        <div id="view-teacher" class="hidden w-full fade-in space-y-6 pt-20">
+            <!-- 头部信息 -->
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center space-x-4">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-xl">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-3">
+                            <h1 id="teacher-dashboard-title" class="text-3xl font-bold text-white">教师工作台</h1>
+                            <button onclick="teacher.startTour()" class="bg-white/10 hover:bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center transition backdrop-blur-sm" title="新手指引">
+                                <i class="fa-solid fa-question text-sm"></i>
+                            </button>
+                            <button onclick="teacher.refreshAllData()" class="bg-white/10 hover:bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center transition backdrop-blur-sm" title="刷新数据">
+                                <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="text-white/60">词表管理与学情追踪</p>
+                    </div>
+                </div>
+                <!-- admin 进入时显示返回教务处按钮（JS动态控制可见性） -->
+                <div id="teacher-admin-back-btn" class="hidden">
+                    <button onclick="router.navigate('admin')" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition flex items-center space-x-2">
+                        <i class="fa-solid fa-arrow-left mr-2"></i>
+                        <span>返回教务处</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-slate-800/80 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
+                    <p class="text-slate-400 text-sm">我的学生</p>
+                    <p class="text-4xl font-bold text-white" id="teacher-student-count">0</p>
+                </div>
+                <div class="bg-slate-800/80 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
+                    <p class="text-slate-400 text-sm">词表数量</p>
+                    <p class="text-4xl font-bold text-white" id="teacher-wordlist-count">0</p>
+                </div>
+                <div class="bg-slate-800/80 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
+                    <p class="text-slate-400 text-sm">今日学习</p>
+                    <p class="text-4xl font-bold text-white" id="teacher-today-count">0</p>
+                </div>
+                <div class="bg-slate-800/80 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
+                    <p class="text-slate-400 text-sm">检测任务</p>
+                    <p class="text-4xl font-bold text-white" id="teacher-task-count">0</p>
+                </div>
+            </div>
+
+            <!-- Tab导航 -->
+            <div class="flex space-x-2 border-b border-white/20 pb-2">
+                <button id="btn-tab-stats" onclick="teacher.switchTab('tab-stats')" class="px-6 py-3 text-white font-semibold border-b-2 border-white">
+                    <i class="fa-solid fa-chart-line mr-2"></i>学情统计
+                </button>
+                <button id="btn-tab-students" onclick="teacher.switchTab('tab-students')" class="px-6 py-3 text-white/70 font-medium border-b-2 border-transparent hover:text-white hover:border-white/50 transition">
+                    <i class="fa-solid fa-users mr-2"></i>学生管理
+                </button>
+                <button id="btn-tab-words" onclick="teacher.switchTab('tab-words')" class="px-6 py-3 text-white/70 font-medium border-b-2 border-transparent hover:text-white hover:border-white/50 transition">
+                    <i class="fa-solid fa-book mr-2"></i>词表管理
+                </button>
+                <button id="btn-tab-settings" onclick="teacher.switchTab('tab-settings')" class="px-6 py-3 text-white/70 font-medium border-b-2 border-transparent hover:text-white hover:border-white/50 transition">
+                    <i class="fa-solid fa-cog mr-2"></i>设置
+                </button>
+            </div>
+
+            <!-- Tab内容 -->
+            <div id="tab-stats" class="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-white">学习统计</h3>
+                    <div class="flex items-center space-x-3">
+                        <select id="export-date-range" onchange="teacher.renderStats()" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white">
+                            <option value="all">全部</option>
+                            <option value="today">今日</option>
+                            <option value="week">本周</option>
+                        </select>
+                        <button onclick="teacher.exportLearningLogs()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg text-sm hover:shadow-lg transition">
+                            <i class="fa-solid fa-file-export mr-2"></i>导出
+                        </button>
+                    </div>
+                </div>
+                <p class="text-slate-400 text-sm mb-4" id="stats-total-count">共 0 条记录</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-slate-300">
+                        <thead class="border-b border-white/20">
+                            <tr>
+                                <th class="text-left py-3 px-4 text-slate-400">日期</th>
+                                <th class="text-left py-3 px-4 text-slate-400">班级</th>
+                                <th class="text-left py-3 px-4 text-slate-400">姓名</th>
+                                <th class="text-left py-3 px-4 text-slate-400">新学</th>
+                                <th class="text-left py-3 px-4 text-slate-400">复习</th>
+                                <th class="text-left py-3 px-4 text-slate-400">检测</th>
+                                <th class="text-left py-3 px-4 text-slate-400">游戏</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-stats-tbody">
+                            <!-- JS动态渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-students" class="hidden bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-xl font-bold text-white">学生管理</h3>
+                        <span id="teacher-student-count" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-sm font-medium">0</span>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="teacher.toggleBatchDeleteMode()" id="btn-batch-delete" class="px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-trash-can mr-2"></i>批量删除
+                        </button>
+                        <button onclick="teacher.showAddStudentModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-plus mr-2"></i>添加学生
+                        </button>
+                    </div>
+                </div>
+                <!-- 批量删除操作栏 -->
+                <div id="batch-delete-bar" class="hidden mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="select-all-students" onchange="teacher.toggleSelectAllStudents(this.checked)" class="w-5 h-5 text-rose-600 rounded focus:ring-rose-500">
+                            <label for="select-all-students" class="text-rose-200 text-sm font-medium cursor-pointer">全选</label>
+                            <span id="selected-students-count" class="text-rose-300 text-sm">已选择 0 人</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="teacher.cancelBatchDelete()" class="px-3 py-1.5 text-rose-200 hover:text-white text-sm transition">
+                                取消
+                            </button>
+                            <button onclick="teacher.confirmBatchResetPassword()" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition">
+                                <i class="fa-solid fa-key mr-1"></i>批量重置密码
+                            </button>
+                            <button onclick="teacher.confirmBatchDelete()" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-medium transition">
+                                确认删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="teacher-students-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- JS动态渲染 -->
+                </div>
+            </div>
+
+            <div id="tab-words" class="hidden bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                <!-- 教材词表（来自教务处） -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-xl font-bold text-white">教材词表</h3>
+                            <span id="textbook-wordlist-count" class="px-2 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 text-sm font-medium">0</span>
+                        </div>
+                        <button onclick="teacher.showLinkTextbookModal()" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-link mr-2"></i>关联教材词表
+                        </button>
+                    </div>
+                    
+                    <!-- 教材词表列表 -->
+                    <div id="teacher-textbook-wordlists-container" class="space-y-3">
+                        <!-- JS动态渲染 -->
+                    </div>
+                    
+                    <!-- 展开/收起按钮 -->
+                    <div id="textbook-expand-btn" class="hidden mt-3 text-center">
+                        <button onclick="teacher.toggleTextbookWordlists()" class="text-sm text-slate-400 hover:text-white transition flex items-center justify-center gap-2 mx-auto">
+                            <span id="textbook-expand-text">展开更多</span>
+                            <i id="textbook-expand-icon" class="fa-solid fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 词表管理 -->
+                <div class="mb-8 border-t border-white/20 pt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-white">我的词表</h3>
+                        <div class="flex space-x-2">
+                            <button onclick="teacher.showImportModal()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition">
+                                <i class="fa-solid fa-file-import mr-2"></i>导入单词
+                            </button>
+                            <button onclick="teacher.showAddWordlistModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
+                                <i class="fa-solid fa-plus mr-2"></i>新建词表
+                            </button>
+                        </div>
+                    </div>
+                    <div id="teacher-wordlists" class="space-y-3">
+                        <!-- JS动态渲染 -->
+                    </div>
+                </div>
+
+                <!-- 任务管理 -->
+                <div class="border-t border-white/20 pt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-white">检测任务</h3>
+                        <button onclick="teacher.showCreateTaskModal()" class="px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:shadow-lg transition">
+                            <i class="fa-solid fa-plus mr-2"></i>新建任务
+                        </button>
+                    </div>
+                    <div id="published-tasks" class="space-y-3">
+                        <!-- JS动态渲染 -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-settings" class="hidden bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                <h3 class="text-xl font-bold text-white mb-4">个人设置</h3>
+                <div class="space-y-4 max-w-md">
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-2">工号</label>
+                        <p id="settings-teacher-id" class="text-white font-medium"></p>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-2">姓名</label>
+                        <p id="settings-teacher-name" class="text-white font-medium"></p>
+                    </div>
+                    <div class="border-t border-white/20 pt-4 mt-4">
+                        <h4 class="text-white font-medium mb-3">修改密码</h4>
+                        <input type="password" id="settings-current-pwd" placeholder="当前密码" class="w-full px-4 py-3 bg-slate-700/50 border border-white/20 rounded-xl text-white placeholder-slate-500 mb-3">
+                        <input type="password" id="settings-new-pwd" placeholder="新密码" class="w-full px-4 py-3 bg-slate-700/50 border border-white/20 rounded-xl text-white placeholder-slate-500 mb-3">
+                        <input type="password" id="settings-confirm-pwd" placeholder="确认新密码" class="w-full px-4 py-3 bg-slate-700/50 border border-white/20 rounded-xl text-white placeholder-slate-500 mb-3">
+                        <button onclick="teacher.changePassword()" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
+                            修改密码
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 视图 4：学生学习 ==================== -->
+        <div id="view-student" class="hidden w-full fade-in space-y-6 pt-20">
+            <!-- 头部信息 + 统计数据 -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl shadow-xl">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-3">
+                            <h1 class="text-3xl font-bold text-white">学习中心</h1>
+                            <button onclick="student.startTour()" class="bg-white/10 hover:bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center transition backdrop-blur-sm" title="新手指引">
+                                <i class="fa-solid fa-question text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="text-white/60">游戏化词汇学习</p>
+                    </div>
+                </div>
+                <!-- 统计数据横向排列 -->
+                <div class="flex items-center gap-4">
+                    <div class="bg-slate-800/60 backdrop-blur-xl px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2">
+                        <i class="fa-solid fa-book text-indigo-400"></i>
+                        <span class="text-white font-bold" id="student-learned-count">0</span>
+                        <span class="text-slate-400 text-sm">已学</span>
+                    </div>
+                    <div class="bg-slate-800/60 backdrop-blur-xl px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2">
+                        <i class="fa-solid fa-fire text-orange-400"></i>
+                        <span class="text-white font-bold" id="student-streak-count">0</span>
+                        <span class="text-slate-400 text-sm">天</span>
+                    </div>
+                    <div class="bg-slate-800/60 backdrop-blur-xl px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2">
+                        <i class="fa-solid fa-coins text-amber-400"></i>
+                        <span class="text-amber-400 font-bold" id="student-coins-count">0</span>
+                    </div>
+                    <button onclick="student.showChangePasswordModal()" class="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm transition backdrop-blur-sm" title="修改密码">
+                        <i class="fa-solid fa-key"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 学习模式选择 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div onclick="student.startLearningMode()" class="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-8 cursor-pointer hover:bg-slate-700/80 transition border border-white/10 group">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition">
+                            <i class="fa-solid fa-book-open"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">自主学习</h3>
+                            <p class="text-slate-400">系统学习单词的音形意用</p>
+                        </div>
+                    </div>
+                </div>
+                <div onclick="student.startGameMode()" class="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-8 cursor-pointer hover:bg-slate-700/80 transition border border-white/10 group">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition">
+                            <i class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">单词闯关</h3>
+                            <p class="text-slate-400">游戏化挑战，趣味记忆</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 学习任务 -->
+            <div class="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                <h3 class="text-xl font-bold text-white mb-4">我的任务</h3>
+                <div id="student-tasks-list" class="space-y-3">
+                    <!-- JS动态渲染 -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ========== 教务处模态框 ========== -->
+    
+    <!-- 修改密码模态框 -->
+    <div id="modal-change-password" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                    <i class="fa-solid fa-key text-white text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800">修改管理密码</h3>
+                <p class="text-slate-500 text-sm mt-2">为了系统安全，请设置新密码</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">当前密码</label>
+                    <input type="password" id="change-pwd-current" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">新密码</label>
+                    <input type="password" id="change-pwd-new" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">确认新密码</label>
+                    <input type="password" id="change-pwd-confirm" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="admin.hideChangePasswordModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="admin.changePassword()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    确认修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加教师模态框 -->
+    <div id="modal-add-teacher" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">添加教师</h3>
+                <p class="text-slate-500 text-sm mt-2">输入教师信息</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">工号</label>
+                    <input type="text" id="new-teacher-id" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="如: t03">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">姓名</label>
+                    <input type="text" id="new-teacher-name" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="如: 王老师">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">密码</label>
+                    <input type="password" id="new-teacher-pwd" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="初始密码">
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="admin.hideAddTeacherModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="admin.confirmAddTeacher()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    确认添加
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑教师模态框 -->
+    <div id="modal-edit-teacher" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">编辑教师</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">工号</label>
+                    <input type="text" id="edit-teacher-id" class="w-full px-4 py-3 bg-slate-100 border-2 border-slate-200 rounded-xl" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">姓名</label>
+                    <input type="text" id="edit-teacher-name" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">新密码（留空则不修改）</label>
+                    <input type="password" id="edit-teacher-pwd" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="admin.closeEditTeacherModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="admin.confirmEditTeacher()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    保存修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 教师详情模态框 -->
+    <div id="modal-teacher-detail" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-2xl transform scale-95 transition-transform max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800" id="detail-teacher-name">教师详情</h3>
+                <button onclick="admin.closeTeacherDetail()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-slate-50 p-4 rounded-xl text-center">
+                    <p class="text-slate-500 text-sm">工号</p>
+                    <p class="text-xl font-bold text-slate-800" id="detail-teacher-id">-</p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl text-center">
+                    <p class="text-slate-500 text-sm">学生数</p>
+                    <p class="text-xl font-bold text-indigo-600" id="detail-student-count">0</p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl text-center">
+                    <p class="text-slate-500 text-sm">班级数</p>
+                    <p class="text-xl font-bold text-emerald-600" id="detail-class-count">0</p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl text-center">
+                    <p class="text-slate-500 text-sm">词表数</p>
+                    <p class="text-xl font-bold text-amber-600" id="detail-wordlist-count">0</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-bold text-slate-800 mb-2">检测任务</h4>
+                    <div id="detail-tasks-list" class="space-y-2 max-h-40 overflow-y-auto">
+                        <!-- JS动态渲染 -->
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-800 mb-2">学生列表</h4>
+                    <div id="detail-students-list" class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                        <!-- JS动态渲染 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 所有教师模态框 -->
+    <div id="modal-all-teachers" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-4xl transform scale-95 transition-transform max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">所有教师</h3>
+                <button onclick="admin.closeAllTeachersDetail()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- 统计信息 -->
+            <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="bg-indigo-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-indigo-600">教师总数</p>
+                    <p class="text-xl font-bold text-indigo-700" id="stats-total-teachers">0</p>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-emerald-600">学生总数</p>
+                    <p class="text-xl font-bold text-emerald-700" id="stats-teacher-students">0</p>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-amber-600">词表总数</p>
+                    <p class="text-xl font-bold text-amber-700" id="stats-teacher-wordlists">0</p>
+                </div>
+                <div class="bg-rose-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-rose-600">平均正确率</p>
+                    <p class="text-xl font-bold text-rose-700" id="stats-avg-accuracy">0%</p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="border-b border-slate-200">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-600">工号</th>
+                            <th class="text-left py-3 px-4 text-slate-600">姓名</th>
+                            <th class="text-left py-3 px-4 text-slate-600">班级数</th>
+                            <th class="text-left py-3 px-4 text-slate-600">学生数</th>
+                            <th class="text-left py-3 px-4 text-slate-600">词表数</th>
+                            <th class="text-left py-3 px-4 text-slate-600">正确率</th>
+                            <th class="text-left py-3 px-4 text-slate-600">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-teachers-list">
+                        <!-- JS动态渲染 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学生详情模态框 -->
+    <div id="modal-students-detail" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-4xl transform scale-95 transition-transform max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">所有学生</h3>
+                <button onclick="admin.closeStudentsDetail()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- 筛选和导出工具栏 -->
+            <div class="flex flex-wrap gap-3 mb-4 p-4 bg-slate-50 rounded-xl">
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-slate-600">班级:</label>
+                    <select id="filter-student-class" onchange="admin.filterStudents()" class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm">
+                        <option value="">全部班级</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-slate-600">老师:</label>
+                    <select id="filter-student-teacher" onchange="admin.filterStudents()" class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm">
+                        <option value="">全部老师</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-slate-600">搜索:</label>
+                    <input type="text" id="filter-student-search" oninput="admin.filterStudents()" placeholder="学生姓名..." class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm w-32">
+                </div>
+                <div class="flex-1"></div>
+                <button onclick="admin.exportStudentsData()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg text-sm hover:shadow-lg transition">
+                    <i class="fa-solid fa-file-export mr-2"></i>导出数据
+                </button>
+            </div>
+            
+            <!-- 统计信息 -->
+            <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="bg-indigo-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-indigo-600">总学生数</p>
+                    <p class="text-xl font-bold text-indigo-700" id="stats-total-students">0</p>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-emerald-600">总金币数</p>
+                    <p class="text-xl font-bold text-emerald-700" id="stats-total-coins">0</p>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-amber-600">总学习单词</p>
+                    <p class="text-xl font-bold text-amber-700" id="stats-total-learned">0</p>
+                </div>
+                <div class="bg-rose-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-rose-600">筛选结果</p>
+                    <p class="text-xl font-bold text-rose-700" id="stats-filtered-count">0</p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="border-b border-slate-200">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('class')">
+                                班级 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                            </th>
+                            <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('name')">
+                                姓名 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                            </th>
+                            <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('teacher')">
+                                老师 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                            </th>
+                            <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('coins')">
+                                金币 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                            </th>
+                            <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('totalLearned')">
+                                已学 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-students-list">
+                        <!-- JS动态渲染 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 今日学习详情模态框 -->
+    <div id="modal-today-detail" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-2xl transform scale-95 transition-transform max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">今日学习记录</h3>
+                <button onclick="admin.closeTodayDetail()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="border-b border-slate-200">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-600">时间</th>
+                            <th class="text-left py-3 px-4 text-slate-600">班级</th>
+                            <th class="text-left py-3 px-4 text-slate-600">姓名</th>
+                            <th class="text-left py-3 px-4 text-slate-600">内容</th>
+                        </tr>
+                    </thead>
+                    <tbody id="today-learning-list">
+                        <!-- JS动态渲染 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量导入教师模态框 -->
+    <div id="modal-batch-import" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">批量导入教师</h3>
+                <p class="text-slate-500 text-sm mt-2">每行格式: 工号,姓名,密码</p>
+            </div>
+            <textarea id="batch-import-textarea" class="w-full h-40 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none" placeholder="t03,王老师,123&#10;t04,李老师,123"></textarea>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="admin.closeBatchImportModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="admin.confirmBatchImport()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    确认导入
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量删除模态框 -->
+    <div id="modal-batch-delete" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-2xl transform scale-95 transition-transform max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">批量删除教师</h3>
+                <button onclick="admin.closeBatchDeleteModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="batch-delete-list" class="space-y-2 max-h-60 overflow-y-auto mb-4">
+                <!-- JS动态渲染 -->
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="admin.closeBatchDeleteModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="admin.confirmBatchDelete()" class="flex-1 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-medium">
+                    删除选中
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI设置模态框 -->
+    <div id="modal-ai-settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-2xl transform scale-95 transition-transform max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">AI生成设置</h3>
+                <button onclick="admin.closeAISettingsModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">AI提供商</label>
+                    <select id="ai-provider" onchange="admin.onProviderChange()" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                        <option value="builtin">🤖 内置AI（无需配置）</option>
+                        <option value="openai">🌐 OpenAI (国际版)</option>
+                        <option value="anthropic">🧠 Anthropic (Claude)</option>
+                        <option value="gemini">🔮 Google Gemini</option>
+                        <option value="deepseek">🐋 DeepSeek (深度求索)</option>
+                        <option value="moonshot">🌙 Moonshot AI (Kimi)</option>
+                        <option value="qwen">🎨 阿里云 (通义千问)</option>
+                        <option value="baidu">🐻 百度 (文心一言)</option>
+                        <option value="zhipu">📊 智谱AI (ChatGLM)</option>
+                        <option value="custom">⚙️ 自定义API</option>
+                    </select>
+                </div>
+                <div id="ai-api-config">
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">API Key</label>
+                        <div class="relative">
+                            <input type="password" id="ai-api-key" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="输入API密钥">
+                            <button onclick="admin.toggleApiKeyVisibility()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                <i class="fa-solid fa-eye" id="api-key-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">API Endpoint</label>
+                        <input type="text" id="ai-api-endpoint" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="https://api.openai.com/v1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">模型</label>
+                        <select id="ai-model" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                            <option value="">请选择模型</option>
+                        </select>
+                        <div class="flex justify-between items-center mt-2">
+                            <span id="ai-model-status" class="text-sm text-slate-500 hidden"></span>
+                            <span id="ai-last-sync" class="text-xs text-slate-400"></span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Temperature: <span id="temp-value">0.7</span></label>
+                    <input type="range" id="ai-temperature" min="0" max="2" step="0.1" value="0.7" class="w-full" oninput="document.getElementById('temp-value').innerText = this.value">
+                    <p class="text-xs text-slate-500 mt-1">较低值生成更确定的结果，较高值生成更多样化的结果</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Max Tokens</label>
+                    <input type="number" id="ai-max-tokens" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" value="2000" min="100" max="8000" step="100">
+                </div>
+                <div>
+                    <button onclick="admin.toggleAdvancedSettings()" class="flex items-center text-sm text-slate-600 hover:text-slate-800">
+                        <i class="fa-solid fa-chevron-down mr-2" id="advanced-settings-icon"></i>
+                        高级设置
+                    </button>
+                    <div id="ai-advanced-settings" class="hidden mt-3 space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">系统提示词</label>
+                            <textarea id="ai-system-prompt" class="w-full h-32 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none" placeholder="你是一个专业的英语教育助手，擅长为单词生成真实语境例句和干扰选项。"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div id="ai-test-result" class="hidden p-3 rounded-xl text-sm"></div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="admin.closeAISettingsModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="admin.refreshModelList()" class="flex-1 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition font-medium">
+                    刷新模型
+                </button>
+                <button onclick="admin.testAIConnection()" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium">
+                    测试连接
+                </button>
+                <button onclick="admin.saveAISettings()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 词表详情模态框 -->
+    <div id="modal-wordlists-detail" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-5xl transform scale-95 transition-transform max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">所有词表</h3>
+                <button onclick="admin.closeWordlistsDetail()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- 筛选工具栏 -->
+            <div class="flex flex-wrap gap-3 mb-4 p-4 bg-slate-50 rounded-xl">
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-slate-600">年级:</label>
+                    <select id="filter-wordlist-grade" onchange="admin.filterWordlists()" class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm">
+                        <option value="">全部年级</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-slate-600">创建者:</label>
+                    <select id="filter-wordlist-teacher" onchange="admin.filterWordlists()" class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm">
+                        <option value="">全部</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-slate-600">搜索:</label>
+                    <input type="text" id="filter-wordlist-search" oninput="admin.filterWordlists()" placeholder="词表名称..." class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm w-32">
+                </div>
+                <div class="flex-1"></div>
+                <button onclick="admin.exportWordlistsData()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg text-sm hover:shadow-lg transition">
+                    <i class="fa-solid fa-file-export mr-2"></i>导出数据
+                </button>
+            </div>
+            
+            <!-- 统计信息 -->
+            <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="bg-indigo-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-indigo-600">词表总数</p>
+                    <p class="text-xl font-bold text-indigo-700" id="stats-total-wordlists">0</p>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-emerald-600">单词总数</p>
+                    <p class="text-xl font-bold text-emerald-700" id="stats-total-words">0</p>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-amber-600">已配例句</p>
+                    <p class="text-xl font-bold text-amber-700" id="stats-with-sentences">0</p>
+                </div>
+                <div class="bg-rose-50 p-3 rounded-xl text-center">
+                    <p class="text-xs text-rose-600">筛选结果</p>
+                    <p class="text-xl font-bold text-rose-700" id="stats-filtered-wordlists">0</p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="border-b border-slate-200">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-600">词表名称</th>
+                            <th class="text-left py-3 px-4 text-slate-600">年级</th>
+                            <th class="text-left py-3 px-4 text-slate-600">单词数</th>
+                            <th class="text-left py-3 px-4 text-slate-600">创建者</th>
+                            <th class="text-left py-3 px-4 text-slate-600">例句</th>
+                            <th class="text-left py-3 px-4 text-slate-600">状态</th>
+                            <th class="text-left py-3 px-4 text-slate-600">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-wordlists-list">
+                        <!-- JS动态渲染 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入词表模态框 -->
+    <div id="modal-import-wordlist" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-2xl transform scale-95 transition-transform max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">导入词表</h3>
+                <button onclick="admin.closeImportWordlistModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">选择Excel文件</label>
+                    <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" onchange="admin.handleExcelFileSelect(event)" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl">
+                </div>
+                <div id="excel-column-mapping" class="hidden">
+                    <p class="text-sm text-slate-600 mb-2">请指定列对应关系:</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">单词列 <span class="text-red-500">*</span></label>
+                            <select id="col-word" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">中文释义列</label>
+                            <select id="col-meaning" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">音标列</label>
+                            <select id="col-phonetic" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">词性列</label>
+                            <select id="col-pos" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">教材列</label>
+                            <select id="col-textbook" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">年级列</label>
+                            <select id="col-grade" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">册别列</label>
+                            <select id="col-volume" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">单元列</label>
+                            <select id="col-unit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></select>
+                        </div>
+                    </div>
+                </div>
+                <div id="import-preview" class="hidden">
+                    <p class="text-sm text-slate-600 mb-2">预览:</p>
+                    <div class="bg-slate-50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead id="preview-header"></thead>
+                            <tbody id="preview-body"></tbody>
+                        </table>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">共 <span id="preview-count">0</span> 条记录</p>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="admin.closeImportWordlistModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button id="btn-confirm-import" onclick="admin.confirmImportWordlist()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium" disabled>
+                    确认导入
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 教师端模态框 ========== -->
+
+    <!-- 关联教材词表模态框 -->
+    <div id="modal-link-textbook" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-3xl transform scale-95 transition-transform max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800">关联教材词表</h3>
+                    <p class="text-sm text-slate-500 mt-1">选择需要关联的教材单元，可多选</p>
+                </div>
+                <button onclick="teacher.hideLinkTextbookModal()" class="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-lg transition">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- 已关联单元预览 -->
+            <div id="linked-units-preview" class="mb-6 hidden">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-semibold text-emerald-800">
+                            <i class="fa-solid fa-check-circle mr-2"></i>已选择 <span id="selected-count">0</span> 个单元
+                        </span>
+                        <button onclick="teacher.clearSelectedUnits()" class="text-xs text-emerald-600 hover:text-emerald-800 underline">
+                            清空选择
+                        </button>
+                    </div>
+                    <div id="selected-units-list" class="flex flex-wrap gap-2">
+                        <!-- 动态显示已选择的单元 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 教材单元列表 -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-slate-700">可选单元</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="teacher.selectAllUnits()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                            全选
+                        </button>
+                        <span class="text-slate-300">|</span>
+                        <button onclick="teacher.deselectAllUnits()" class="text-xs text-slate-500 hover:text-slate-700 font-medium">
+                            取消全选
+                        </button>
+                    </div>
+                </div>
+                <div id="available-textbook-wordlists" class="space-y-2 max-h-80 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-slate-50">
+                    <!-- JS动态渲染可用教材词表 -->
+                </div>
+            </div>
+            
+            <!-- 底部操作按钮 -->
+            <div class="flex space-x-3 mt-6 pt-4 border-t border-slate-200">
+                <button onclick="teacher.hideLinkTextbookModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="teacher.confirmLinkTextbookUnits()" id="btn-confirm-link" class="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fa-solid fa-link mr-2"></i>确认关联
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 教务处添加词表模态框 -->
+    <div id="modal-add-admin-wordlist" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">新建教材词表</h3>
+                <p class="text-sm text-slate-500 mt-1">单词列表每行一个，可附带释义（用逗号分隔）</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">教材版本</label>
+                    <select id="admin-wordlist-textbook" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                        <option value="">请选择教材版本</option>
+                        <option value="人教版">人教版</option>
+                        <option value="外研版">外研版</option>
+                        <option value="新概念">新概念</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">年级</label>
+                        <select id="admin-wordlist-grade" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                            <option value="七年级">七年级</option>
+                            <option value="八年级">八年级</option>
+                            <option value="九年级">九年级</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">册别</label>
+                        <select id="admin-wordlist-volume" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                            <option value="上册">上册</option>
+                            <option value="下册">下册</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">单元</label>
+                    <input type="text" id="admin-wordlist-unit" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="如：Unit 1">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">单词列表（每行一个，可附带释义）</label>
+                    <textarea id="admin-wordlist-words" class="w-full h-32 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none" placeholder="apple,苹果&#10;banana,香蕉&#10;orange,橙子"></textarea>
+                    <p class="text-xs text-slate-400 mt-1" id="admin-wordlist-count">已识别 0 个单词</p>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="admin.closeAddWordlistModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="admin.saveAdminWordlist()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    创建词表
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加词表模态框 -->
+    <div id="modal-add-wordlist" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">新建词表</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">词表类型</label>
+                    <select id="new-wordlist-type" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                        <option value="课外">课外词表</option>
+                        <option value="教材">教材词表</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">词表名称</label>
+                    <input type="text" id="new-wordlist-name" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="如：七年级上册Unit1">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">教材版本（选填）</label>
+                    <select id="new-wordlist-textbook" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                        <option value="">请选择教材版本</option>
+                        <option value="人教版">人教版</option>
+                        <option value="外研版">外研版</option>
+                        <option value="新概念">新概念</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">年级</label>
+                    <select id="new-wordlist-grade" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                        <option value="七年级">七年级</option>
+                        <option value="八年级">八年级</option>
+                        <option value="九年级">九年级</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">单词列表（每行一个）</label>
+                    <textarea id="new-wordlist-words" class="w-full h-32 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none" placeholder="apple&#10;banana&#10;orange"></textarea>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="teacher.hideAddWordlistModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="teacher.confirmAddWordlist()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    创建词表
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑词表模态框 -->
+    <div id="modal-edit-wordlist" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">编辑词表</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">词表名称</label>
+                    <input type="text" id="edit-wordlist-name" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">单词列表（每行一个）</label>
+                    <textarea id="edit-wordlist-words" class="w-full h-32 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="teacher.deleteCurrentWordlist()" class="px-4 py-3 border-2 border-rose-300 text-rose-600 rounded-xl hover:bg-rose-50 transition font-medium">
+                    <i class="fa-solid fa-trash-can mr-1"></i>删除
+                </button>
+                <button onclick="teacher.hideEditWordlistModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="teacher.confirmEditWordlist()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    保存修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入单词模态框 -->
+    <div id="modal-import" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-2xl transform scale-95 transition-transform max-h-[90vh] overflow-y-auto">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">导入单词</h3>
+                <p class="text-slate-500 text-sm mt-2">支持Excel文件导入或粘贴单词列表</p>
+            </div>
+            
+            <!-- 导入方式选择 -->
+            <div class="flex space-x-4 mb-6">
+                <button onclick="teacher.switchImportMode('file')" id="btn-import-file" class="flex-1 py-2 rounded-xl border-2 border-indigo-500 bg-indigo-50 text-indigo-700 font-medium transition">
+                    <i class="fa-solid fa-file-excel mr-2"></i>Excel文件
+                </button>
+                <button onclick="teacher.switchImportMode('text')" id="btn-import-text" class="flex-1 py-2 rounded-xl border-2 border-slate-200 text-slate-600 font-medium transition">
+                    <i class="fa-solid fa-keyboard mr-2"></i>文本输入
+                </button>
+            </div>
+            
+            <!-- 文件导入区域 -->
+            <div id="import-file-area" class="space-y-4">
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-indigo-400 transition">
+                    <input type="file" id="word-excel-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="teacher.handleWordFileSelect(event)">
+                    <label for="word-excel-file" class="cursor-pointer">
+                        <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-400 mb-3"></i>
+                        <p class="text-slate-600 font-medium">点击上传Excel文件</p>
+                        <p class="text-slate-400 text-sm mt-1">支持 .xlsx, .xls, .csv 格式</p>
+                    </label>
+                </div>
+                
+                <!-- 模板下载 -->
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <p class="text-sm text-slate-600 mb-2">Excel文件格式要求：</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase bg-slate-100">
+                                <tr>
+                                    <th class="px-3 py-2">单词</th>
+                                    <th class="px-3 py-2">音标</th>
+                                    <th class="px-3 py-2">词性</th>
+                                    <th class="px-3 py-2">中文释义</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-slate-600">
+                                <tr class="border-b">
+                                    <td class="px-3 py-2">hello</td>
+                                    <td class="px-3 py-2">/həˈləʊ/</td>
+                                    <td class="px-3 py-2">int.</td>
+                                    <td class="px-3 py-2">你好</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-3 py-2">world</td>
+                                    <td class="px-3 py-2">/wɜːld/</td>
+                                    <td class="px-3 py-2">n.</td>
+                                    <td class="px-3 py-2">世界</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button onclick="teacher.downloadWordTemplate()" class="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                        <i class="fa-solid fa-download mr-1"></i>下载模板文件
+                    </button>
+                </div>
+                
+                <!-- 预览区域 -->
+                <div id="word-import-preview" class="hidden">
+                    <p class="text-sm font-medium text-slate-700 mb-2">预览 (<span id="word-preview-count">0</span> 个单词):</p>
+                    <div class="bg-slate-50 rounded-xl p-4 max-h-48 overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="text-xs text-slate-500 uppercase bg-slate-100 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">单词</th>
+                                    <th class="px-3 py-2 text-left">音标</th>
+                                    <th class="px-3 py-2 text-left">词性</th>
+                                    <th class="px-3 py-2 text-left">释义</th>
+                                </tr>
+                            </thead>
+                            <tbody id="word-preview-body" class="text-slate-600">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 文本导入区域 -->
+            <div id="import-text-area" class="hidden">
+                <textarea id="import-textarea" class="w-full h-40 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none" placeholder="每行一个单词，格式：单词 音标 词性 释义&#10;hello /həˈləʊ/ int. 你好&#10;world /wɜːld/ n. 世界"></textarea>
+            </div>
+            
+            <div class="flex space-x-3 mt-6">
+                <button onclick="teacher.hideImportModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="teacher.confirmImport()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    确认导入
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 强制修改密码模态框 -->
+    <div id="modal-force-change-password" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                    <i class="fa-solid fa-shield-halved text-white text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800">首次登录 - 修改密码</h3>
+                <p class="text-slate-500 text-sm mt-2">为了系统安全，首次登录需要修改默认密码</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">新密码</label>
+                    <input type="password" id="force-new-password" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-amber-500 outline-none transition" placeholder="请输入新密码（至少6位）">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">确认新密码</label>
+                    <input type="password" id="force-confirm-password" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-amber-500 outline-none transition" placeholder="请再次输入新密码">
+                </div>
+            </div>
+            <div class="mt-6">
+                <button onclick="auth.confirmForceChangePassword()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    确认修改并登录
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加学生模态框 -->
+    <div id="modal-add-student" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">批量添加学生</h3>
+                <p class="text-sm text-slate-500 mt-2">支持批量导入，每行一个学生</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">班级（所有学生将使用此班级）</label>
+                    <input type="text" id="new-student-class" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="如：七年级1班">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">学生姓名列表（每行一个）</label>
+                    <textarea id="new-student-names" class="w-full h-40 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none" placeholder="王小明
+李小红
+张小华
+..."></textarea>
+                    <p class="text-xs text-slate-500 mt-1">支持从Excel直接复制粘贴，每行一个姓名</p>
+                </div>
+                <div id="student-import-preview" class="hidden bg-slate-50 rounded-xl p-3">
+                    <p class="text-sm text-slate-600 mb-2">预览：<span id="student-preview-count" class="font-semibold text-indigo-600">0</span> 名学生</p>
+                    <div id="student-preview-list" class="text-xs text-slate-500 max-h-20 overflow-y-auto"></div>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="teacher.hideAddStudentModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="teacher.saveNewStudents()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    批量添加
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学生详情模态框 -->
+    <div id="modal-student-detail" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="bg-slate-800 rounded-3xl p-8 w-full max-w-2xl transform scale-95 transition-transform max-h-[80vh] overflow-y-auto border border-white/10">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-white">学生详情</h3>
+                <button onclick="teacher.closeStudentDetail()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="student-detail-content" class="space-y-4">
+                <!-- JS动态渲染 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 学生端修改密码模态框 -->
+    <div id="modal-student-change-password" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                    <i class="fa-solid fa-key text-white text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800">修改密码</h3>
+                <p class="text-slate-500 text-sm mt-2">修改后用新密码登录</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">当前密码</label>
+                    <input type="password" id="student-pwd-current" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="请输入当前密码">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">新密码</label>
+                    <input type="password" id="student-pwd-new" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="请输入新密码">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">确认新密码</label>
+                    <input type="password" id="student-pwd-confirm" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="再次输入新密码">
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="student.hideChangePasswordModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="student.confirmChangePassword()" class="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    确认修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑学生模态框 -->
+    <div id="modal-edit-student" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">编辑学生</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">姓名</label>
+                    <input type="text" id="edit-student-name" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">班级</label>
+                    <input type="text" id="edit-student-class" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="teacher.hideEditStudentModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="teacher.confirmEditStudent()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    保存修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑任务模态框 -->
+    <div id="modal-edit-task" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">编辑任务</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">任务名称</label>
+                    <input type="text" id="edit-task-title" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">任务类型（可多选）</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition border-2 border-transparent hover:border-indigo-300">
+                            <input type="checkbox" name="edit-task-type" value="learn" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                            <span class="ml-3 text-slate-700">
+                                <i class="fa-solid fa-graduation-cap text-indigo-500 mr-1"></i>学习任务
+                            </span>
+                        </label>
+                        <label class="flex items-center p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition border-2 border-transparent hover:border-rose-300">
+                            <input type="checkbox" name="edit-task-type" value="test" class="w-5 h-5 text-rose-600 rounded focus:ring-rose-500">
+                            <span class="ml-3 text-slate-700">
+                                <i class="fa-solid fa-puzzle-piece text-rose-500 mr-1"></i>检测任务
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">任务状态</label>
+                    <select id="edit-task-status" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                        <option value="active">进行中</option>
+                        <option value="paused">已暂停</option>
+                        <option value="completed">已完成</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="teacher.deleteCurrentTask()" class="px-4 py-3 border-2 border-rose-300 text-rose-600 rounded-xl hover:bg-rose-50 transition font-medium">
+                    <i class="fa-solid fa-trash-can mr-1"></i>删除
+                </button>
+                <button onclick="teacher.hideEditTaskModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="teacher.saveEditTask()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    保存修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建任务模态框 -->
+    <div id="modal-create-task" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">新建检测任务</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">任务名称</label>
+                    <input type="text" id="new-task-title" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="如：七年级Unit1检测">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">选择词表</label>
+                    <select id="new-task-wordlist" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                        <option value="">请选择词表</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">任务类型（可多选）</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition border-2 border-transparent hover:border-indigo-300">
+                            <input type="checkbox" name="task-type" value="learn" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500" checked>
+                            <span class="ml-3 text-slate-700">
+                                <i class="fa-solid fa-graduation-cap text-indigo-500 mr-1"></i>学习任务
+                            </span>
+                        </label>
+                        <label class="flex items-center p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition border-2 border-transparent hover:border-rose-300">
+                            <input type="checkbox" name="task-type" value="test" class="w-5 h-5 text-rose-600 rounded focus:ring-rose-500" checked>
+                            <span class="ml-3 text-slate-700">
+                                <i class="fa-solid fa-puzzle-piece text-rose-500 mr-1"></i>检测任务
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">截止时间</label>
+                    <input type="date" id="new-task-deadline" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">分配学生</label>
+                    <div id="new-task-students" class="max-h-40 overflow-y-auto space-y-2 p-3 bg-slate-50 rounded-xl">
+                        <!-- JS动态渲染学生列表 -->
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="teacher.hideCreateTaskModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="teacher.confirmCreateTask()" class="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    创建任务
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI生成确认模态框 -->
+    <div id="modal-ai-confirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-white text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800">AI生成确认</h3>
+                <p id="ai-confirm-message" class="text-slate-500 text-sm mt-2">检测到已有生成的素材</p>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-xl mb-6">
+                <p class="text-sm text-slate-600">预计生成时间：约30秒</p>
+                <p class="text-sm text-slate-600">消耗：AI生成额度</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="teacher.onAIConfirmCancel()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    使用已有素材
+                </button>
+                <button onclick="teacher.onAIConfirmOK()" class="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    重新生成
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI生成模态框 -->
+    <div id="modal-ai" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-4xl transform scale-95 transition-transform max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800">AI智能生成</h3>
+                    <p id="ai-modal-subtitle" class="text-slate-500 text-sm mt-1">为词表生成例句和检测题</p>
+                </div>
+                <button onclick="teacher.closeAIModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- 加载状态 -->
+            <div id="ai-loading" class="text-center py-12">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center animate-pulse">
+                    <i class="fa-solid fa-wand-magic-sparkles text-white text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">正在分析词表...</h3>
+                <p class="text-slate-500 mb-4">识别单词难度和词性分布</p>
+                <div class="w-64 h-2 bg-slate-200 rounded-full mx-auto overflow-hidden">
+                    <div class="h-full bg-indigo-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- 结果内容 -->
+            <div id="ai-result" class="hidden">
+                <!-- Tab导航 -->
+                <div class="flex border-b border-slate-200 mb-6">
+                    <button id="ai-nav-overview" onclick="teacher.switchAITab('overview')" class="px-4 py-2 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600 bg-white rounded-t-lg">
+                        <i class="fa-solid fa-chart-pie mr-2"></i>概览
+                    </button>
+                    <button id="ai-nav-materials" onclick="teacher.switchAITab('materials')" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 bg-white rounded-t-lg">
+                        <i class="fa-solid fa-list mr-2"></i>素材列表
+                    </button>
+                    <button id="ai-nav-verify" onclick="teacher.switchAITab('verify')" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 bg-white rounded-t-lg">
+                        <i class="fa-solid fa-check-double mr-2"></i>核验
+                    </button>
+                    <button id="ai-nav-publish" onclick="teacher.switchAITab('publish')" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 bg-white rounded-t-lg">
+                        <i class="fa-solid fa-paper-plane mr-2"></i>发布
+                    </button>
+                </div>
+                
+                <!-- Tab内容 -->
+                <div id="ai-pane-overview" class="ai-pane overflow-y-auto max-h-[60vh] pr-2">
+                    <!-- JS动态渲染 -->
+                </div>
+                <div id="ai-pane-materials" class="ai-pane hidden overflow-y-auto max-h-[60vh] pr-2">
+                    <!-- JS动态渲染 -->
+                </div>
+                <div id="ai-pane-verify" class="ai-pane hidden overflow-y-auto max-h-[60vh] pr-2">
+                    <!-- JS动态渲染 -->
+                </div>
+                <div id="ai-pane-publish" class="ai-pane hidden overflow-y-auto max-h-[60vh] pr-2">
+                    <!-- JS动态渲染 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI核验模态框 -->
+    <div id="modal-ai-verify" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-4xl transform scale-95 transition-transform max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">AI生成核验</h3>
+                <button onclick="teacher.closeVerifyModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="ai-verify-content" class="space-y-4">
+                <!-- JS动态渲染 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 核心模块加载 -->
+    <script src="js/utils/helpers.js"></script>
+    <script src="js/utils/tour.js"></script>
+    
+    <!-- 错误处理和数据同步模块 -->
+    <script src="js/core/errorHandler.js"></script>
+    <script src="js/core/dataSync.js"></script>
+    
+    <!-- 种子数据必须在db.js之前加载 -->
+    <script src="data/seed.js"></script>
+    
+    <script src="js/core/api.js"></script>
+    <script src="js/core/db.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/core/reward.js"></script>
+    <script src="js/core/router.js"></script>
+    <script src="js/modules/admin.js"></script>
+    <script src="js/modules/teacher.js"></script>
+    <script src="js/modules/student.js"></script>
+    <script src="js/modules/zootopiaGame.js"></script>
+    <script src="js/modules/wordLearning.js"></script>
+    <script src="js/modules/taskEngine.js"></script>
+    <script src="js/modules/testEngine.js"></script>
+    <script src="js/modules/spellingTest.js"></script>
+    <script src="js/modules/matchingTest.js"></script>
+    <script src="js/modules/flashcardLearning.js"></script>
+    <script src="js/modules/contextTest.js"></script>
+    <script src="js/utils/speech.js"></script>
+    <script src="js/modules/sentenceGenerator.js"></script>
+    <script src="js/modules/sentenceValidator.js"></script>
+    <script src="js/modules/aiSentenceService.js"></script>
+    <script src="js/modules/teacherReview.js"></script>
+    <script src="js/modules/vocabularyApiBridge.js"></script>
+    <script src="js/core/app.js"></script>
+    
+    <!-- 默认教材词表数据 -->
+    <script src="data/default-wordlists.js"></script>
+
+    <script>
+        // 创建粒子背景
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 10 + 's';
+                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+        
+        // 调试：确保app对象可用
+        console.log('App object check:', typeof app, app);
+    </script>
+</body>
+</html>

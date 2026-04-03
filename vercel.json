@@ -9,6 +9,10 @@
       "destination": "/api/auth/index"
     },
     {
+      "source": "/api/learning-records",
+      "destination": "/api/learning-records/index"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

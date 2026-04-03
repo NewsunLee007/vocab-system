@@ -353,6 +353,36 @@ const api = {
         return this._readSuccessData(response);
     },
 
+    // ── 学习记录管理 ──────────────────────────────────────────────────────────
+
+    async fetchLearningRecords({ vocabularyId = null, limit = 50 } = {}) {
+        const params = new URLSearchParams();
+        if (vocabularyId) params.append('vocabularyId', String(vocabularyId));
+        params.append('limit', String(limit));
+        
+        const response = await fetch(this._url(`/learning-records?${params.toString()}`), {
+            headers: this._headers()
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Fetch learning records failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    async createLearningRecord(payload) {
+        const response = await fetch(this._url('/learning-records'), {
+            method: 'POST',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Create learning record failed');
+        }
+        return this._readSuccessData(response);
+    },
+
     // ── 教师账户管理 ──────────────────────────────────────────────────────────
 
     /** 拉取所有教师账户列表（仅管理员） */

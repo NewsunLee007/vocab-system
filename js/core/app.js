@@ -10,6 +10,7 @@ const app = {
         await auth.init();
         await db.init();
         auth.refreshCurrentUserProfile();
+        dataSync.init();
         
         const hasSession = auth.isLoggedIn();
         
@@ -20,6 +21,13 @@ const app = {
         if (hasSession && auth.currentUser) {
             router.navigate(auth.currentUser.role === 'admin' ? 'admin' : 
                            auth.currentUser.role === 'teacher' ? 'teacher' : 'student');
+            
+            // 后台同步词库到服务器
+            setTimeout(() => {
+                dataSync.syncWordlistsToServer().catch(err => {
+                    console.warn('Initial sync failed:', err);
+                });
+            }, 2000);
         } else {
             router.navigate('login');
         }

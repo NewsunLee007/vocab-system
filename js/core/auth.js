@@ -170,12 +170,8 @@ const auth = {
                 // 关闭模态框
                 app.hideAdminLogin();
                 
-                // 根据角色重定向
-                if (typeof router !== 'undefined' && router.redirectByRole) {
-                    router.redirectByRole();
-                } else {
-                    router.navigate('admin');
-                }
+                // 根据角色重定向，使用 replaceState 替换历史记录
+                router.navigate('admin', true, true);
                 app.updateNav();
                 helpers.showToast('欢迎回来，教务处管理员！', 'success');
                 return true;
@@ -371,12 +367,8 @@ const auth = {
                 // 关闭模态框
                 app.hideTeacherLogin();
                 
-                // 根据角色重定向
-                if (typeof router !== 'undefined' && router.redirectByRole) {
-                    router.redirectByRole();
-                } else {
-                    router.navigate('teacher');
-                }
+                // 根据角色重定向，使用 replaceState 替换历史记录
+                router.navigate('teacher', true, true);
                 app.updateNav();
                 helpers.showToast(`欢迎回来，${teacher.name}！`, 'success');
                 return true;

@@ -49,7 +49,23 @@ const router = {
     handleInitialPath() {
         // 检查用户是否已登录
         if (auth.isLoggedIn()) {
-            this.redirectByRole();
+            // 用户已登录，直接重定向到对应页面，使用 replaceState 替换历史记录
+            const user = auth.getCurrentUser();
+            if (user) {
+                let targetView = 'login';
+                switch (user.role) {
+                    case 'admin':
+                        targetView = 'admin';
+                        break;
+                    case 'teacher':
+                        targetView = 'teacher';
+                        break;
+                    case 'student':
+                        targetView = 'student';
+                        break;
+                }
+                this.navigate(targetView, false, true); // 第三个参数表示使用 replaceState
+            }
             return;
         }
         
@@ -97,7 +113,7 @@ const router = {
     /**
      * 导航到指定视图
      */
-    navigate(viewName, updateHistory = true) {
+    navigate(viewName, updateHistory = true, useReplaceState = false) {
         console.log(`=== router.navigate: ${viewName} ===`);
         
         // 权限检查
@@ -126,7 +142,11 @@ const router = {
             // 更新 URL
             if (updateHistory) {
                 const path = this.getPathFromView(viewName);
-                history.pushState({ view: viewName }, '', path);
+                if (useReplaceState) {
+                    history.replaceState({ view: viewName }, '', path);
+                } else {
+                    history.pushState({ view: viewName }, '', path);
+                }
             }
             
             // 触发视图加载回调

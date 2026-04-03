@@ -243,12 +243,17 @@
         <!-- ==================== 教师登录模态框 ==================== -->
         <div id="modal-teacher-login" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
             <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-                <div class="text-center mb-6">
-                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                        <i class="fa-solid fa-chalkboard-user text-white text-2xl"></i>
+                <div class="flex justify-between items-center mb-6">
+                    <div class="text-center flex-1">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                            <i class="fa-solid fa-chalkboard-user text-white text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-800">教师登录</h3>
+                        <p class="text-slate-500 text-sm mt-1">智能词表定制与检测分发</p>
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-800">教师登录</h3>
-                    <p class="text-slate-500 text-sm mt-1">智能词表定制与检测分发</p>
+                    <button onclick="app.hideTeacherLogin()" class="text-slate-400 hover:text-slate-600 p-1 -mt-8 -mr-4">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
                 </div>
                 <div class="space-y-4">
                     <div class="relative">
@@ -274,12 +279,17 @@
         <!-- ==================== 教务处登录模态框 ==================== -->
         <div id="modal-admin-login" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
             <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-                <div class="text-center mb-6">
-                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                        <i class="fa-solid fa-building-columns text-white text-2xl"></i>
+                <div class="flex justify-between items-center mb-6">
+                    <div class="text-center flex-1">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+                            <i class="fa-solid fa-building-columns text-white text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-800">教务处登录</h3>
+                        <p class="text-slate-500 text-sm mt-1">全校数据管理中心</p>
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-800">教务处登录</h3>
-                    <p class="text-slate-500 text-sm mt-1">全校数据管理中心</p>
+                    <button onclick="app.hideAdminLogin()" class="text-slate-400 hover:text-slate-600 p-1 -mt-8 -mr-4">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
                 </div>
                 <div class="space-y-4">
                     <div class="relative">
@@ -780,12 +790,17 @@
     <!-- 修改密码模态框 -->
     <div id="modal-change-password" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                    <i class="fa-solid fa-key text-white text-2xl"></i>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                        <i class="fa-solid fa-key text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800">修改管理密码</h3>
+                    <p class="text-slate-500 text-sm mt-2">为了系统安全，请设置新密码</p>
                 </div>
-                <h3 class="text-2xl font-bold text-slate-800">修改管理密码</h3>
-                <p class="text-slate-500 text-sm mt-2">为了系统安全，请设置新密码</p>
+                <button onclick="admin.hideChangePasswordModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -815,9 +830,14 @@
     <!-- 添加教师模态框 -->
     <div id="modal-add-teacher" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">添加教师</h3>
-                <p class="text-slate-500 text-sm mt-2">输入教师信息</p>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">添加教师</h3>
+                    <p class="text-slate-500 text-sm mt-2">输入教师信息</p>
+                </div>
+                <button onclick="admin.hideAddTeacherModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -847,8 +867,13 @@
     <!-- 编辑教师模态框 -->
     <div id="modal-edit-teacher" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">编辑教师</h3>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">编辑教师</h3>
+                </div>
+                <button onclick="admin.closeEditTeacherModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1074,8 +1099,13 @@
     <!-- 编辑学生模态框 -->
     <div id="modal-edit-student" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">编辑学生信息</h3>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">编辑学生信息</h3>
+                </div>
+                <button onclick="admin.closeEditStudentModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1136,9 +1166,14 @@
     <!-- 批量导入教师模态框 -->
     <div id="modal-batch-import" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">批量导入教师</h3>
-                <p class="text-slate-500 text-sm mt-2">每行格式: 工号,姓名,密码</p>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">批量导入教师</h3>
+                    <p class="text-slate-500 text-sm mt-2">每行格式: 工号,姓名,密码</p>
+                </div>
+                <button onclick="admin.closeBatchImportModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <textarea id="batch-import-textarea" class="w-full h-40 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none" placeholder="t03,王老师,123&#10;t04,李老师,123"></textarea>
             <div class="flex space-x-3 mt-6">
@@ -1479,9 +1514,14 @@
     <!-- 教务处添加词表模态框 -->
     <div id="modal-add-admin-wordlist" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">新建教材词表</h3>
-                <p class="text-sm text-slate-500 mt-1">单词列表每行一个，可附带释义（用逗号分隔）</p>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">新建教材词表</h3>
+                    <p class="text-sm text-slate-500 mt-1">单词列表每行一个，可附带释义（用逗号分隔）</p>
+                </div>
+                <button onclick="admin.closeAddWordlistModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1535,8 +1575,13 @@
     <!-- 添加词表模态框 -->
     <div id="modal-add-wordlist" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">新建词表</h3>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">新建词表</h3>
+                </div>
+                <button onclick="teacher.hideAddWordlistModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1587,8 +1632,13 @@
     <!-- 编辑词表模态框 -->
     <div id="modal-edit-wordlist" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">编辑词表</h3>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">编辑词表</h3>
+                </div>
+                <button onclick="teacher.hideEditWordlistModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1617,9 +1667,14 @@
     <!-- 导入单词模态框 -->
     <div id="modal-import" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-2xl transform scale-95 transition-transform max-h-[90vh] overflow-y-auto">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">导入单词</h3>
-                <p class="text-slate-500 text-sm mt-2">支持Excel文件导入或粘贴单词列表</p>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">导入单词</h3>
+                    <p class="text-slate-500 text-sm mt-2">支持Excel文件导入或粘贴单词列表</p>
+                </div>
+                <button onclick="teacher.hideImportModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             
             <!-- 导入方式选择 -->
@@ -1716,12 +1771,17 @@
     <!-- 强制修改密码模态框 -->
     <div id="modal-force-change-password" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                    <i class="fa-solid fa-shield-halved text-white text-2xl"></i>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                        <i class="fa-solid fa-shield-halved text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800">首次登录 - 修改密码</h3>
+                    <p class="text-slate-500 text-sm mt-2">为了系统安全，首次登录需要修改默认密码</p>
                 </div>
-                <h3 class="text-2xl font-bold text-slate-800">首次登录 - 修改密码</h3>
-                <p class="text-slate-500 text-sm mt-2">为了系统安全，首次登录需要修改默认密码</p>
+                <button onclick="auth.logout()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1744,9 +1804,14 @@
     <!-- 添加学生模态框 -->
     <div id="modal-add-student" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">批量添加学生</h3>
-                <p class="text-sm text-slate-500 mt-2">支持批量导入，每行一个学生</p>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">批量添加学生</h3>
+                    <p class="text-sm text-slate-500 mt-2">支持批量导入，每行一个学生</p>
+                </div>
+                <button onclick="teacher.hideAddStudentModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1795,12 +1860,17 @@
     <!-- 学生端修改密码模态框 -->
     <div id="modal-student-change-password" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                    <i class="fa-solid fa-key text-white text-2xl"></i>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                        <i class="fa-solid fa-key text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800">修改密码</h3>
+                    <p class="text-slate-500 text-sm mt-2">修改后用新密码登录</p>
                 </div>
-                <h3 class="text-2xl font-bold text-slate-800">修改密码</h3>
-                <p class="text-slate-500 text-sm mt-2">修改后用新密码登录</p>
+                <button onclick="student.hideChangePasswordModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1830,8 +1900,13 @@
     <!-- 编辑学生模态框 -->
     <div id="modal-edit-student" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">编辑学生</h3>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">编辑学生</h3>
+                </div>
+                <button onclick="teacher.hideEditStudentModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1857,8 +1932,13 @@
     <!-- 编辑任务模态框 -->
     <div id="modal-edit-task" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">编辑任务</h3>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">编辑任务</h3>
+                </div>
+                <button onclick="teacher.hideEditTaskModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1908,8 +1988,13 @@
     <!-- 创建任务模态框 -->
     <div id="modal-create-task" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-lg transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-slate-800">新建检测任务</h3>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <h3 class="text-2xl font-bold text-slate-800">新建检测任务</h3>
+                </div>
+                <button onclick="teacher.hideCreateTaskModal()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1964,12 +2049,17 @@
     <!-- AI生成确认模态框 -->
     <div id="modal-ai-confirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
         <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                    <i class="fa-solid fa-robot text-white text-2xl"></i>
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-center flex-1">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                        <i class="fa-solid fa-robot text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800">AI生成确认</h3>
+                    <p id="ai-confirm-message" class="text-slate-500 text-sm mt-2">检测到已有生成的素材</p>
                 </div>
-                <h3 class="text-2xl font-bold text-slate-800">AI生成确认</h3>
-                <p id="ai-confirm-message" class="text-slate-500 text-sm mt-2">检测到已有生成的素材</p>
+                <button onclick="teacher.onAIConfirmCancel()" class="text-slate-400 hover:text-slate-600 p-1 -mt-4 -mr-4">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
             <div class="bg-slate-50 p-4 rounded-xl mb-6">
                 <p class="text-sm text-slate-600">预计生成时间：约30秒</p>

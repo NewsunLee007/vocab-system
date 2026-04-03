@@ -94,6 +94,24 @@ const api = {
     },
 
     async login(credentials) {
+        // 本地开发环境模拟登录
+        if (this._baseUrl.includes('localhost') || this._baseUrl.includes('127.0.0.1')) {
+            console.log('本地开发环境，模拟登录成功');
+            const mockToken = 'local_dev_token_' + Date.now();
+            this.setToken(mockToken);
+            return {
+                success: true,
+                user: {
+                    id: '1',
+                    username: credentials.username,
+                    role: credentials.role,
+                    passwordChanged: true
+                },
+                token: mockToken
+            };
+        }
+        
+        // 生产环境正常API调用
         const response = await fetch(this._url('/auth/login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -123,6 +141,21 @@ const api = {
     },
 
     async me() {
+        // 本地开发环境模拟me()方法
+        if (this._baseUrl.includes('localhost') || this._baseUrl.includes('127.0.0.1')) {
+            console.log('本地开发环境，模拟me()成功');
+            return {
+                success: true,
+                user: {
+                    id: '1',
+                    username: '教师',
+                    role: 'teacher',
+                    passwordChanged: true
+                }
+            };
+        }
+        
+        // 生产环境正常API调用
         const response = await fetch(this._url('/auth/me'), {
             headers: this._headers()
         });

@@ -123,8 +123,15 @@
                 const result = await api.login({ username: input, password: pwd, role: 'teacher' });
                 
                 if (result && result.user) {
-                    localStorage.setItem('currentRole', 'teacher');
-                    localStorage.setItem('apiToken', result.token);
+                    // 设置auth.currentUser，确保在app.html中用户信息不丢失
+                    if (auth) {
+                        auth.currentUser = {
+                            id: result.user.id,
+                            name: result.user.username,
+                            role: 'teacher',
+                            passwordChanged: result.user.passwordChanged
+                        };
+                    }
                     hideLoading();
                     showToast('登录成功！', 'success');
                     setTimeout(function() {

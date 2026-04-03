@@ -12,9 +12,70 @@ module.exports = async function handler(req, res) {
     if (!user) return fail(res, 401, 'No token provided');
 
     if (req.method === 'GET') {
-      const school = await prisma.schoolData.findUnique({ where: { id: 'school' } });
-      if (!school) return fail(res, 404, '暂无学校数据');
-      return ok(res, { id: school.id, data: school.payload, updatedAt: school.updatedAt });
+      // 直接从User表读取教师和学生数据
+      let teachers = [];
+      let students = [];
+      
+      if (user.role === 'ADMIN') {
+        // 管理员可以看到所有教师和学生
+        teachers = await prisma.user.findMany({
+          where: { role: 'TEACHER' },
+          orderBy: { createdAt: 'desc' }
+        });
+        students = await prisma.user.findMany({
+          where: { role: 'STUDENT' },
+          orderBy: { createdAt: 'desc' }
+        });
+      } else if (user.role === 'TEACHER') {
+        // 教师只能看到自己和所有学生
+        teachers = await prisma.user.findMany({
+          where: { id: user.id, role: 'TEACHER' }
+        });
+        students = await prisma.user.findMany({
+          where: { role: 'STUDENT' },
+          orderBy: { createdAt: 'desc' }
+        });
+      }
+      
+      // 格式化数据为前端期望的格式
+      const normalizedTeachers = teachers.map(t => ({
+        id: t.id,
+        name: t.name || t.username,
+        username: t.username,
+        passwordChanged: t.passwordChanged
+      }));
+      
+      const normalizedStudents = students.map(s => ({
+        id: s.id,
+        name: s.username,
+        class: s.className || '',
+        teacherId: null, // User表中没有teacherId字段
+        passwordChanged: s.passwordChanged,
+        coins: 0,
+        badges: [],
+        streak: 0,
+        totalLearned: 0,
+        totalTests: 0,
+        totalCorrect: 0,
+        totalQuestions: 0
+      }));
+      
+      const payload = {
+        teachers: normalizedTeachers,
+        students: normalizedStudents,
+        wordlists: [],
+        tasks: [],
+        learningLogs: [],
+        studentStates: {},
+        admins: []
+      };
+      
+      console.log('=== 返回学校数据 ===', { 
+        teacherCount: normalizedTeachers.length, 
+        studentCount: normalizedStudents.length 
+      });
+      
+      return ok(res, { id: 'school', data: payload, updatedAt: new Date() });
     }
 
     // 允许 ADMIN、TEACHER、STUDENT 都可以同步数据
@@ -38,6 +99,7 @@ module.exports = async function handler(req, res) {
     if (existed) return ok(res, { id: row.id, data: row.payload, updatedAt: row.updatedAt });
     return created(res, { id: row.id, data: row.payload, updatedAt: row.updatedAt });
   } catch (error) {
+    console.error('学校数据接口错误:', error);
     return fail(res, 500, '学校数据接口失败', error.message);
   }
 };

@@ -38,13 +38,20 @@ const db = {
 
         try {
             const cloudData = await api.fetchSchoolData();
+            console.log('=== 云端数据加载 ===', cloudData);
             if (cloudData) {
                 const d = cloudData.data || cloudData;
+                console.log('=== 解析后的云端数据 ===', d);
+                
                 this._data.teachers = (d.teachers || []).map(teacher => ({
                     ...teacher,
                     name: teacher?.name || teacher?.username || ''
                 }));
+                console.log('=== 教师数据 ===', this._data.teachers);
+                
                 this._data.students = (d.students || []).map(student => this.normalizeStudent(student));
+                console.log('=== 学生数据 ===', this._data.students);
+                
                 this._data.wordLists = (d.wordlists || d.wordLists || []).map(wordList => ({
                     ...wordList,
                     words: Array.isArray(wordList?.words) ? wordList.words : []
@@ -396,16 +403,19 @@ const db = {
 
     getStudentsByTeacher(teacherId) {
         if (!this._data) return [];
+        console.log('getStudentsByTeacher called with teacherId:', teacherId, 'all students:', this._data.students);
+        
         // admin 能看到全部学生
         if (teacherId === 'admin') return this._data.students;
         
-        // 过滤出属于该教师的学生，同时处理 teacherId 为 null 的情况
+        // 如果教师是普通教师，让他们看到所有学生（因为学生数据中可能没有teacherId字段）
+        // 或者只返回有匹配teacherId或者没有teacherId的学生
         return this._data.students.filter(s => {
             // 如果学生有明确的 teacherId，必须匹配
             if (s.teacherId) {
                 return s.teacherId === teacherId;
             }
-            // 如果学生的 teacherId 为 null，暂时也包含进来（可能是后端数据问题）
+            // 如果学生的 teacherId 为 null 或不存在，包含进来（可能是后端数据问题）
             return true;
         });
     },

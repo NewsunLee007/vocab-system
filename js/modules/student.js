@@ -770,6 +770,15 @@ const student = {
     },
 
     /**
+     * 播放游戏单词发音
+     */
+    speakGameWord() {
+        if (this.gameState && this.gameState.currentQuestion && this.gameState.currentQuestion.word) {
+            speech.speakWord(this.gameState.currentQuestion.word);
+        }
+    },
+
+    /**
      * 退出卡片模式
      */
     exitFlashcardMode() {
@@ -1864,7 +1873,7 @@ const student = {
                                 <div class="bg-white/20 rounded-lg p-3">
                                     <div class="text-sm text-white/80">生命值</div>
                                     <div class="flex justify-center mt-1">
-                                        ${Array(state.lives).fill('❤️').join('')}
+                                        ${Array(Math.max(0, Math.min(10, state.lives || 3))).fill('❤️').join('')}
                                     </div>
                                 </div>
                                 <div class="bg-white/20 rounded-lg p-3">
@@ -1893,8 +1902,8 @@ const student = {
                         <div class="p-8">
                             <div class="text-center mb-8">
                                 <div class="mb-6">
-                                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                                        <i class="fa-solid fa-question text-3xl text-white"></i>
+                                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg cursor-pointer hover:scale-105 transition-transform" onclick="student.speakGameWord()">
+                                        <i class="fa-solid fa-volume-high text-3xl text-white"></i>
                                     </div>
                                     <h3 class="text-2xl font-bold text-gray-800 mb-2">${question.question}</h3>
                                     ${question.hint ? `<p class="text-lg text-gray-600 mb-2">提示：${question.hint}</p>` : ''}

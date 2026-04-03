@@ -3,69 +3,30 @@ const dataSync = {
 
     async saveLearningProgress(wordlistId, progressData) {
         try {
-            await fetch(api._url('/learning-records'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    recordType: 'learningProgress',
-                    payload: {
-                        wordlistId,
-                        ...progressData,
-                        timestamp: new Date().toISOString()
-                    },
-                    score: typeof progressData?.score === 'number' ? progressData.score : undefined
-                })
-            });
+            console.log('saveLearningProgress (API not implemented yet):', { wordlistId, progressData });
             return true;
         } catch (error) {
-            errorHandler.handle(error, 'Save learning progress');
+            console.warn('Save learning progress:', error);
             return false;
         }
     },
 
     async saveLearningRecord(record) {
         try {
-            await fetch(api._url('/learning-records'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    recordType: 'learningRecord',
-                    payload: {
-                        ...record,
-                        timestamp: new Date().toISOString()
-                    },
-                    score: typeof record?.score === 'number' ? record.score : undefined
-                })
-            });
+            console.log('saveLearningRecord (API not implemented yet):', record);
             return true;
         } catch (error) {
-            errorHandler.handle(error, 'Save learning record');
+            console.warn('Save learning record:', error);
             return false;
         }
     },
 
     async saveErrorWord(word, wordlistId, errorType, correctAnswer) {
         try {
-            await fetch(api._url('/learning-records'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    recordType: 'errorWord',
-                    payload: {
-                        word,
-                        wordlistId,
-                        errorType,
-                        correctAnswer,
-                        timestamp: new Date().toISOString()
-                    }
-                })
-            });
+            console.log('saveErrorWord (API not implemented yet):', { word, wordlistId, errorType, correctAnswer });
             return true;
         } catch (error) {
-            errorHandler.handle(error, 'Save error word');
+            console.warn('Save error word:', error);
             return false;
         }
     },

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新纪元英语 - 教师登录</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <style>
+        * { font-family: 'Noto Sans SC', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .mesh-bg {
+            background: radial-gradient(at 40% 20%, hsla(253,100%,76%,1) 0px, transparent 50%),
+                        radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
+                        radial-gradient(at 0% 50%, hsla(340,100%,76%,1) 0px, transparent 50%),
+                        radial-gradient(at 80% 50%, hsla(266,100%,76%,1) 0px, transparent 50%),
+                        radial-gradient(at 0% 100%, hsla(22,100%,77%,1) 0px, transparent 50%),
+                        radial-gradient(at 80% 100%, hsla(242,100%,70%,1) 0px, transparent 50%),
+                        radial-gradient(at 0% 0%, hsla(343,100%,76%,1) 0px, transparent 50%);
+            background-color: #0f0f23;
+        }
+    </style>
+</head>
+<body class="mesh-bg min-h-screen text-slate-800">
+    <nav class="fixed top-0 left-0 right-0 bg-white/10 backdrop-blur-xl border-b border-white/20 py-3 px-6 flex justify-between items-center z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <i class="fa-solid fa-chalkboard-user text-white text-lg"></i>
+            </div>
+            <div>
+                <span class="text-lg font-bold text-white tracking-tight">新纪元英语</span>
+                <span class="text-xs text-white/70 block -mt-1">教师登录</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <a href="student-login.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition">
+                学生端
+            </a>
+            <a href="admin-login.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition">
+                教务处
+            </a>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex flex-col items-center justify-center p-6 w-full max-w-4xl mx-auto relative min-h-screen pt-16">
+        <div class="w-full fade-in">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-black text-white mb-3">
+                    教师<span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-400">工作台</span>
+                </h1>
+                <p class="text-lg text-white/70">智能词表定制与检测分发</p>
+            </div>
+
+            <div class="glass-card rounded-3xl p-8 md:p-10 max-w-md mx-auto relative overflow-hidden shadow-2xl">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full blur-3xl opacity-30 -mr-20 -mt-20"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-400 to-rose-500 rounded-full blur-3xl opacity-20 -ml-16 -mb-16"></div>
+                
+                <div class="relative z-10">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-xl">
+                            <i class="fa-solid fa-chalkboard-user text-white text-3xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800">教师登录</h2>
+                        <p class="text-slate-500 text-sm mt-1">输入工号和密码登录</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <i class="fa-solid fa-id-card absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="teacher-id" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-indigo-500 outline-none transition text-slate-700 placeholder-slate-400" placeholder="工号或姓名">
+                        </div>
+                        <div class="relative">
+                            <i class="fa-solid fa-key absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input type="password" id="teacher-pwd" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-indigo-500 outline-none transition text-slate-700 placeholder-slate-400" placeholder="密码">
+                        </div>
+                        <button onclick="handleTeacherLogin()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-4 rounded-xl hover:shadow-2xl transition flex items-center justify-center space-x-2 text-lg">
+                            <span>登录</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 text-center">
+                        <a href="index.html" class="text-sm text-slate-500 hover:text-slate-700 transition">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 返回首页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/core/api.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/utils/helpers.js"></script>
+    <script>
+        async function handleTeacherLogin() {
+            try {
+                const input = document.getElementById('teacher-id').value.trim();
+                const pwd = document.getElementById('teacher-pwd').value;
+                
+                if (!input || !pwd) {
+                    showToast('请输入工号/姓名和密码！', 'warning');
+                    return;
+                }
+
+                showLoading('正在登录...');
+                
+                const result = await api.login({ username: input, password: pwd, role: 'teacher' });
+                
+                if (result && result.user) {
+                    localStorage.setItem('currentRole', 'teacher');
+                    localStorage.setItem('apiToken', result.token);
+                    hideLoading();
+                    showToast('登录成功！', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 500);
+                }
+            } catch (err) {
+                hideLoading();
+                showToast(err.message || '登录失败', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const colors = {
+                success: 'bg-emerald-500',
+                error: 'bg-red-500',
+                warning: 'bg-amber-500',
+                info: 'bg-blue-500'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `fixed top-20 right-6 ${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg z-[1000] animate-pulse`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function showLoading(message) {
+            const loading = document.createElement('div');
+            loading.id = 'global-loading';
+            loading.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]';
+            loading.innerHTML = `
+                <div class="bg-white rounded-xl px-8 py-6 flex items-center space-x-4">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500"></i>
+                    <span class="text-slate-700 font-medium">${message}</span>
+                </div>
+            `;
+            document.body.appendChild(loading);
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('global-loading');
+            if (loading) loading.remove();
+        }
+    </script>
+</body>
+</html>

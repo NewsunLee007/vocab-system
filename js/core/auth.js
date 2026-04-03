@@ -31,6 +31,10 @@ const auth = {
                     class: u.className,
                     passwordChanged: u.passwordChanged
                 };
+                // 登录成功后根据角色重定向
+                if (typeof router !== 'undefined' && router.redirectByRole) {
+                    router.redirectByRole();
+                }
                 return true;
             }
             return false;
@@ -166,7 +170,12 @@ const auth = {
                 // 关闭模态框
                 app.hideAdminLogin();
                 
-                router.navigate('admin');
+                // 根据角色重定向
+                if (typeof router !== 'undefined' && router.redirectByRole) {
+                    router.redirectByRole();
+                } else {
+                    router.navigate('admin');
+                }
                 app.updateNav();
                 helpers.showToast('欢迎回来，教务处管理员！', 'success');
                 return true;
@@ -362,7 +371,12 @@ const auth = {
                 // 关闭模态框
                 app.hideTeacherLogin();
                 
-                router.navigate('teacher');
+                // 根据角色重定向
+                if (typeof router !== 'undefined' && router.redirectByRole) {
+                    router.redirectByRole();
+                } else {
+                    router.navigate('teacher');
+                }
                 app.updateNav();
                 helpers.showToast(`欢迎回来，${teacher.name}！`, 'success');
                 return true;
@@ -410,7 +424,15 @@ const auth = {
                 }
 
                 if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
-                this.completeStudentLogin(student);
+                this.currentUser = student;
+                
+                // 根据角色重定向
+                if (typeof router !== 'undefined' && router.redirectByRole) {
+                    router.redirectByRole();
+                } else {
+                    this.completeStudentLogin(student);
+                }
+                app.updateNav();
                 return true;
             }
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();

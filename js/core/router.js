@@ -1,6 +1,6 @@
 /**
  * 新纪元英语词汇系统 - 路由模块
- * 处理视图切换
+ * 处理视图切换和路径导航
  */
 
 const router = {
@@ -17,10 +17,81 @@ const router = {
         testing: 'view-testing'
     },
 
+    // 路径映射
+    pathMap: {
+        '/': 'login',
+        '/login': 'login',
+        '/admin': 'admin',
+        '/teacher': 'teacher',
+        '/student': 'student',
+        '/learning': 'learning',
+        '/testing': 'testing'
+    },
+
+    /**
+     * 初始化路由
+     */
+    init() {
+        console.log('=== router.init ===');
+        
+        // 监听 URL 变化
+        window.addEventListener('popstate', () => {
+            this.handlePopState();
+        });
+        
+        // 处理初始路径
+        this.handleInitialPath();
+    },
+
+    /**
+     * 处理初始路径
+     */
+    handleInitialPath() {
+        const path = window.location.pathname;
+        const viewName = this.getViewFromPath(path);
+        
+        if (viewName) {
+            this.navigate(viewName, false);
+        } else {
+            this.navigate('login', false);
+        }
+    },
+
+    /**
+     * 处理浏览器前进/后退
+     */
+    handlePopState() {
+        const path = window.location.pathname;
+        const viewName = this.getViewFromPath(path);
+        
+        if (viewName) {
+            this.navigate(viewName, false);
+        }
+    },
+
+    /**
+     * 从路径获取视图名称
+     */
+    getViewFromPath(path) {
+        return this.pathMap[path] || null;
+    },
+
+    /**
+     * 从视图名称获取路径
+     */
+    getPathFromView(viewName) {
+        for (const [path, view] of Object.entries(this.pathMap)) {
+            if (view === viewName) {
+                return path;
+            }
+        }
+        return '/';
+    },
+
     /**
      * 导航到指定视图
      */
-    navigate(viewName) {
+    navigate(viewName, updateHistory = true) {
         console.log(`=== router.navigate: ${viewName} ===`);
         
         // 权限检查
@@ -45,6 +116,12 @@ const router = {
         if (targetElement) {
             targetElement.classList.remove('hidden');
             this.currentView = viewName;
+            
+            // 更新 URL
+            if (updateHistory) {
+                const path = this.getPathFromView(viewName);
+                history.pushState({ view: viewName }, '', path);
+            }
             
             // 触发视图加载回调
             this.onViewLoad(viewName);
@@ -168,5 +245,40 @@ const router = {
         } else {
             this.navigate('login');
         }
+    },
+
+    /**
+     * 根据角色重定向到默认页面
+     */
+    redirectByRole() {
+        if (!auth.isLoggedIn()) {
+            this.navigate('login');
+            return;
+        }
+        
+        const user = auth.getCurrentUser();
+        if (!user) {
+            this.navigate('login');
+            return;
+        }
+        
+        switch (user.role) {
+            case 'admin':
+                this.navigate('admin');
+                break;
+            case 'teacher':
+                this.navigate('teacher');
+                break;
+            case 'student':
+                this.navigate('student');
+                break;
+            default:
+                this.navigate('login');
+        }
     }
 };
+
+// 初始化路由
+window.addEventListener('DOMContentLoaded', () => {
+    router.init();
+});

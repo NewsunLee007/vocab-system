@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新纪元英语 - 学生登录</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <style>
+        * { font-family: 'Noto Sans SC', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .mesh-bg {
+            background: radial-gradient(at 40% 20%, hsla(253,100%,76%,1) 0px, transparent 50%),
+                        radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
+                        radial-gradient(at 0% 50%, hsla(340,100%,76%,1) 0px, transparent 50%),
+                        radial-gradient(at 80% 50%, hsla(266,100%,76%,1) 0px, transparent 50%),
+                        radial-gradient(at 0% 100%, hsla(22,100%,77%,1) 0px, transparent 50%),
+                        radial-gradient(at 80% 100%, hsla(242,100%,70%,1) 0px, transparent 50%),
+                        radial-gradient(at 0% 0%, hsla(343,100%,76%,1) 0px, transparent 50%);
+            background-color: #0f0f23;
+        }
+    </style>
+</head>
+<body class="mesh-bg min-h-screen text-slate-800">
+    <nav class="fixed top-0 left-0 right-0 bg-white/10 backdrop-blur-xl border-b border-white/20 py-3 px-6 flex justify-between items-center z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center shadow-lg">
+                <i class="fa-solid fa-graduation-cap text-white text-lg"></i>
+            </div>
+            <div>
+                <span class="text-lg font-bold text-white tracking-tight">新纪元英语</span>
+                <span class="text-xs text-white/70 block -mt-1">学生登录</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <a href="teacher-login.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition">
+                教师端
+            </a>
+            <a href="admin-login.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition">
+                教务处
+            </a>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex flex-col items-center justify-center p-6 w-full max-w-4xl mx-auto relative min-h-screen pt-16">
+        <div class="w-full fade-in">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-black text-white mb-3">
+                    开启词汇<span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-400">新纪元</span>
+                </h1>
+                <p class="text-lg text-white/70">游戏化学习，让背单词变得有趣</p>
+            </div>
+
+            <div class="glass-card rounded-3xl p-8 md:p-10 max-w-md mx-auto relative overflow-hidden shadow-2xl">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full blur-3xl opacity-30 -mr-20 -mt-20"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-cyan-400 to-blue-500 rounded-full blur-3xl opacity-20 -ml-16 -mb-16"></div>
+                
+                <div class="relative z-10">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4 shadow-xl">
+                            <i class="fa-solid fa-user-graduate text-white text-3xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800">学生登录</h2>
+                        <p class="text-slate-500 text-sm mt-1">输入班级和姓名开始学习</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <i class="fa-solid fa-school absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                            <input type="text" id="student-class" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-emerald-500 outline-none transition text-slate-700 placeholder-slate-400" placeholder="班级 (如: 七年级1班)">
+                        </div>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                            <input type="text" id="student-name" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-emerald-500 outline-none transition text-slate-700 placeholder-slate-400" placeholder="姓名">
+                        </div>
+                        <div class="relative">
+                            <i class="fa-solid fa-key absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                            <input type="password" id="student-pwd" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-emerald-500 outline-none transition text-slate-700 placeholder-slate-400" placeholder="密码 (默认123456)">
+                        </div>
+                        <button onclick="handleStudentLogin()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-4 rounded-xl hover:shadow-2xl transition flex items-center justify-center space-x-2 text-lg">
+                            <span>开始学习</span>
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 text-center">
+                        <a href="index.html" class="text-sm text-slate-500 hover:text-slate-700 transition">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 返回首页
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 grid grid-cols-4 gap-4 text-center max-w-2xl mx-auto">
+                <div class="text-white/80">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fa-solid fa-robot text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium">AI智能</p>
+                </div>
+                <div class="text-white/80">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fa-solid fa-gamepad text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium">游戏闯关</p>
+                </div>
+                <div class="text-white/80">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fa-solid fa-trophy text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium">积分排行</p>
+                </div>
+                <div class="text-white/80">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fa-solid fa-mobile-screen text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium">随时学习</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/core/api.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/utils/helpers.js"></script>
+    <script>
+        async function handleStudentLogin() {
+            try {
+                const className = document.getElementById('student-class').value.trim();
+                const name = document.getElementById('student-name').value.trim();
+                const pwd = document.getElementById('student-pwd').value;
+                
+                if (!className || !name || !pwd) {
+                    showToast('请输入班级、姓名和密码！', 'warning');
+                    return;
+                }
+
+                showLoading('正在登录...');
+                
+                const result = await api.login({ username: name, className, password: pwd, role: 'student' });
+                
+                if (result && result.user) {
+                    localStorage.setItem('currentRole', 'student');
+                    localStorage.setItem('apiToken', result.token);
+                    hideLoading();
+                    showToast('登录成功！', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 500);
+                }
+            } catch (err) {
+                hideLoading();
+                showToast(err.message || '登录失败', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const colors = {
+                success: 'bg-emerald-500',
+                error: 'bg-red-500',
+                warning: 'bg-amber-500',
+                info: 'bg-blue-500'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `fixed top-20 right-6 ${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg z-[1000] animate-pulse`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function showLoading(message) {
+            const loading = document.createElement('div');
+            loading.id = 'global-loading';
+            loading.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]';
+            loading.innerHTML = `
+                <div class="bg-white rounded-xl px-8 py-6 flex items-center space-x-4">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500"></i>
+                    <span class="text-slate-700 font-medium">${message}</span>
+                </div>
+            `;
+            document.body.appendChild(loading);
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('global-loading');
+            if (loading) loading.remove();
+        }
+    </script>
+</body>
+</html>

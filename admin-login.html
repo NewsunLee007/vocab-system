@@ -122,7 +122,7 @@
                     localStorage.setItem('apiToken', result.token);
                     hideLoading();
                     showToast('登录成功！', 'success');
-                    setTimeout(() =&gt; {
+                    setTimeout(function() {
                         window.location.href = 'app.html';
                     }, 500);
                 }
@@ -132,7 +132,7 @@
             }
         }
 
-        function showToast(message, type = 'info') {
+        function showToast(message, type) {
             const colors = {
                 success: 'bg-emerald-500',
                 error: 'bg-red-500',
@@ -141,23 +141,18 @@
             };
             
             const toast = document.createElement('div');
-            toast.className = `fixed top-20 right-6 ${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg z-[1000] animate-pulse`;
+            toast.className = 'fixed top-20 right-6 ' + colors[type] + ' text-white px-6 py-3 rounded-xl shadow-lg z-[1000] animate-pulse';
             toast.textContent = message;
             document.body.appendChild(toast);
             
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(function() { toast.remove(); }, 3000);
         }
 
         function showLoading(message) {
             const loading = document.createElement('div');
             loading.id = 'global-loading';
             loading.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]';
-            loading.innerHTML = `
-                <div class="bg-white rounded-xl px-8 py-6 flex items-center space-x-4">
-                    <i class="fa-solid fa-spinner fa-spin text-2xl text-slate-700"></i>
-                    <span class="text-slate-700 font-medium">${message}</span>
-                </div>
-            `;
+            loading.innerHTML = '<div class="bg-white rounded-xl px-8 py-6 flex items-center space-x-4"><i class="fa-solid fa-spinner fa-spin text-2xl text-slate-700"></i><span class="text-slate-700 font-medium">' + message + '</span></div>';
             document.body.appendChild(loading);
         }
 

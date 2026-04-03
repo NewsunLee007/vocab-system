@@ -357,23 +357,59 @@ const helpers = {
     },
 
     memoryStore: (() => {
-        const map = new Map();
+        const STORAGE_PREFIX = 'vocab_';
         return {
             set(key, value) {
-                map.set(String(key), value);
-                return true;
+                try {
+                    const k = STORAGE_PREFIX + String(key);
+                    localStorage.setItem(k, typeof value === 'string' ? value : JSON.stringify(value));
+                    return true;
+                } catch (e) {
+                    console.warn('Failed to save to memoryStore:', e);
+                    return false;
+                }
             },
             get(key, defaultValue = null) {
-                const k = String(key);
-                return map.has(k) ? map.get(k) : defaultValue;
+                try {
+                    const k = STORAGE_PREFIX + String(key);
+                    const value = localStorage.getItem(k);
+                    if (value === null) return defaultValue;
+                    try {
+                        return JSON.parse(value);
+                    } catch (e) {
+                        return value;
+                    }
+                } catch (e) {
+                    console.warn('Failed to load from memoryStore:', e);
+                    return defaultValue;
+                }
             },
             remove(key) {
-                return map.delete(String(key));
+                try {
+                    const k = STORAGE_PREFIX + String(key);
+                    localStorage.removeItem(k);
+                    return true;
+                } catch (e) {
+                    console.warn('Failed to remove from memoryStore:', e);
+                    return false;
+                }
             },
             clear() {
-                map.clear();
-                return true;
-            }
+                try {
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith(STORAGE_PREFIX)) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                    keysToRemove.forEach(key => localStorage.removeItem(key));
+                    return true;
+                } catch (e) {
+                    console.warn('Failed to clear memoryStore:', e);
+                    return false;
+                }
+            },
         };
     })()
 };

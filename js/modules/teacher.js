@@ -3981,13 +3981,30 @@ const teacher = {
         // 加载学生列表
         const students = db.getStudentsByTeacher(user.id);
         const studentsContainer = document.getElementById('new-task-students');
+        const classSelectorContainer = document.getElementById('class-selector-container');
         studentsContainer.innerHTML = '';
+        classSelectorContainer.innerHTML = '';
+        
+        // 获取所有班级
+        const classes = [...new Set(students.map(s => s.class).filter(Boolean))];
+        
+        // 渲染班级选择按钮
+        classes.forEach(cls => {
+            const btn = document.createElement('button');
+            btn.className = 'px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-sm hover:bg-emerald-200 transition';
+            btn.innerHTML = `<i class="fa-solid fa-users mr-1"></i>${cls}`;
+            btn.onclick = () => this.toggleClassStudents(cls, students);
+            classSelectorContainer.appendChild(btn);
+        });
+        
+        // 渲染学生列表
         students.forEach(s => {
             const div = document.createElement('div');
             div.className = 'flex items-center';
+            div.dataset.class = s.class || '';
             div.innerHTML = `
                 <input type="checkbox" id="task-student-${s.id}" value="${s.id}" class="mr-2 rounded border-slate-300">
-                <label for="task-student-${s.id}" class="text-sm text-slate-700">${s.class} - ${s.name}</label>
+                <label for="task-student-${s.id}" class="text-sm text-slate-700">${s.class || '未分班'} - ${s.name}</label>
             `;
             studentsContainer.appendChild(div);
         });
@@ -4000,6 +4017,47 @@ const teacher = {
         modal.classList.remove('hidden');
         modal.offsetHeight;
         modal.classList.remove('opacity-0');
+    },
+    
+    /**
+     * 全选学生
+     */
+    selectAllStudents() {
+        const checkboxes = document.querySelectorAll('#new-task-students input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = true);
+    },
+    
+    /**
+     * 取消全选学生
+     */
+    deselectAllStudents() {
+        const checkboxes = document.querySelectorAll('#new-task-students input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = false);
+    },
+    
+    /**
+     * 切换班级学生选择
+     */
+    toggleClassStudents(className, allStudents) {
+        const studentsInClass = allStudents.filter(s => s.class === className);
+        const studentIdsInClass = new Set(studentsInClass.map(s => s.id));
+        
+        const checkboxes = document.querySelectorAll('#new-task-students input[type="checkbox"]');
+        let allChecked = true;
+        
+        // 检查当前班级是否全部选中
+        checkboxes.forEach(cb => {
+            if (studentIdsInClass.has(cb.value) && !cb.checked) {
+                allChecked = false;
+            }
+        });
+        
+        // 切换选中状态
+        checkboxes.forEach(cb => {
+            if (studentIdsInClass.has(cb.value)) {
+                cb.checked = !allChecked;
+            }
+        });
     },
 
     /**

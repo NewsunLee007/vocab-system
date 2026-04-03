@@ -1080,31 +1080,47 @@
             const [activeWords, setActiveWords] = useState(DEFAULT_WORDS);
             const [userInfo, setUserInfo] = useState({ name: 'Cadet 007', className: '未设置班级', classId: 'A', groupId: '1' });
             const [batchSize, setBatchSize] = useState(6);
+            const [isLoaded, setIsLoaded] = useState(false);
 
             // Load on mount
             useEffect(() => {
-                const savedDatasets = store.get('zootopia_datasets');
-                if (savedDatasets) {
-                    const parsedDatasets = JSON.parse(savedDatasets);
-                    setDatasets(parsedDatasets);
-                    if (parsedDatasets.length > 0) {
-                        setActiveDataset(parsedDatasets[0].name);
+                try {
+                    const savedDatasets = store.get('zootopia_datasets');
+                    if (savedDatasets) {
+                        const parsedDatasets = JSON.parse(savedDatasets);
+                        console.log('Loaded datasets:', parsedDatasets);
+                        setDatasets(parsedDatasets);
+                        if (parsedDatasets.length > 0) {
+                            setActiveDataset(parsedDatasets[0].name);
+                        }
                     }
+                    const savedUser = store.get('zootopia_user');
+                    if(savedUser) {
+                        const parsedUser = JSON.parse(savedUser);
+                        console.log('Loaded user info:', parsedUser);
+                        setUserInfo(parsedUser);
+                    }
+                } catch (e) {
+                    console.error('Failed to load saved data:', e);
+                } finally {
+                    setIsLoaded(true);
                 }
-                const savedUser = store.get('zootopia_user');
-                if(savedUser) setUserInfo(JSON.parse(savedUser));
             }, []);
 
-            // Update activeWords when activeDataset or datasets change
+            // Update activeWords when activeDataset or datasets change or when first loaded
             useEffect(() => {
+                if (!isLoaded) return;
                 const selectedDataset = datasets.find(d => d.name === activeDataset);
-                setActiveWords(selectedDataset?.words || datasets[0]?.words || []);
-            }, [activeDataset, datasets]);
+                const wordsToUse = selectedDataset?.words || datasets[0]?.words || DEFAULT_WORDS;
+                console.log('Setting active words:', wordsToUse);
+                setActiveWords(wordsToUse);
+            }, [activeDataset, datasets, isLoaded]);
 
             // Save when datasets change
             useEffect(() => {
+                if (!isLoaded) return;
                 store.set('zootopia_datasets', JSON.stringify(datasets));
-            }, [datasets]);
+            }, [datasets, isLoaded]);
 
             const handleStartGame = (type) => {
                 if (activeWords.length < batchSize) {

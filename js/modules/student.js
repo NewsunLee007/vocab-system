@@ -1902,8 +1902,8 @@ const student = {
                         <div class="p-8">
                             <div class="text-center mb-8">
                                 <div class="mb-6">
-                                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg cursor-pointer hover:scale-105 transition-transform" onclick="student.speakGameWord()">
-                                        <i class="fa-solid fa-volume-high text-3xl text-white"></i>
+                                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                        <i class="fa-solid fa-question text-3xl text-white"></i>
                                     </div>
                                     <h3 class="text-2xl font-bold text-gray-800 mb-2">${question.question}</h3>
                                     ${question.hint ? `<p class="text-lg text-gray-600 mb-2">提示：${question.hint}</p>` : ''}
@@ -2005,6 +2005,9 @@ const student = {
             this.clearGameTimer();
             
             if (isCorrect) {
+                // 播放正确音效
+                speech.playSound('correct');
+                
                 // 正确答案
                 const points = state.currentQuestion.points * (1 + state.combo * 0.1);
                 state.score += Math.floor(points);
@@ -2019,6 +2022,9 @@ const student = {
                 this.saveGameRecord(currentWord, true, points);
                 
             } else {
+                // 播放错误音效
+                speech.playSound('wrong');
+                
                 // 错误答案
                 state.lives--;
                 state.combo = 0;
@@ -2250,6 +2256,9 @@ const student = {
      */
     showLevelUp(level, bonusCoins) {
         try {
+            // 播放胜利/升级音效
+            speech.playSound('win');
+            
             const levelUpHtml = `
                 <div id="level-up" class="fixed inset-0 bg-black/70 z-70 flex items-center justify-center">
                     <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-8 text-center text-white shadow-2xl transform scale-110">

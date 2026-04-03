@@ -813,7 +813,7 @@
         };
 
         // --- Main Menu & User Info ---
-        const MainMenu = ({ onStartGame, onManageWords, onShowHistory, userInfo }) => (
+        const MainMenu = ({ onStartGame, onManageWords, onShowHistory, userInfo, datasets, activeDataset, setActiveDataset }) => (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-fade-in z-20 relative">
                 {/* Return to Learning Center Control */}
                 <div className="absolute top-6 left-6">
@@ -844,7 +844,19 @@
                 </div>
                 <i className="fa-solid fa-shield-halved text-8xl text-z-blue-neon mb-4 text-glow"></i>
                 <h1 className="text-6xl font-black text-white mb-2 text-outline">ZPD Cadet Training</h1>
-                <p className="text-2xl text-cyan-300 mb-12">词汇特训 V11</p>
+                <p className="text-2xl text-cyan-300 mb-8">词汇特训 V11</p>
+                
+                {/* Dataset Selector */}
+                <div className="w-full max-w-sm mb-6">
+                    <select 
+                        value={activeDataset} 
+                        onChange={e => setActiveDataset(e.target.value)} 
+                        className="w-full bg-slate-800/80 text-white p-3 rounded-xl border border-white/20 text-center"
+                    >
+                        {datasets.map(d => <option key={d.name} value={d.name}>{d.name} ({d.words.length} 个单词)</option>)}
+                    </select>
+                </div>
+                
                 <div className="flex flex-col gap-5 w-full max-w-sm">
                     <Button onClick={() => onStartGame('rapid_fire')} className="w-full text-xl"><i className="fa-solid fa-bolt-lightning mr-2"></i> Rapid Fire / 快速反应</Button>
                     <Button onClick={() => onStartGame('spelling_bee')} className="w-full text-xl"><i className="fa-solid fa-keyboard mr-2"></i> Spelling Bee / 拼写达人</Button>
@@ -867,30 +879,68 @@
 
             const fetchSystemWords = async () => {
                 try {
-                    const systemWordsJSON = store.get('zootopia_words');
-                    if (systemWordsJSON) {
-                        const systemWords = JSON.parse(systemWordsJSON);
-                        if (Array.isArray(systemWords) && systemWords.length > 0) {
-                            const formattedWords = systemWords.map((word, index) => ({
-                                id: `sys-${Date.now()}-${index}`,
-                                en: word.en,
-                                cn: word.cn,
-                                tag: 'System'
-                            }));
-                            
-                            setDatasets(prev => {
-                                const existingSystemDatasetIndex = prev.findIndex(d => d.name === '系统词库');
-                                if (existingSystemDatasetIndex > -1) {
-                                    const updated = [...prev];
-                                    updated[existingSystemDatasetIndex].words = formattedWords;
-                                    return updated;
-                                } else {
-                                    return [...prev, { name: '系统词库', words: formattedWords }];
-                                }
-                            });
-                            setActiveDataset('系统词库');
-                            alert(`成功同步 ${formattedWords.length} 个单词！`);
+                    let systemWords = [];
+                    
+                    if (window.opener && window.opener.db) {
+                        try {
+                            const wordLists = window.opener.db.getWordLists();
+                            if (wordLists && wordLists.length > 0) {
+                                const allWords = new Map();
+                                wordLists.forEach(wl => {
+                                    if (wl.words && Array.isArray(wl.words)) {
+                                        wl.words.forEach(word => {
+                                            const wordData = window.opener.db.findWord(word.toLowerCase());
+                                            if (!allWords.has(word.toLowerCase())) {
+                                                allWords.set(word.toLowerCase(), {
+                                                    en: word,
+                                                    cn: wordData?.meaning || word
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                                systemWords = Array.from(allWords.values()).map((word, index) => ({
+                                    id: `sys-${Date.now()}-${index}`,
+                                    en: word.en,
+                                    cn: word.cn,
+                                    tag: 'System'
+                                }));
+                            }
+                        } catch (e) {
+                            console.warn("Could not fetch from opener.db, falling back to store:", e);
                         }
+                    }
+                    
+                    if (systemWords.length === 0) {
+                        const systemWordsJSON = store.get('zootopia_words');
+                        if (systemWordsJSON) {
+                            const parsedWords = JSON.parse(systemWordsJSON);
+                            if (Array.isArray(parsedWords) && parsedWords.length > 0) {
+                                systemWords = parsedWords.map((word, index) => ({
+                                    id: `sys-${Date.now()}-${index}`,
+                                    en: word.en,
+                                    cn: word.cn,
+                                    tag: 'System'
+                                }));
+                            }
+                        }
+                    }
+                    
+                    if (systemWords.length > 0) {
+                        setDatasets(prev => {
+                            const existingSystemDatasetIndex = prev.findIndex(d => d.name === '系统词库');
+                            if (existingSystemDatasetIndex > -1) {
+                                const updated = [...prev];
+                                updated[existingSystemDatasetIndex].words = systemWords;
+                                return updated;
+                            } else {
+                                return [...prev, { name: '系统词库', words: systemWords }];
+                            }
+                        });
+                        setActiveDataset('系统词库');
+                        alert(`成功同步 ${systemWords.length} 个单词！`);
+                    } else {
+                        alert('系统词库中没有找到单词，请确保系统中已有词表。');
                     }
                 } catch (error) {
                     console.error("Failed to fetch or parse system words:", error);
@@ -1026,6 +1076,7 @@
             const [screen, setScreen] = useState('menu'); // menu, game, words, history
             const [gameType, setGameType] = useState(null);
             const [datasets, setDatasets] = useState([{ name: '默认词库', words: DEFAULT_WORDS }]);
+            const [activeDataset, setActiveDataset] = useState('默认词库');
             const [activeWords, setActiveWords] = useState(DEFAULT_WORDS);
             const [userInfo, setUserInfo] = useState({ name: 'Cadet 007', className: '未设置班级', classId: 'A', groupId: '1' });
             const [batchSize, setBatchSize] = useState(6);
@@ -1034,17 +1085,25 @@
             useEffect(() => {
                 const savedDatasets = store.get('zootopia_datasets');
                 if (savedDatasets) {
-                    setDatasets(JSON.parse(savedDatasets));
+                    const parsedDatasets = JSON.parse(savedDatasets);
+                    setDatasets(parsedDatasets);
+                    if (parsedDatasets.length > 0) {
+                        setActiveDataset(parsedDatasets[0].name);
+                    }
                 }
                 const savedUser = store.get('zootopia_user');
                 if(savedUser) setUserInfo(JSON.parse(savedUser));
             }, []);
 
+            // Update activeWords when activeDataset or datasets change
+            useEffect(() => {
+                const selectedDataset = datasets.find(d => d.name === activeDataset);
+                setActiveWords(selectedDataset?.words || datasets[0]?.words || []);
+            }, [activeDataset, datasets]);
+
             // Save when datasets change
             useEffect(() => {
                 store.set('zootopia_datasets', JSON.stringify(datasets));
-                // V11: Always use the first dataset for the game
-                setActiveWords(datasets[0]?.words || []);
             }, [datasets]);
 
             const handleStartGame = (type) => {
@@ -1107,7 +1166,15 @@
                         return <HistoryViewer onBack={() => setScreen('menu')} />;
                     case 'menu':
                     default:
-                        return <MainMenu onStartGame={handleStartGame} onManageWords={() => setScreen('words')} onShowHistory={() => setScreen('history')} userInfo={userInfo} />;
+                        return <MainMenu 
+                            onStartGame={handleStartGame} 
+                            onManageWords={() => setScreen('words')} 
+                            onShowHistory={() => setScreen('history')} 
+                            userInfo={userInfo}
+                            datasets={datasets}
+                            activeDataset={activeDataset}
+                            setActiveDataset={setActiveDataset}
+                        />;
                 }
             };
 

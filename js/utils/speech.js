@@ -16,6 +16,54 @@ const speech = {
     // 首选语音
     preferredVoice: null,
     
+    // 音效缓存
+    audioContext: null,
+    
+    /**
+     * 播放音效
+     * @param {string} type - 音效类型 ('correct', 'wrong', 'click', 'win')
+     */
+    playSound(type) {
+        try {
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const ctx = this.audioContext;
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            const now = ctx.currentTime;
+            
+            const configs = {
+                correct: { type: 'sine', freq: [523, 784, 1047], dur: 0.4, vol: 0.3 },
+                wrong: { type: 'sawtooth', freq: [200, 100], dur: 0.3, vol: 0.25 },
+                click: { type: 'sine', freq: [800, 300], dur: 0.1, vol: 0.2 },
+                win: { type: 'triangle', freq: [523, 659, 784, 1047], dur: 0.8, vol: 0.3 }
+            };
+
+            const cfg = configs[type] || configs.click;
+            osc.type = cfg.type;
+            
+            for (let i = 0; i < cfg.freq.length; i++) {
+                const time = now + i * 0.1;
+                if (i === 0) {
+                    osc.frequency.setValueAtTime(cfg.freq[i], time);
+                } else {
+                    osc.frequency.exponentialRampToValueAtTime(cfg.freq[i], time);
+                }
+            }
+            
+            gainNode.gain.setValueAtTime(cfg.vol, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + cfg.dur);
+            osc.start(now);
+            osc.stop(now + cfg.dur);
+        } catch (e) {
+            console.warn('Sound playback failed:', e);
+        }
+    },
+    
     /**
      * 初始化语音合成
      */

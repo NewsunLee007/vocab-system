@@ -3843,7 +3843,7 @@ const student = {
             groups[k].sort((a, b) => {
                 const na = parseInt(a.unit); const nb = parseInt(b.unit);
                 if (!isNaN(na) && !isNaN(nb)) return na - nb;
-                return (a.unit || '').localeCompare(b.unit || '');
+                return String(a.unit || '').localeCompare(String(b.unit || ''));
             });
         });
 

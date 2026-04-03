@@ -2987,9 +2987,13 @@ const teacher = {
         const publishPane = document.getElementById('ai-pane-publish');
         if (!overview || !materialsPane || !verifyPane || !publishPane) return;
 
-        // 初始化teacherReview模块
+        // 初始化teacherReview模块，使用AI生成的素材
         const grade = wordlist.grade || 'middle';
-        teacherReview.initReviewSession(wordlist.id, wordlist.words, grade);
+        if (result.materials) {
+            teacherReview.initReviewSessionWithMaterials(wordlist.id, wordlist.words, grade, result.materials);
+        } else {
+            teacherReview.initReviewSession(wordlist.id, wordlist.words, grade);
+        }
         
         // 检查是否有已审核的句子
         const user = auth.getCurrentUser();

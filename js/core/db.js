@@ -396,7 +396,16 @@ const db = {
     getStudentsByTeacher(teacherId) {
         // admin 能看到全部学生
         if (teacherId === 'admin') return this._data.students;
-        return this._data.students.filter(s => s.teacherId === teacherId);
+        
+        // 过滤出属于该教师的学生，同时处理 teacherId 为 null 的情况
+        return this._data.students.filter(s => {
+            // 如果学生有明确的 teacherId，必须匹配
+            if (s.teacherId) {
+                return s.teacherId === teacherId;
+            }
+            // 如果学生的 teacherId 为 null，暂时也包含进来（可能是后端数据问题）
+            return true;
+        });
     },
 
     findStudent(id) {

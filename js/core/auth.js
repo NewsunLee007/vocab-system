@@ -600,8 +600,8 @@ const auth = {
             window.speechSynthesis.cancel();
         }
         
-        router.navigate('login');
-        app.updateNav();
+        // 登出后跳转到新的角色选择页面
+        window.location.href = 'index.html';
         helpers.showToast('已安全退出', 'info');
     },
 

@@ -390,10 +390,12 @@ const db = {
     // ==================== 学生操作 ====================
     
     getStudents() {
+        if (!this._data) return [];
         return this._data.students;
     },
 
     getStudentsByTeacher(teacherId) {
+        if (!this._data) return [];
         // admin 能看到全部学生
         if (teacherId === 'admin') return this._data.students;
         
@@ -409,14 +411,17 @@ const db = {
     },
 
     findStudent(id) {
+        if (!this._data) return null;
         return this._data.students.find(s => s.id === id);
     },
 
     findStudentByClassAndName(className, name) {
+        if (!this._data) return null;
         return this._data.students.find(s => s.class === className && s.name === name);
     },
 
     addStudent(studentData) {
+        if (!this._data) return null;
         const newStudent = {
             id: studentData.id || helpers.generateId('s'),
             teacherId: studentData.teacherId,
@@ -456,6 +461,7 @@ const db = {
     },
 
     updateAdminPassword(id, hashedPassword) {
+        if (!this._data) return false;
         const admin = this._data.admins.find(a => a.id === id);
         if (admin) {
             admin.pwd = hashedPassword;
@@ -467,6 +473,7 @@ const db = {
     },
 
     updateTeacherPassword(id, hashedPassword) {
+        if (!this._data) return false;
         const teacher = this._data.teachers.find(t => t.id === id);
         if (teacher) {
             teacher.pwd = hashedPassword;
@@ -512,6 +519,7 @@ const db = {
      * 删除学生
      */
     deleteStudent(studentId) {
+        if (!this._data) return false;
         const index = this._data.students.findIndex(s => s.id === studentId);
         if (index !== -1) {
             this._data.students.splice(index, 1);
@@ -527,20 +535,24 @@ const db = {
     // ==================== 词表操作 ====================
     
     getWordLists() {
+        if (!this._data) return [];
         return this._data.wordLists;
     },
 
     getWordListsByTeacher(teacherId) {
+        if (!this._data) return [];
         // admin 能看到全部词表
         if (teacherId === 'admin') return this._data.wordLists;
         return this._data.wordLists.filter(wl => wl.teacherId === teacherId);
     },
 
     findWordList(id) {
+        if (!this._data) return null;
         return this._data.wordLists.find(wl => wl.id === id);
     },
 
     addWordList(wordlistData) {
+        if (!this._data) return null;
         const newWordList = {
             id: helpers.generateId('wl'),
             teacherId: wordlistData.teacherId,
@@ -565,6 +577,7 @@ const db = {
      * 删除词表
      */
     deleteWordList(wordlistId) {
+        if (!this._data) return false;
         const index = this._data.wordLists.findIndex(wl => wl.id === wordlistId);
         if (index !== -1) {
             this._data.wordLists.splice(index, 1);
@@ -577,18 +590,22 @@ const db = {
     // ==================== 词库操作 ====================
     
     getDict() {
+        if (!this._data) return {};
         return this._data.dict;
     },
 
     getAllWords() {
+        if (!this._data) return [];
         return Object.values(this._data.dict);
     },
 
     findWord(word) {
+        if (!this._data) return null;
         return this._data.dict[word.toLowerCase()];
     },
 
     addWord(wordData) {
+        if (!this._data) return null;
         this._data.dict[wordData.word.toLowerCase()] = {
             word: wordData.word,
             phonetic: wordData.phonetic,
@@ -610,6 +627,7 @@ const db = {
      * @returns {Object} 更新后的单词数据
      */
     updateWordSentence(word, sentence, phonetic = null, meaning = null) {
+        if (!this._data) return null;
         const wordKey = word.toLowerCase();
         if (this._data.dict[wordKey]) {
             this._data.dict[wordKey].sentence = sentence;
@@ -627,6 +645,7 @@ const db = {
      * @returns {number} 更新的单词数量
      */
     batchUpdateWordSentences(materials) {
+        if (!this._data) return 0;
         let updatedCount = 0;
         if (materials && materials.flashcard) {
             materials.flashcard.forEach((item, idx) => {
@@ -658,16 +677,19 @@ const db = {
     // ==================== 任务操作 ====================
     
     getTasks() {
+        if (!this._data) return [];
         return this._data.tasks;
     },
 
     getTasksByTeacher(teacherId) {
+        if (!this._data) return [];
         // admin 能看到全部任务
         if (teacherId === 'admin') return this._data.tasks;
         return this._data.tasks.filter(t => t.teacherId === teacherId);
     },
 
     getTasksByStudent(studentId) {
+        if (!this._data) return [];
         const student = this.findStudent(studentId);
         if (!student) {
             console.warn('getTasksByStudent: Student not found', studentId);
@@ -686,6 +708,7 @@ const db = {
     },
 
     addTask(taskData) {
+        if (!this._data) return null;
         const newTask = {
             id: helpers.generateId('task'),
             teacherId: taskData.teacherId,
@@ -728,20 +751,24 @@ const db = {
     // ==================== 学习日志操作 ====================
     
     getLearningLogs() {
+        if (!this._data) return [];
         return this._data.learningLogs;
     },
 
     getLearningLogsByTeacher(teacherId) {
+        if (!this._data) return [];
         // admin 能看到全部记录
         if (teacherId === 'admin') return this._data.learningLogs;
         return this._data.learningLogs.filter(l => l.teacherId === teacherId);
     },
 
     getLearningLogsByStudent(studentId) {
+        if (!this._data) return [];
         return this._data.learningLogs.filter(l => l.studentId === studentId);
     },
 
     addLearningLog(logData) {
+        if (!this._data) return null;
         const newLog = {
             id: helpers.generateId('L'),
             studentId: logData.studentId,
@@ -761,16 +788,19 @@ const db = {
     // ==================== 学生记忆状态操作 ====================
     
     getStudentState(studentId) {
+        if (!this._data) return { learned: [], queue: {} };
         return this._data.studentStates[studentId] || { learned: [], queue: {} };
     },
 
     updateStudentState(studentId, state) {
+        if (!this._data) return state;
         this._data.studentStates[studentId] = state;
         this.save();
         return state;
     },
 
     addLearnedWord(studentId, word) {
+        if (!this._data) return { learned: [], queue: {} };
         const state = this.getStudentState(studentId);
         if (!state.learned.includes(word)) {
             state.learned.push(word);
@@ -786,10 +816,16 @@ const db = {
     // ==================== 系统操作 ====================
     
     getSystem() {
+        if (!this._data) return {
+            mockCurrentIP: helpers.generateMockIP(),
+            lastLoginIP: '',
+            lastLoginStudentId: null
+        };
         return this._data.system;
     },
 
     updateSystem(updates) {
+        if (!this._data) return updates;
         Object.assign(this._data.system, updates);
         this.save();
         return this._data.system;

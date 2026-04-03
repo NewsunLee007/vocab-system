@@ -3251,10 +3251,45 @@ const teacher = {
             const wordlist = db.findWordList(this.currentAIWordlistId);
             if (wordlist) {
                 const grade = wordlist.grade || 'middle';
-                teacherReview.initReviewSession(this.currentAIWordlistId, wordlist.words, grade);
+                const user = auth.getCurrentUser();
+                
+                // 检查是否已有AI导入的素材（检查teacherReview.state是否有isFromAIMaterials标记）
+                const hasAIMaterials = teacherReview.state.reviewedSentences && 
+                    Object.values(teacherReview.state.reviewedSentences).some(s => s.isFromAIMaterials);
+                
+                // 检查teacherReview是否已经初始化了相同的词表
+                const isSameWordlist = teacherReview.state.currentWordlistId === this.currentAIWordlistId;
+                
+                if (hasAIMaterials && isSameWordlist) {
+                    // 已有AI素材且是同一个词表，不要重新初始化
+                    console.log('保留已导入的AI素材，不重新初始化');
+                } else {
+                    // 检查数据库中是否有已保存的审核记录（包含AI素材）
+                    const savedReview = teacherReview.loadReviewedSentences(this.currentAIWordlistId, user.id);
+                    const hasSavedAIMaterials = savedReview && savedReview.sentences && 
+                        Object.values(savedReview.sentences).some(s => s.isFromAIMaterials);
+                    
+                    if (hasSavedAIMaterials) {
+                        // 从数据库加载已保存的AI素材审核记录
+                        console.log('从数据库加载已保存的AI素材审核记录');
+                        teacherReview.initReviewSession(this.currentAIWordlistId, wordlist.words, grade);
+                    } else if (this._aiAnalysisResult?.materials) {
+                        // 有当前会话的AI素材，使用它
+                        console.log('使用当前会话的AI素材初始化核验');
+                        teacherReview.initReviewSessionWithMaterials(
+                            this.currentAIWordlistId, 
+                            wordlist.words, 
+                            grade,
+                            this._aiAnalysisResult.materials
+                        );
+                    } else {
+                        // 没有AI素材，使用默认初始化
+                        console.log('没有AI素材，使用默认初始化');
+                        teacherReview.initReviewSession(this.currentAIWordlistId, wordlist.words, grade);
+                    }
+                }
                 
                 // 检查是否有已审核的句子
-                const user = auth.getCurrentUser();
                 const hasReviewed = teacherReview.hasReviewedSentences(this.currentAIWordlistId, user.id);
                 
                 if (hasReviewed) {

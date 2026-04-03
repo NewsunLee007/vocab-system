@@ -83,14 +83,55 @@ const teacherReview = {
         // 使用AI生成的素材创建审核数据
         materials.context.forEach((item, idx) => {
             const word = item.word;
+            
+            // 确保选项和正确答案索引是正确的
+            let options = item.options || [];
+            let correctIndex = item.correctIndex !== undefined ? item.correctIndex : 0;
+            
+            // 验证并修复选项和正确答案
+            if (options.length === 0) {
+                // 如果没有选项，生成默认选项
+                options = this.generateDefaultOptions(word, 'noun');
+                // 查找正确答案的位置
+                correctIndex = options.indexOf(word);
+                if (correctIndex === -1) {
+                    correctIndex = 0;
+                }
+            } else if (options.length < 4) {
+                // 补充选项到4个
+                while (options.length < 4) {
+                    options.push('选项' + (options.length + 1));
+                }
+            }
+            
+            // 确保正确答案在选项中
+            if (!options.includes(word)) {
+                console.warn(`正确答案 "${word}" 不在选项中，修复中...`);
+                // 将正确答案放在当前正确索引位置，替换原来的选项
+                if (correctIndex >= 0 && correctIndex < options.length) {
+                    options[correctIndex] = word;
+                } else {
+                    // 如果正确索引无效，放在第一个位置
+                    options[0] = word;
+                    correctIndex = 0;
+                }
+            } else {
+                // 确保correctIndex指向正确的单词
+                const actualCorrectIndex = options.indexOf(word);
+                if (actualCorrectIndex !== correctIndex) {
+                    console.warn(`correctIndex 不匹配，修复: ${correctIndex} -> ${actualCorrectIndex}`);
+                    correctIndex = actualCorrectIndex;
+                }
+            }
+            
             this.state.reviewedSentences[word] = {
                 word: word,
                 sentence: item.sentence,
                 meaning: materials.flashcard?.[idx]?.meaning || '',
                 pos: sentenceGenerator.parsePartOfSpeech(materials.flashcard?.[idx]?.meaning || ''),
                 phonetic: materials.flashcard?.[idx]?.phonetic || `/${word}/`,
-                options: item.options,
-                correctIndex: item.correctIndex,
+                options: options,
+                correctIndex: correctIndex,
                 status: this.REVIEW_STATUS.PENDING,
                 createdAt: Date.now(),
                 modifiedAt: Date.now(),

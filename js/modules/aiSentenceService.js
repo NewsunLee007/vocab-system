@@ -130,6 +130,9 @@ const aiSentenceService = {
         this.state.totalWords = words.length;
         this.state.completedWords = 0;
         
+        // 重置位置追踪器，确保新生成的题目正确答案位置真正随机
+        this.resetPositionTracker();
+        
         const materials = {
             context: [],
             spelling: [],
@@ -172,6 +175,22 @@ const aiSentenceService = {
                         const correctWord = result.context.word;
                         let options = result.context.options;
                         
+                        // 关键修复：确保正确答案在选项数组的第一位
+                        // 先检查正确答案是否在选项中
+                        const correctIndexInOriginal = options.indexOf(correctWord);
+                        if (correctIndexInOriginal === -1) {
+                            console.warn(`AI 返回的 context 选项中没有正确答案 "${correctWord}"，正在补充`);
+                            const distractors = this.generateDistractors(correctWord, 'noun', '');
+                            options = [correctWord, ...distractors];
+                        } else {
+                            // 把正确答案移到第一位
+                            if (correctIndexInOriginal !== 0) {
+                                options = [...options];
+                                options.splice(correctIndexInOriginal, 1);
+                                options.unshift(correctWord);
+                            }
+                        }
+                        
                         // 检查并移除重复选项
                         const uniqueOptions = [...new Set(options.map(o => o.toLowerCase()))];
                         if (uniqueOptions.length < options.length) {
@@ -191,6 +210,21 @@ const aiSentenceService = {
                     if (result.matching && result.matching.options) {
                         const correctMeaning = result.matching.meaning;
                         let options = result.matching.options;
+                        
+                        // 关键修复：确保正确答案在选项数组的第一位
+                        const correctIndexInOriginal = options.indexOf(correctMeaning);
+                        if (correctIndexInOriginal === -1) {
+                            console.warn(`AI 返回的 matching 选项中没有正确答案 "${correctMeaning}"，正在补充`);
+                            const distractors = this.generateMeaningDistractors(correctMeaning);
+                            options = [correctMeaning, ...distractors];
+                        } else {
+                            // 把正确答案移到第一位
+                            if (correctIndexInOriginal !== 0) {
+                                options = [...options];
+                                options.splice(correctIndexInOriginal, 1);
+                                options.unshift(correctMeaning);
+                            }
+                        }
                         
                         // 检查无效选项（占位符、词性标注等）
                         const hasInvalidOptions = options.some(opt => this.isInvalidOption(opt));

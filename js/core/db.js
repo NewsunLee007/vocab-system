@@ -773,13 +773,23 @@ const db = {
     // ==================== 统计数据 ====================
     
     getStats() {
+        if (!this._data) {
+            return {
+                teacherCount: 0,
+                studentCount: 0,
+                todayLearningCount: 0,
+                totalWords: 0,
+                totalTasks: 0,
+                wordlistCount: 0
+            };
+        }
         return {
-            teacherCount: this._data.teachers.length,
-            studentCount: this._data.students.length,
-            todayLearningCount: this._data.learningLogs.filter(l => l.date === helpers.getTodayDate()).length,
-            totalWords: Object.keys(this._data.dict).length,
-            totalTasks: this._data.tasks.length,
-            wordlistCount: this._data.wordLists.length
+            teacherCount: (this._data.teachers || []).length,
+            studentCount: (this._data.students || []).length,
+            todayLearningCount: (this._data.learningLogs || []).filter(l => l.date === helpers.getTodayDate()).length,
+            totalWords: Object.keys(this._data.dict || {}).length,
+            totalTasks: (this._data.tasks || []).length,
+            wordlistCount: (this._data.wordLists || []).length
         };
     },
 

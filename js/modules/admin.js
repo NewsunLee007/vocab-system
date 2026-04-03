@@ -509,6 +509,8 @@ const admin = {
         this._allStudents = db.getStudents();
         this._studentSortField = 'name';
         this._studentSortAsc = true;
+        this._selectedStudentsForDelete = [];
+        this._studentBatchDeleteMode = false;
         
         // 初始化筛选器
         this.initStudentFilters();
@@ -604,16 +606,72 @@ const admin = {
      */
     renderStudentsList(students) {
         const tbody = document.getElementById('all-students-list');
+        const thead = document.getElementById('students-table-header');
         tbody.innerHTML = '';
         
+        // 更新表头
+        if (this._studentBatchDeleteMode) {
+            thead.innerHTML = `
+                <th class="text-left py-3 px-4 text-slate-600">
+                    <input type="checkbox" id="select-all-students-checkbox" 
+                        onchange="admin.toggleSelectAllStudents(this.checked)" 
+                        class="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500">
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('class')">
+                    班级 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('name')">
+                    姓名 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('teacher')">
+                    老师 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('coins')">
+                    金币 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('totalLearned')">
+                    已学 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600">操作</th>
+            `;
+        } else {
+            thead.innerHTML = `
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('class')">
+                    班级 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('name')">
+                    姓名 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('teacher')">
+                    老师 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('coins')">
+                    金币 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('totalLearned')">
+                    已学 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
+                </th>
+                <th class="text-left py-3 px-4 text-slate-600">操作</th>
+            `;
+        }
+        
         if (students.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">暂无符合条件的学生</td></tr>';
+            const colCount = this._studentBatchDeleteMode ? 7 : 6;
+            tbody.innerHTML = `<tr><td colspan="${colCount + 1}" class="p-4 text-center text-slate-400">暂无符合条件的学生</td></tr>`;
         } else {
             students.forEach(student => {
                 const teacher = db.findTeacher(student.teacherId);
+                const isSelected = this._selectedStudentsForDelete.includes(student.id);
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-slate-50';
                 row.innerHTML = `
+                    ${this._studentBatchDeleteMode ? `
+                        <td class="p-3 border-b">
+                            <input type="checkbox" class="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500"
+                                ${isSelected ? 'checked' : ''} 
+                                onchange="admin.toggleStudentForDelete('${student.id}')">
+                        </td>
+                    ` : ''}
                     <td class="p-3 border-b">${student.class || '-'}</td>
                     <td class="p-3 border-b font-medium">${student.name}</td>
                     <td class="p-3 border-b">${teacher ? teacher.name : '-'}</td>
@@ -621,6 +679,14 @@ const admin = {
                         <i class="fa-solid fa-coins mr-1"></i>${student.coins || 0}
                     </td>
                     <td class="p-3 border-b">${student.totalLearned || 0}</td>
+                    <td class="p-3 border-b">
+                        <button onclick="admin.editStudent('${student.id}')" class="text-indigo-600 hover:text-indigo-800 text-sm mr-2">
+                            <i class="fa-solid fa-pen mr-1"></i>编辑
+                        </button>
+                        <button onclick="admin.deleteStudent('${student.id}')" class="text-rose-600 hover:text-rose-800 text-sm">
+                            <i class="fa-solid fa-trash mr-1"></i>删除
+                        </button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
@@ -668,6 +734,200 @@ const admin = {
         const filename = `学生数据_${helpers.getTodayDate()}.csv`;
         helpers.exportCSV(filename, rows);
         helpers.showToast('导出成功！', 'success');
+    },
+
+    /**
+     * 切换批量删除模式
+     */
+    toggleStudentBatchDeleteMode() {
+        this._studentBatchDeleteMode = !this._studentBatchDeleteMode;
+        this._selectedStudentsForDelete = [];
+        
+        const deleteBar = document.getElementById('student-batch-delete-bar');
+        const actionBar = document.getElementById('student-batch-delete-action-bar');
+        
+        if (this._studentBatchDeleteMode) {
+            deleteBar.classList.add('hidden');
+            actionBar.classList.remove('hidden');
+        } else {
+            deleteBar.classList.remove('hidden');
+            actionBar.classList.add('hidden');
+        }
+        
+        this.filterStudents();
+    },
+
+    /**
+     * 切换学生选中状态
+     */
+    toggleStudentForDelete(studentId) {
+        const index = this._selectedStudentsForDelete.indexOf(studentId);
+        if (index > -1) {
+            this._selectedStudentsForDelete.splice(index, 1);
+        } else {
+            this._selectedStudentsForDelete.push(studentId);
+        }
+        this.updateSelectedStudentsCount();
+    },
+
+    /**
+     * 全选/取消全选学生
+     */
+    toggleSelectAllStudents(checked) {
+        if (checked) {
+            const classFilter = document.getElementById('filter-student-class').value;
+            const teacherFilter = document.getElementById('filter-student-teacher').value;
+            const searchText = document.getElementById('filter-student-search').value.toLowerCase();
+            
+            let filtered = this._allStudents.filter(s => {
+                if (classFilter && s.class !== classFilter) return false;
+                if (teacherFilter && s.teacherId !== teacherFilter) return false;
+                if (searchText && !s.name.toLowerCase().includes(searchText)) return false;
+                return true;
+            });
+            
+            this._selectedStudentsForDelete = filtered.map(s => s.id);
+        } else {
+            this._selectedStudentsForDelete = [];
+        }
+        
+        this.updateSelectedStudentsCount();
+        this.filterStudents();
+    },
+
+    /**
+     * 更新选中学生计数
+     */
+    updateSelectedStudentsCount() {
+        const countEl = document.getElementById('selected-students-count');
+        if (countEl) {
+            countEl.textContent = `已选择 ${this._selectedStudentsForDelete.length} 人`;
+        }
+    },
+
+    /**
+     * 取消批量删除
+     */
+    cancelStudentBatchDelete() {
+        this.toggleStudentBatchDeleteMode();
+    },
+
+    /**
+     * 确认批量删除学生
+     */
+    confirmStudentBatchDelete() {
+        if (this._selectedStudentsForDelete.length === 0) {
+            helpers.showToast('请至少选择一位学生！', 'warning');
+            return;
+        }
+        
+        if (!confirm(`确定要删除选中的 ${this._selectedStudentsForDelete.length} 位学生吗？此操作不可恢复！`)) {
+            return;
+        }
+        
+        const count = this._selectedStudentsForDelete.length;
+        
+        try {
+            this._selectedStudentsForDelete.forEach(studentId => {
+                db.deleteStudent(studentId);
+            });
+            db.save();
+            
+            helpers.showToast(`成功删除 ${count} 位学生！`, 'success');
+            
+            this.toggleStudentBatchDeleteMode();
+            this._allStudents = db.getStudents();
+            this.filterStudents();
+            this.updateStudentsStats(this._allStudents);
+        } catch (err) {
+            helpers.showToast('删除失败：' + err.message, 'error');
+        }
+    },
+
+    /**
+     * 编辑学生
+     */
+    editStudent(studentId) {
+        const student = db.findStudent(studentId);
+        if (!student) return;
+        
+        document.getElementById('edit-student-id').value = student.id;
+        document.getElementById('edit-student-name').value = student.name;
+        document.getElementById('edit-student-class').value = student.class || '';
+        document.getElementById('edit-student-pwd').value = '';
+        
+        const modal = document.getElementById('modal-edit-student');
+        modal.classList.remove('hidden');
+        modal.offsetHeight;
+        modal.classList.remove('opacity-0');
+    },
+
+    /**
+     * 关闭编辑学生模态框
+     */
+    closeEditStudentModal() {
+        const modal = document.getElementById('modal-edit-student');
+        modal.classList.add('opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    },
+
+    /**
+     * 保存编辑的学生信息
+     */
+    saveEditStudent() {
+        const id = document.getElementById('edit-student-id').value;
+        const name = document.getElementById('edit-student-name').value.trim();
+        const className = document.getElementById('edit-student-class').value.trim();
+        const pwd = document.getElementById('edit-student-pwd').value.trim();
+        
+        if (!name) {
+            helpers.showToast('学生姓名不能为空！', 'warning');
+            return;
+        }
+        
+        const student = db.findStudent(id);
+        if (!student) return;
+        
+        student.name = name;
+        student.class = className;
+        
+        if (pwd) {
+            student.pwd = helpers.hash(pwd);
+        }
+        
+        db.save();
+        
+        this.closeEditStudentModal();
+        this._allStudents = db.getStudents();
+        this.filterStudents();
+        helpers.showToast('学生信息更新成功！', 'success');
+    },
+
+    /**
+     * 删除学生
+     */
+    deleteStudent(studentId) {
+        const student = db.findStudent(studentId);
+        if (!student) return;
+        
+        if (!confirm(`确定要删除学生 "${student.name}" 吗？此操作不可恢复！`)) {
+            return;
+        }
+        
+        try {
+            db.deleteStudent(studentId);
+            db.save();
+            
+            helpers.showToast(`学生 "${student.name}" 已删除`, 'success');
+            
+            this._allStudents = db.getStudents();
+            this.filterStudents();
+            this.updateStudentsStats(this._allStudents);
+        } catch (err) {
+            helpers.showToast('删除失败：' + err.message, 'error');
+        }
     },
 
     /**
@@ -1987,6 +2247,10 @@ const admin = {
                                 <i class="fa-solid fa-user mr-1"></i>${teacherInfo.teacherName}
                             </span>
                             <div class="flex gap-2">
+                                <button onclick="admin.manageQuestionBank('${wordlistId}', '${teacherInfo.teacherId}')" 
+                                    class="text-xs text-green-500 hover:text-green-700 px-2 py-0.5 rounded hover:bg-green-100">
+                                    <i class="fa-solid fa-question-bank mr-1"></i>练习库
+                                </button>
                                 <button onclick="admin.deleteTeacherAIMaterials('${wordlistId}', '${teacherInfo.teacherId}')" 
                                     class="text-xs text-rose-500 hover:text-rose-700 px-2 py-0.5 rounded hover:bg-rose-100">
                                     <i class="fa-solid fa-trash mr-1"></i>删除
@@ -2000,7 +2264,13 @@ const admin = {
                     const mat = w.materials;
                     aiMaterialsHtml += `
                         <div class="bg-white rounded p-2 border border-purple-100">
-                            <div class="font-medium text-slate-800">${w.word}</div>
+                            <div class="flex justify-between items-start">
+                                <div class="font-medium text-slate-800">${w.word}</div>
+                                <button onclick="admin.editAIMaterial('${wordlistId}', '${teacherInfo.teacherId}', '${w.word}')" 
+                                    class="text-xs text-blue-500 hover:text-blue-700 px-2 py-0.5 rounded hover:bg-blue-100">
+                                    <i class="fa-solid fa-pen mr-1"></i>修改
+                                </button>
+                            </div>
                             ${mat.context ? `
                                 <div class="mt-1 text-slate-600">
                                     <span class="text-purple-600 text-xs">[语境]</span> 
@@ -2076,6 +2346,157 @@ const admin = {
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+    },
+
+    /**
+     * 管理练习库
+     * @param {string} wordlistId - 词表ID
+     * @param {string} teacherId - 教师ID
+     */
+    manageQuestionBank(wordlistId, teacherId) {
+        const wordlist = db.findWordList(wordlistId);
+        if (!wordlist) return;
+        
+        // 获取题库数据
+        const bank = db._data.testQuestionBank[teacherId]?.[wordlistId] || {};
+        const questions = [];
+        
+        for (const word in bank) {
+            bank[word].forEach(q => {
+                questions.push({
+                    word: word,
+                    ...q
+                });
+            });
+        }
+        
+        // 构建练习库管理模态框
+        let questionsHtml = '';
+        if (questions.length === 0) {
+            questionsHtml = `
+                <div class="p-4 text-center text-slate-500">
+                    <i class="fa-solid fa-question-bank text-2xl mb-2 text-slate-300"></i>
+                    <p>暂无练习题目</p>
+                    <p class="text-xs mt-1">AI生成材料后会自动添加到练习库</p>
+                </div>
+            `;
+        } else {
+            questionsHtml = `
+                <div class="space-y-3 max-h-64 overflow-y-auto">
+            `;
+            
+            questions.forEach(q => {
+                questionsHtml += `
+                    <div class="bg-white rounded p-3 border border-slate-200">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-medium text-slate-800">${q.word}</div>
+                                <div class="text-xs text-slate-500 mt-1">
+                                    ${q.sentence || q.hint || '无内容'}
+                                </div>
+                                <div class="text-xs text-slate-400 mt-1">
+                                    使用次数: ${q.usedCount || 0} | 创建时间: ${new Date(q.createdAt).toLocaleString()}
+                                </div>
+                            </div>
+                            <button onclick="admin.deleteQuestion('${wordlistId}', '${teacherId}', '${q.word}', '${q.id}')" 
+                                class="text-xs text-rose-500 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-100">
+                                <i class="fa-solid fa-trash mr-1"></i>删除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            questionsHtml += `
+                </div>
+            `;
+        }
+        
+        const modalHtml = `
+            <div id="modal-question-bank" class="fixed inset-0 bg-slate-900 bg-opacity-60 flex items-center justify-center z-[200]">
+                <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden m-4">
+                    <div class="p-6 border-b flex justify-between items-center bg-gradient-to-r from-green-50 to-emerald-50">
+                        <h3 class="text-xl font-bold text-slate-800">
+                            <i class="fa-solid fa-question-bank mr-2 text-green-600"></i>练习库管理 - ${wordlist.title}
+                        </h3>
+                        <div class="flex gap-2">
+                            ${questions.length > 0 ? `
+                                <button onclick="admin.deleteAllQuestions('${wordlistId}', '${teacherId}')" 
+                                    class="text-xs text-rose-600 hover:text-rose-800 px-2 py-1 border border-rose-300 rounded hover:bg-rose-50">
+                                    <i class="fa-solid fa-trash-can mr-1"></i>清空全部
+                                </button>
+                            ` : ''}
+                            <button onclick="document.getElementById('modal-question-bank').remove()" class="text-slate-400 hover:text-slate-600">
+                                <i class="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6 overflow-y-auto max-h-[60vh]">
+                        ${questionsHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    },
+
+    /**
+     * 删除单个题目
+     * @param {string} wordlistId - 词表ID
+     * @param {string} teacherId - 教师ID
+     * @param {string} word - 单词
+     * @param {string} questionId - 题目ID
+     */
+    deleteQuestion(wordlistId, teacherId, word, questionId) {
+        if (!confirm('确定要删除这个题目吗？')) {
+            return;
+        }
+        
+        if (db._data.testQuestionBank[teacherId]?.[wordlistId]?.[word]) {
+            const questions = db._data.testQuestionBank[teacherId][wordlistId][word];
+            const index = questions.findIndex(q => q.id === questionId);
+            if (index !== -1) {
+                questions.splice(index, 1);
+                // 如果该单词没有题目了，删除单词记录
+                if (questions.length === 0) {
+                    delete db._data.testQuestionBank[teacherId][wordlistId][word];
+                }
+                // 如果该词表没有题目了，删除词表记录
+                if (Object.keys(db._data.testQuestionBank[teacherId][wordlistId]).length === 0) {
+                    delete db._data.testQuestionBank[teacherId][wordlistId];
+                }
+                db.save();
+                
+                // 刷新练习库管理界面
+                document.getElementById('modal-question-bank')?.remove();
+                this.manageQuestionBank(wordlistId, teacherId);
+                
+                helpers.showToast('题目删除成功', 'success');
+            }
+        }
+    },
+
+    /**
+     * 删除词表的所有题目
+     * @param {string} wordlistId - 词表ID
+     * @param {string} teacherId - 教师ID
+     */
+    deleteAllQuestions(wordlistId, teacherId) {
+        if (!confirm('确定要清空该词表的所有练习题目吗？此操作不可恢复！')) {
+            return;
+        }
+        
+        if (db._data.testQuestionBank[teacherId]?.[wordlistId]) {
+            delete db._data.testQuestionBank[teacherId][wordlistId];
+            db.save();
+            
+            // 刷新练习库管理界面
+            document.getElementById('modal-question-bank')?.remove();
+            this.manageQuestionBank(wordlistId, teacherId);
+            
+            helpers.showToast('所有题目已清空', 'success');
+        }
     },
 
     /**
@@ -2281,6 +2702,162 @@ const admin = {
         link.click();
         
         helpers.showToast('AI材料导出成功', 'success');
+    },
+
+    /**
+     * 编辑AI生成的材料
+     * @param {string} wordlistId - 词表ID
+     * @param {string} teacherId - 教师ID
+     * @param {string} word - 单词
+     */
+    editAIMaterial(wordlistId, teacherId, word) {
+        // 获取AI材料（优先取审核后的，其次取草稿）
+        let materials = null;
+        const reviewed = db.getTeacherReviewedSentences(teacherId, wordlistId);
+        const draft = db.getAIDraft(wordlistId, teacherId);
+        
+        if (reviewed && reviewed.sentences && reviewed.sentences[word]) {
+            materials = reviewed.sentences[word];
+        } else if (draft && draft.materials && draft.materials[word]) {
+            materials = draft.materials[word];
+        }
+        
+        if (!materials) {
+            helpers.showToast('未找到AI材料', 'warning');
+            return;
+        }
+        
+        // 构建编辑模态框
+        const modalHtml = `
+            <div id="modal-edit-ai-material" class="fixed inset-0 bg-slate-900 bg-opacity-60 flex items-center justify-center z-[200]">
+                <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden m-4">
+                    <div class="p-6 border-b flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <h3 class="text-xl font-bold text-slate-800">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-2 text-blue-600"></i>修改AI材料 - ${word}
+                        </h3>
+                        <button onclick="document.getElementById('modal-edit-ai-material').remove()" class="text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 overflow-y-auto max-h-[60vh]">
+                        <div class="space-y-4">
+                            ${materials.context ? `
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                                        语境例句
+                                    </label>
+                                    <textarea id="edit-context-sentence" class="w-full p-2 border border-slate-300 rounded-lg" rows="3">
+                                        ${materials.context.sentence || ''}
+                                    </textarea>
+                                    <div class="mt-2 text-sm text-slate-500">
+                                        <label class="block mb-1">选项（每行一个）</label>
+                                        <textarea id="edit-context-options" class="w-full p-2 border border-slate-300 rounded-lg" rows="4">
+                                            ${(materials.context.options || []).join('\n')}
+                                        </textarea>
+                                    </div>
+                                    <div class="mt-2">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                                            正确选项 (A/B/C/D)
+                                        </label>
+                                        <select id="edit-context-correct" class="w-full p-2 border border-slate-300 rounded-lg">
+                                            <option value="0" ${materials.context.correctIndex === 0 ? 'selected' : ''}>A</option>
+                                            <option value="1" ${materials.context.correctIndex === 1 ? 'selected' : ''}>B</option>
+                                            <option value="2" ${materials.context.correctIndex === 2 ? 'selected' : ''}>C</option>
+                                            <option value="3" ${materials.context.correctIndex === 3 ? 'selected' : ''}>D</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${materials.spelling ? `
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                                        拼写提示
+                                    </label>
+                                    <input type="text" id="edit-spelling-hint" 
+                                        class="w-full p-2 border border-slate-300 rounded-lg"
+                                        value="${materials.spelling.hint || ''}">
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="p-6 border-t flex justify-end space-x-3">
+                        <button onclick="document.getElementById('modal-edit-ai-material').remove()" 
+                            class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
+                            取消
+                        </button>
+                        <button onclick="admin.saveAIMaterialEdit('${wordlistId}', '${teacherId}', '${word}')" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            保存修改
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    },
+
+    /**
+     * 保存AI材料修改
+     * @param {string} wordlistId - 词表ID
+     * @param {string} teacherId - 教师ID
+     * @param {string} word - 单词
+     */
+    saveAIMaterialEdit(wordlistId, teacherId, word) {
+        // 获取当前材料
+        let materials = null;
+        let isReviewed = false;
+        const reviewed = db.getTeacherReviewedSentences(teacherId, wordlistId);
+        const draft = db.getAIDraft(wordlistId, teacherId);
+        
+        if (reviewed && reviewed.sentences && reviewed.sentences[word]) {
+            materials = reviewed.sentences[word];
+            isReviewed = true;
+        } else if (draft && draft.materials && draft.materials[word]) {
+            materials = draft.materials[word];
+        }
+        
+        if (!materials) {
+            helpers.showToast('未找到AI材料', 'error');
+            return;
+        }
+        
+        // 更新材料
+        if (materials.context) {
+            const sentence = document.getElementById('edit-context-sentence')?.value.trim();
+            const optionsText = document.getElementById('edit-context-options')?.value.trim();
+            const correctIndex = parseInt(document.getElementById('edit-context-correct')?.value);
+            
+            if (sentence !== undefined) materials.context.sentence = sentence;
+            if (optionsText !== undefined) {
+                materials.context.options = optionsText.split('\n').filter(opt => opt.trim());
+            }
+            if (correctIndex !== undefined) materials.context.correctIndex = correctIndex;
+        }
+        
+        if (materials.spelling) {
+            const hint = document.getElementById('edit-spelling-hint')?.value.trim();
+            if (hint !== undefined) materials.spelling.hint = hint;
+        }
+        
+        // 保存修改
+        if (isReviewed) {
+            reviewed.sentences[word] = materials;
+            db.saveTeacherReviewedSentences(teacherId, wordlistId, reviewed);
+        } else if (draft) {
+            draft.materials[word] = materials;
+            db.saveAIDraft(wordlistId, draft, teacherId);
+        }
+        
+        // 关闭模态框
+        document.getElementById('modal-edit-ai-material')?.remove();
+        
+        // 刷新词表详情
+        document.getElementById('modal-wordlist-detail-temp')?.remove();
+        this.viewWordlistDetail(wordlistId);
+        
+        helpers.showToast('AI材料修改成功', 'success');
     },
 
     /**

@@ -508,6 +508,22 @@ const db = {
         return null;
     },
 
+    /**
+     * 删除学生
+     */
+    deleteStudent(studentId) {
+        const index = this._data.students.findIndex(s => s.id === studentId);
+        if (index !== -1) {
+            this._data.students.splice(index, 1);
+            if (this._data.studentStates && this._data.studentStates[studentId]) {
+                delete this._data.studentStates[studentId];
+            }
+            this.save();
+            return true;
+        }
+        return false;
+    },
+
     // ==================== 词表操作 ====================
     
     getWordLists() {

@@ -47,6 +47,12 @@ const router = {
      * 处理初始路径
      */
     handleInitialPath() {
+        // 检查用户是否已登录
+        if (auth.isLoggedIn()) {
+            this.redirectByRole();
+            return;
+        }
+        
         const path = window.location.pathname;
         const viewName = this.getViewFromPath(path);
         

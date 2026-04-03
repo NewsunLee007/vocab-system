@@ -995,14 +995,31 @@
                     </select>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <label class="text-sm text-slate-600">搜索:</label>
-                    <input type="text" id="filter-student-search" oninput="admin.filterStudents()" placeholder="学生姓名..." class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm w-32">
-                </div>
-                <div class="flex-1"></div>
+                <label class="text-sm text-slate-600">搜索:</label>
+                <input type="text" id="filter-student-search" oninput="admin.filterStudents()" placeholder="学生姓名..." class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm w-32">
+            </div>
+            <div class="flex-1"></div>
+            <div class="flex space-x-2" id="student-batch-delete-bar">
+                <button onclick="admin.toggleStudentBatchDeleteMode()" class="px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg text-sm hover:shadow-lg transition">
+                    <i class="fa-solid fa-trash-can mr-2"></i>批量删除
+                </button>
                 <button onclick="admin.exportStudentsData()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg text-sm hover:shadow-lg transition">
                     <i class="fa-solid fa-file-export mr-2"></i>导出数据
                 </button>
             </div>
+            <div class="flex space-x-2 hidden" id="student-batch-delete-action-bar">
+                <input type="checkbox" id="select-all-students" onchange="admin.toggleSelectAllStudents(this.checked)" class="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500">
+                <label for="select-all-students" class="text-sm text-slate-600 cursor-pointer">全选</label>
+                <span id="selected-students-count" class="text-sm text-rose-600 font-medium">已选择 0 人</span>
+                <div class="flex-1"></div>
+                <button onclick="admin.cancelStudentBatchDelete()" class="px-3 py-1.5 text-rose-600 hover:text-rose-800 text-sm transition">
+                    取消
+                </button>
+                <button onclick="admin.confirmStudentBatchDelete()" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-medium transition">
+                    确认删除
+                </button>
+            </div>
+        </div>
             
             <!-- 统计信息 -->
             <div class="grid grid-cols-4 gap-4 mb-4">
@@ -1027,7 +1044,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead class="border-b border-slate-200">
-                        <tr>
+                        <tr id="students-table-header">
                             <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('class')">
                                 班级 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
                             </th>
@@ -1043,12 +1060,48 @@
                             <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('totalLearned')">
                                 已学 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
                             </th>
+                            <th class="text-left py-3 px-4 text-slate-600">操作</th>
                         </tr>
                     </thead>
                     <tbody id="all-students-list">
                         <!-- JS动态渲染 -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑学生模态框 -->
+    <div id="modal-edit-student" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">编辑学生信息</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">学生ID</label>
+                    <input type="text" id="edit-student-id" class="w-full px-4 py-3 bg-slate-100 border-2 border-slate-200 rounded-xl" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">姓名</label>
+                    <input type="text" id="edit-student-name" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">班级</label>
+                    <input type="text" id="edit-student-class" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">新密码（留空则不修改）</label>
+                    <input type="password" id="edit-student-pwd" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="留空则保持原密码">
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="admin.closeEditStudentModal()" class="flex-1 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium">
+                    取消
+                </button>
+                <button onclick="admin.saveEditStudent()" class="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition font-medium">
+                    保存修改
+                </button>
             </div>
         </div>
     </div>

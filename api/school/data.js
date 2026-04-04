@@ -59,23 +59,55 @@ module.exports = async function handler(req, res) {
         class: s.className || '',
         teacherId: null,
         passwordChanged: s.passwordChanged,
-        coins: 0,
-        badges: [],
-        streak: 0,
-        totalLearned: 0,
-        totalTests: 0,
-        totalCorrect: 0,
-        totalQuestions: 0
+        coins: s.coins || 0,
+        badges: s.badges || [],
+        streak: s.streak || 0,
+        totalLearned: s.totalLearned || 0,
+        totalTests: s.totalTests || 0,
+        totalCorrect: s.totalCorrect || 0,
+        totalQuestions: s.totalQuestions || 0
       }));
       
       let wordlists = [];
+      try {
+        const dbWordLists = await prisma.wordList.findMany({
+          where: user.role === 'ADMIN' ? undefined : {
+            OR: [
+              { createdById: user.id },
+              { isPublic: true }
+            ]
+          }
+        });
+        
+        wordlists = dbWordLists.map(wl => ({
+          id: wl.id,
+          name: wl.name,
+          description: wl.description,
+          words: wl.words || [],
+          isPublic: wl.isPublic,
+          createdById: wl.createdById,
+          createdAt: wl.createdAt,
+          updatedAt: wl.updatedAt
+        }));
+      } catch (e) {
+        console.log('读取 WordList 表失败，可能尚未迁移', e.message);
+      }
       
       const oldPayload = schoolData?.payload || {};
+      
+      // 合并数据库中的词表和旧版JSON词表
+      const mergedWordlists = [...wordlists];
+      const oldWordlists = oldPayload.wordlists || oldPayload.wordLists || [];
+      for (const wl of oldWordlists) {
+        if (!mergedWordlists.find(m => m.id === wl.id)) {
+          mergedWordlists.push(wl);
+        }
+      }
       
       const payload = {
         teachers: normalizedTeachers,
         students: normalizedStudents,
-        wordlists: oldPayload.wordlists || oldPayload.wordLists || [],
+        wordlists: mergedWordlists,
         tasks: oldPayload.tasks || [],
         learningLogs: oldPayload.learningLogs || [],
         studentStates: oldPayload.studentStates || {},

@@ -126,7 +126,13 @@ const api = {
             const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
             throw new Error(message || 'Login failed');
         }
-        const data = await this._readSuccessData(response);
+        let data = await this._readSuccessData(response);
+        
+        // 如果是教师角色且ID是纯数字，添加前缀't'以匹配学生数据格式
+        if (data && data.user && data.user.role === 'teacher' && data.user.id && /^\d+$/.test(data.user.id)) {
+            data.user.id = 't' + data.user.id;
+        }
+        
         const token = data?.token || data?.data?.token;
         if (token) this.setToken(token);
         return data;
@@ -168,7 +174,14 @@ const api = {
             const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
             throw new Error(message || 'Fetch session failed');
         }
-        return this._readSuccessData(response);
+        let data = await this._readSuccessData(response);
+        
+        // 如果是教师角色且ID是纯数字，添加前缀't'以匹配学生数据格式
+        if (data && data.user && data.user.role === 'teacher' && data.user.id && /^\d+$/.test(data.user.id)) {
+            data.user.id = 't' + data.user.id;
+        }
+        
+        return data;
     },
     
     async register(userData) {

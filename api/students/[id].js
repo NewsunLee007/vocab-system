@@ -11,7 +11,15 @@ module.exports = async function handler(req, res) {
     const user = await getAuthUser(req);
     if (!user) return fail(res, 401, '未登录');
 
-    const { id } = req.query;
+    const urlPath = req.url ? req.url.split('?')[0] : '';
+    const segments = urlPath.replace(/\/+$/, '').split('/');
+    const lastSegment = segments[segments.length - 1];
+    
+    // 尝试从路径或 query 中获取 id
+    const id = (lastSegment && lastSegment !== 'students' && lastSegment !== '[id].js') 
+      ? lastSegment 
+      : (req.query.id || null);
+
     if (!id) return fail(res, 400, '学生ID不能为空');
 
     if (req.method === 'GET') {

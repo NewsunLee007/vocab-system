@@ -11,34 +11,16 @@ module.exports = async function handler(req, res) {
     const user = await getAuthUser(req);
     if (!user) return fail(res, 401, '未登录');
 
-    if (req.method === 'GET') {
-      const where = {
-        OR: [
-          { createdById: user.id },
-          { isPublic: true }
-        ]
-      };
-
-      if (user.role === 'ADMIN') {
-        // 管理员可以看到所有词表
-        delete where.OR;
-      }
-
-      const wordLists = await prisma.wordList.findMany({
-        where,
-        orderBy: { updatedAt: 'desc' },
-        include: {
-          createdBy: {
-            select: { id: true, username: true, name: true }
-          }
-        }
-      });
-
-      return ok(res, wordLists);
-    }
+    const urlPath = req.url ? req.url.split('?')[0] : '';
+    const segments = urlPath.replace(/\/+$/, '').split('/');
+    const lastSegment = segments[segments.length - 1];
+    
+    // 如果最后一段不是 'word-lists' 和 'index'，则认为是 id
+    const id = (lastSegment && lastSegment !== 'word-lists' && lastSegment !== 'index') 
+      ? lastSegment 
+      : (req.query.id || null);
 
     // 处理单个词表的请求（带id参数）
-    const { id } = req.query;
     if (id) {
       const wordList = await prisma.wordList.findUnique({
         where: { id }

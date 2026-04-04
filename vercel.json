@@ -13,6 +13,18 @@
       "destination": "/api/learning-records/index"
     },
     {
+      "source": "/api/word-lists",
+      "destination": "/api/word-lists/index"
+    },
+    {
+      "source": "/api/word-lists/(?<id>[^/]+)",
+      "destination": "/api/word-lists/index?id=$id"
+    },
+    {
+      "source": "/api/students/(?<id>[^/]+)",
+      "destination": "/api/students/[id]?id=$id"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

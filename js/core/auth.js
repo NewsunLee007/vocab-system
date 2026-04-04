@@ -355,11 +355,11 @@ const auth = {
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
             if (result && result.user) {
-                // 确保教师ID格式一致，与学生的teacherId格式匹配
+                // 使用真实的教师ID，确保与学生的teacherId格式匹配
+                // 如果教师ID是纯数字（如'1'），添加前缀't'以匹配学生数据格式
                 let teacherId = result.user.id;
-                // 如果是本地开发环境且ID为'1'，转换为't001'以匹配默认值
-                if ((api._baseUrl.includes('localhost') || api._baseUrl.includes('127.0.0.1')) && teacherId === '1') {
-                    teacherId = 't001';
+                if (/^\d+$/.test(teacherId)) {
+                    teacherId = 't' + teacherId;
                 }
                 
                 const teacher = {

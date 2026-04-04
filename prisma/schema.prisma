@@ -26,11 +26,36 @@ model User {
   lockUntil       DateTime?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  
+  // 学生学习数据字段
+  coins           Int              @default(0)
+  badges          Json?            // 徽章
+  streak          Int              @default(0)
+  totalLearned    Int              @default(0)
+  totalTests      Int              @default(0)
+  totalCorrect    Int              @default(0)
+  totalQuestions  Int              @default(0)
+
   vocabularies    Vocabulary[]
   learningRecords LearningRecord[]
+  wordLists       WordList[]       // 用户创建的词表
 
   @@index([role, className])
   @@unique([username, className, role])
+}
+
+model WordList {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  words       Json     @default("[]")
+  isPublic    Boolean  @default(false)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdById])
 }
 
 model Vocabulary {

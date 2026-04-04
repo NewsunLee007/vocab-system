@@ -5,7 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "build": "prisma generate",
-    "vercel-build": "prisma generate && prisma db push --accept-data-loss || true",
+    "vercel-build": "prisma generate && npx prisma db push --accept-data-loss || exit 0",
     "start": "node backend/src/server.js",
     "start:legacy": "node server/server.js",
     "start:vercel-local": "vercel dev",

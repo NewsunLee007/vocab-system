@@ -415,8 +415,9 @@
                     score: finalScore || score,
                     maxLevel: level
                 };
-                const existing = JSON.parse(store.get('zootopia_history') || '[]');
-                store.set('zootopia_history', JSON.stringify([historyItem, ...existing]));
+                const existing = store.get('zootopia_history') || [];
+                const existingArray = Array.isArray(existing) ? existing : [];
+                store.set('zootopia_history', [historyItem, ...existingArray]);
             };
 
             const saveLearningRecords = async (isVictory) => {
@@ -995,9 +996,8 @@
                     if (systemWords.length === 0) {
                         const systemWordsJSON = store.get('zootopia_words');
                         if (systemWordsJSON) {
-                            const parsedWords = JSON.parse(systemWordsJSON);
-                            if (Array.isArray(parsedWords) && parsedWords.length > 0) {
-                                systemWords = parsedWords.map((word, index) => ({
+                            if (Array.isArray(systemWordsJSON) && systemWordsJSON.length > 0) {
+                                systemWords = systemWordsJSON.map((word, index) => ({
                                     id: `sys-${Date.now()}-${index}`,
                                     en: word.en,
                                     cn: word.cn,
@@ -1125,7 +1125,10 @@
         const HistoryViewer = ({ onBack }) => {
             const [history, setHistory] = useState([]);
             useEffect(() => {
-                setHistory(JSON.parse(store.get('zootopia_history') || '[]'));
+                const savedHistory = store.get('zootopia_history');
+                if (savedHistory) {
+                    setHistory(Array.isArray(savedHistory) ? savedHistory : []);
+                }
             }, []);
 
             return (
@@ -1169,12 +1172,11 @@
                     // 尝试从zootopia_words读取（学生端传递的数据）
                     const savedWords = store.get('zootopia_words');
                     if (savedWords) {
-                        const parsedWords = JSON.parse(savedWords);
-                        console.log('Loaded words from student app:', parsedWords);
-                        if (parsedWords.length > 0) {
+                        console.log('Loaded words from student app:', savedWords);
+                        if (Array.isArray(savedWords) && savedWords.length > 0) {
                             const dataset = {
                                 name: '学生词库',
-                                words: parsedWords.map((word, index) => ({
+                                words: savedWords.map((word, index) => ({
                                     id: index + 1,
                                     en: word.en || word.word || word,
                                     cn: word.cn || word.meaning || word,
@@ -1189,11 +1191,12 @@
                     else {
                         const savedDatasets = store.get('zootopia_datasets');
                         if (savedDatasets) {
-                            const parsedDatasets = JSON.parse(savedDatasets);
-                            console.log('Loaded datasets:', parsedDatasets);
-                            setDatasets(parsedDatasets);
-                            if (parsedDatasets.length > 0) {
-                                setActiveDataset(parsedDatasets[0].name);
+                            console.log('Loaded datasets:', savedDatasets);
+                            if (Array.isArray(savedDatasets)) {
+                                setDatasets(savedDatasets);
+                                if (savedDatasets.length > 0) {
+                                    setActiveDataset(savedDatasets[0].name);
+                                }
                             }
                         }
                     }
@@ -1201,9 +1204,8 @@
                     // 尝试加载用户信息
                     const savedUser = store.get('zootopia_user');
                     if(savedUser) {
-                        const parsedUser = JSON.parse(savedUser);
-                        console.log('Loaded user info:', parsedUser);
-                        setUserInfo(parsedUser);
+                        console.log('Loaded user info:', savedUser);
+                        setUserInfo(savedUser);
                     }
                     // 尝试从学生端获取用户信息
                     else if (window.opener && window.opener.auth && window.opener.auth.getCurrentUser) {

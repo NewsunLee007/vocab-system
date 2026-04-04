@@ -1335,7 +1335,7 @@ const contextTest = {
             savedAt: new Date().toISOString()
         };
         const key = `context_test_progress_${this.session.words.join('_')}`;
-        helpers.memoryStore.set(key, JSON.stringify(progress));
+        helpers.memoryStore.set(key, progress);
     },
 
     /**

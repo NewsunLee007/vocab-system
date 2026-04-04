@@ -3271,7 +3271,7 @@ const student = {
             const all = db.getAllWords ? db.getAllWords() : [];
             const compact = all.map(w => ({ en: w.word || w.en || '', cn: w.meaning || w.cn || '' }))
                 .filter(w => w.en && w.cn);
-            helpers.memoryStore.set('zootopia_words', JSON.stringify(compact));
+            helpers.memoryStore.set('zootopia_words', compact);
             
             // 尝试打开游戏文件
             const gameUrl = './zootopia.html';
@@ -3295,10 +3295,10 @@ const student = {
     saveTaskProgress(taskId, completedCount) {
         const user = auth.getCurrentUser();
         const key = `task_progress_${user.id}_${taskId}`;
-        const progress = JSON.parse(helpers.memoryStore.get(key) || '{"completed": 0}');
+        const progress = helpers.memoryStore.get(key) || { completed: 0 };
         progress.completed += completedCount;
         progress.lastTime = new Date().toISOString();
-        helpers.memoryStore.set(key, JSON.stringify(progress));
+        helpers.memoryStore.set(key, progress);
     },
 
     /**
@@ -3307,7 +3307,7 @@ const student = {
     getTaskProgress(taskId) {
         const user = auth.getCurrentUser();
         const key = `task_progress_${user.id}_${taskId}`;
-        return JSON.parse(helpers.memoryStore.get(key) || '{"completed": 0}');
+        return helpers.memoryStore.get(key) || { completed: 0 };
     },
 
     /**

@@ -263,7 +263,7 @@ const flexibleLearning = {
             taskId: this.session.taskId,
             savedAt: new Date().toISOString()
         };
-        helpers.memoryStore.set(this.session.progressKey, JSON.stringify(progress));
+        helpers.memoryStore.set(this.session.progressKey, progress);
     },
 
     /**
@@ -272,7 +272,7 @@ const flexibleLearning = {
     restoreProgress() {
         const saved = helpers.memoryStore.get(this.session.progressKey);
         if (saved) {
-            const progress = JSON.parse(saved);
+            const progress = saved;
             // 检查是否是同一批单词
             if (progress.taskId === this.session.taskId && 
                 progress.words && 

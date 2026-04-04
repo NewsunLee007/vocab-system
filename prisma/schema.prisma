@@ -24,19 +24,10 @@ model User {
   passwordChanged Boolean          @default(false)
   loginAttempts   Int              @default(0)
   lockUntil       DateTime?
-  // 学生学习数据
-  coins           Int              @default(0)
-  badges          Json?
-  streak          Int              @default(0)
-  totalLearned    Int              @default(0)
-  totalTests      Int              @default(0)
-  totalCorrect    Int              @default(0)
-  totalQuestions  Int              @default(0)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   vocabularies    Vocabulary[]
   learningRecords LearningRecord[]
-  wordLists       WordList[]
 
   @@index([role, className])
   @@unique([username, className, role])
@@ -75,20 +66,6 @@ model LearningRecord {
 
   @@unique([userId, vocabularyId])
   @@index([nextReviewAt])
-}
-
-model WordList {
-  id          String         @id @default(cuid())
-  name        String
-  description String?
-  words       Json?          // [{word, definition, phonetic, example, difficulty}]
-  createdById String
-  createdBy   User           @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  isPublic    Boolean        @default(false)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  @@index([createdById])
 }
 
 model SchoolData {

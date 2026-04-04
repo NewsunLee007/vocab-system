@@ -59,55 +59,23 @@ module.exports = async function handler(req, res) {
         class: s.className || '',
         teacherId: null,
         passwordChanged: s.passwordChanged,
-        coins: s.coins || 0,
-        badges: s.badges || [],
-        streak: s.streak || 0,
-        totalLearned: s.totalLearned || 0,
-        totalTests: s.totalTests || 0,
-        totalCorrect: s.totalCorrect || 0,
-        totalQuestions: s.totalQuestions || 0
+        coins: 0,
+        badges: [],
+        streak: 0,
+        totalLearned: 0,
+        totalTests: 0,
+        totalCorrect: 0,
+        totalQuestions: 0
       }));
       
       let wordlists = [];
-      try {
-        if (user.role === 'ADMIN') {
-          wordlists = await prisma.wordList.findMany({
-            orderBy: { updatedAt: 'desc' },
-            include: { createdBy: true }
-          });
-        } else if (user.role === 'TEACHER') {
-          wordlists = await prisma.wordList.findMany({
-            where: {
-              OR: [
-                { createdById: user.id },
-                { isPublic: true }
-              ]
-            },
-            orderBy: { updatedAt: 'desc' },
-            include: { createdBy: true }
-          });
-        }
-      } catch (e) {
-        console.log('WordList表不存在或读取失败');
-      }
-      
-      const normalizedWordLists = wordlists.map(wl => ({
-        id: wl.id,
-        title: wl.name,
-        name: wl.name,
-        description: wl.description,
-        words: wl.words || [],
-        teacherId: wl.createdById,
-        createdAt: wl.createdAt,
-        updatedAt: wl.updatedAt
-      }));
       
       const oldPayload = schoolData?.payload || {};
       
       const payload = {
         teachers: normalizedTeachers,
         students: normalizedStudents,
-        wordlists: normalizedWordLists.length > 0 ? normalizedWordLists : (oldPayload.wordlists || oldPayload.wordLists || []),
+        wordlists: oldPayload.wordlists || oldPayload.wordLists || [],
         tasks: oldPayload.tasks || [],
         learningLogs: oldPayload.learningLogs || [],
         studentStates: oldPayload.studentStates || {},

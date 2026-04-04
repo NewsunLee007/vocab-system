@@ -17,12 +17,12 @@
       "destination": "/api/word-lists/index"
     },
     {
-      "source": "/api/word-lists/(?<id>[^/]+)",
-      "destination": "/api/word-lists/index?id=$id"
+      "source": "/api/word-lists/:id",
+      "destination": "/api/word-lists/index"
     },
     {
-      "source": "/api/students/(?<id>[^/]+)",
-      "destination": "/api/students/[id]?id=$id"
+      "source": "/api/students/:id",
+      "destination": "/api/students/[id]"
     },
     {
       "source": "/((?!api/).*)",

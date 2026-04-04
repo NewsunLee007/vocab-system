@@ -46,33 +46,18 @@ const router = {
     handleInitialPath() {
         // 检查用户是否已登录
         if (auth.isLoggedIn()) {
-            // 用户已登录，直接重定向到对应页面，使用 replaceState 替换历史记录
-            const user = auth.getCurrentUser();
-            if (user) {
-                let targetView = 'login';
-                switch (user.role) {
-                    case 'admin':
-                        targetView = 'admin';
-                        break;
-                    case 'teacher':
-                        targetView = 'teacher';
-                        break;
-                    case 'student':
-                        targetView = 'student';
-                        break;
-                }
-                this.navigate(targetView, false, true); // 第三个参数表示使用 replaceState
-            }
+            this.redirectByRole();
             return;
         }
         
         const path = window.location.pathname;
         const viewName = this.getViewFromPath(path);
         
-        if (viewName) {
+        if (viewName && viewName !== 'login') {
             this.navigate(viewName, false);
         } else {
-            this.navigate('login', false);
+            // 如果未登录且没有指定合法的内部视图，则直接重定向回门户首页
+            window.location.href = 'index.html';
         }
     },
 
@@ -276,7 +261,7 @@ const router = {
             // admin 从任意页面返回教务处
             this.navigate('admin');
         } else {
-            this.navigate('login');
+            window.location.href = 'index.html';
         }
     },
 
@@ -285,13 +270,13 @@ const router = {
      */
     redirectByRole() {
         if (!auth.isLoggedIn()) {
-            this.navigate('login');
+            window.location.href = 'index.html';
             return;
         }
         
         const user = auth.getCurrentUser();
         if (!user) {
-            this.navigate('login');
+            window.location.href = 'index.html';
             return;
         }
         
@@ -306,7 +291,7 @@ const router = {
                 this.navigate('student');
                 break;
             default:
-                this.navigate('login');
+                window.location.href = 'index.html';
         }
     }
 };

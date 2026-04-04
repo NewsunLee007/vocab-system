@@ -12,15 +12,13 @@ const app = {
         auth.refreshCurrentUserProfile();
         dataSync.init();
         
-        const hasSession = auth.isLoggedIn();
-        
         // 更新导航栏
         this.updateNav();
         
-        // 如果有会话，自动跳转到对应页面
-        if (hasSession && auth.currentUser) {
-            router.navigate(auth.currentUser.role === 'admin' ? 'admin' : 
-                           auth.currentUser.role === 'teacher' ? 'teacher' : 'student');
+        // 统一路由分发控制权
+        if (auth.isLoggedIn()) {
+            // 如果用户已经登录，根据角色将他分配到对应的工作台
+            router.redirectByRole();
             
             // 后台同步词库到服务器
             setTimeout(() => {
@@ -29,6 +27,7 @@ const app = {
                 });
             }, 2000);
         } else {
+            // 如果未登录，交由路由处理（触发拦截重定向回首页）
             router.navigate('login');
         }
         

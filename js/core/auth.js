@@ -25,10 +25,6 @@ const auth = {
                     class: u.className,
                     passwordChanged: u.passwordChanged
                 };
-                // 登录成功后根据角色重定向
-                if (typeof router !== 'undefined' && router.redirectByRole) {
-                    router.redirectByRole();
-                }
                 return true;
             }
         } catch (e) {
@@ -43,10 +39,6 @@ const auth = {
                     role: 'teacher',
                     passwordChanged: true
                 };
-                // 登录成功后根据角色重定向
-                if (typeof router !== 'undefined' && router.redirectByRole) {
-                    router.redirectByRole();
-                }
                 return true;
             }
         }

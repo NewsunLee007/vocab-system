@@ -44,20 +44,15 @@ const router = {
      * 处理初始路径
      */
     handleInitialPath() {
-        // 检查用户是否已登录
-        if (auth.isLoggedIn()) {
-            this.redirectByRole();
-            return;
-        }
+        // 在新版架构中，路由的初始分发权移交给了 app.js 的 app.init() 方法
+        // 这里不需要再做拦截，否则会与 app.init 产生时序冲突（也就是会导致在登录页面跳转到 app.html 时，闪回首页的 bug）
+        // 这里完全不做任何跳转，只记录内部状态
         
         const path = window.location.pathname;
         const viewName = this.getViewFromPath(path);
         
         if (viewName && viewName !== 'login') {
-            this.navigate(viewName, false);
-        } else {
-            // 如果未登录且没有指定合法的内部视图，则直接重定向回门户首页
-            window.location.href = 'index.html';
+            this.currentView = viewName;
         }
     },
 
@@ -280,15 +275,21 @@ const router = {
             return;
         }
         
+        // Ensure we are on app.html before navigating to internal views
+        if (!window.location.pathname.endsWith('app.html')) {
+            window.location.href = 'app.html';
+            return;
+        }
+        
         switch (user.role) {
             case 'admin':
-                this.navigate('admin');
+                this.navigate('admin', true, true);
                 break;
             case 'teacher':
-                this.navigate('teacher');
+                this.navigate('teacher', true, true);
                 break;
             case 'student':
-                this.navigate('student');
+                this.navigate('student', true, true);
                 break;
             default:
                 window.location.href = 'index.html';

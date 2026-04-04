@@ -120,23 +120,10 @@
 
                 showLoading('正在登录...');
                 
-                const result = await api.login({ username: input, password: pwd, role: 'teacher' });
+                const result = await auth.loginTeacher();
                 
-                if (result && result.user) {
-                    // 设置auth.currentUser，确保在app.html中用户信息不丢失
-                    if (auth) {
-                        auth.currentUser = {
-                            id: result.user.id,
-                            name: result.user.username,
-                            role: 'teacher',
-                            passwordChanged: result.user.passwordChanged
-                        };
-                    }
+                if (result) {
                     hideLoading();
-                    showToast('登录成功！', 'success');
-                    setTimeout(function() {
-                        window.location.href = 'app.html';
-                    }, 500);
                 }
             } catch (err) {
                 hideLoading();

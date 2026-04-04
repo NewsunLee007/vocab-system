@@ -31,12 +31,13 @@ const auth = {
             console.warn('API me() failed:', e);
             // 如果API失败但是有token，尝试从localStorage中恢复用户信息
             const token = localStorage.getItem('vocab_api_token');
-            if (token) {
-                // 暂时设置一个默认的教师用户，以便能够进入系统
+            const role = localStorage.getItem('currentRole');
+            if (token && role) {
+                // 暂时设置一个默认的用户，以便能够进入系统
                 this.currentUser = {
                     id: '1',
-                    name: '教师',
-                    role: 'teacher',
+                    name: '本地恢复',
+                    role: role,
                     passwordChanged: true
                 };
                 return true;
@@ -155,6 +156,12 @@ const auth = {
                 if (!admin.passwordChanged) {
                     this.currentUser = admin;
                     this._pendingPasswordChange = { ...admin, oldPassword: pwd };
+                    
+                    if (!window.location.pathname.endsWith('app.html')) {
+                        window.location.href = 'app.html?action=force_change_password';
+                        return true;
+                    }
+                    
                     this.showForceChangePasswordModal();
                     app.updateNav();
                     return true;
@@ -172,10 +179,15 @@ const auth = {
                 // 关闭模态框
                 app.hideAdminLogin();
                 
-                // 根据角色重定向，使用 replaceState 替换历史记录
-                router.navigate('admin', true, true);
-                app.updateNav();
                 helpers.showToast('欢迎回来，教务处管理员！', 'success');
+                
+                // 如果当前不在 app.html，跳转到 app.html
+                if (!window.location.pathname.endsWith('app.html')) {
+                    window.location.href = 'app.html';
+                } else {
+                    router.navigate('admin', true, true);
+                    app.updateNav();
+                }
                 return true;
             }
         } catch (err) {
@@ -271,12 +283,17 @@ const auth = {
                 // 强制更新导航栏
                 app.updateNav();
                 
-                if (pendingRole === 'admin') {
-                    router.navigate('admin');
-                } else if (pendingRole === 'teacher') {
-                    router.navigate('teacher');
+                // 如果不在 app.html，则重定向
+                if (!window.location.pathname.endsWith('app.html')) {
+                    window.location.href = 'app.html';
                 } else {
-                    router.navigate('student');
+                    if (pendingRole === 'admin') {
+                        router.navigate('admin');
+                    } else if (pendingRole === 'teacher') {
+                        router.navigate('teacher');
+                    } else {
+                        router.navigate('student');
+                    }
                 }
             }, 1000);
             
@@ -365,6 +382,12 @@ const auth = {
                 if (!teacher.passwordChanged) {
                     this.currentUser = teacher;
                     this._pendingPasswordChange = { ...teacher, oldPassword: pwd };
+                    
+                    if (!window.location.pathname.endsWith('app.html')) {
+                        window.location.href = 'app.html?action=force_change_password';
+                        return true;
+                    }
+                    
                     this.showForceChangePasswordModal();
                     app.updateNav();
                     return true;
@@ -376,10 +399,16 @@ const auth = {
                 // 关闭模态框
                 app.hideTeacherLogin();
                 
-                // 根据角色重定向，使用 replaceState 替换历史记录
-                router.navigate('teacher', true, true);
-                app.updateNav();
                 helpers.showToast(`欢迎回来，${teacher.name}！`, 'success');
+                
+                // 如果当前不在 app.html，跳转到 app.html
+                if (!window.location.pathname.endsWith('app.html')) {
+                    window.location.href = 'app.html';
+                } else {
+                    // 根据角色重定向，使用 replaceState 替换历史记录
+                    router.navigate('teacher', true, true);
+                    app.updateNav();
+                }
                 return true;
             }
         } catch (err) {
@@ -419,6 +448,12 @@ const auth = {
                      this.currentUser = student;
                      this._pendingPasswordChange = { ...student, oldPassword: pwd };
                      if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
+                     
+                     if (!window.location.pathname.endsWith('app.html')) {
+                         window.location.href = 'app.html?action=force_change_password';
+                         return true;
+                     }
+                     
                      this.showForceChangePasswordModal();
                      app.updateNav();
                      return true;
@@ -428,12 +463,19 @@ const auth = {
                 this.currentUser = student;
                 
                 // 根据角色重定向
-                if (typeof router !== 'undefined' && router.redirectByRole) {
-                    router.redirectByRole();
+                helpers.showToast(`欢迎回来，${student.name}！`, 'success');
+                
+                // 如果当前不在 app.html，跳转到 app.html
+                if (!window.location.pathname.endsWith('app.html')) {
+                    window.location.href = 'app.html';
                 } else {
-                    this.completeStudentLogin(student);
+                    if (typeof router !== 'undefined' && router.redirectByRole) {
+                        router.redirectByRole();
+                    } else {
+                        this.completeStudentLogin(student);
+                    }
+                    app.updateNav();
                 }
-                app.updateNav();
                 return true;
             }
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
@@ -472,11 +514,14 @@ const auth = {
         console.log('currentUser set:', this.currentUser);
         console.log('Session ready, navigating to student...');
         
-        const result = router.navigate('student');
-        console.log('Navigation result:', result);
-        
-        app.updateNav();
-        helpers.showToast(`欢迎回来，${hydratedStudent.name}！`, 'success');
+        // 如果当前不在 app.html，跳转到 app.html
+        if (!window.location.pathname.endsWith('app.html')) {
+            window.location.href = 'app.html';
+        } else {
+            const result = router.navigate('student');
+            console.log('Navigation result:', result);
+            app.updateNav();
+        }
     },
 
     /**
@@ -601,9 +646,12 @@ const auth = {
             window.speechSynthesis.cancel();
         }
         
-        // 登出后跳转到新的角色选择页面
-        window.location.href = 'index.html';
         helpers.showToast('已安全退出', 'info');
+        
+        // 登出后跳转到新的角色选择页面
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 100);
     },
 
     /**

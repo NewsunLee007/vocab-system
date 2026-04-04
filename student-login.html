@@ -152,16 +152,10 @@
 
                 showLoading('正在登录...');
                 
-                const result = await api.login({ username: name, className: className, password: pwd, role: 'student' });
+                const result = await auth.loginStudent();
                 
-                if (result && result.user) {
-                    localStorage.setItem('currentRole', 'student');
-                    localStorage.setItem('apiToken', result.token);
+                if (result) {
                     hideLoading();
-                    showToast('登录成功！', 'success');
-                    setTimeout(function() {
-                        window.location.href = 'app.html';
-                    }, 500);
                 }
             } catch (err) {
                 hideLoading();

@@ -115,16 +115,11 @@
 
                 showLoading('正在登录...');
                 
-                const result = await api.login({ username: 'admin', password: pwd, role: 'admin' });
+                const result = await auth.loginAdmin();
                 
-                if (result && result.user) {
-                    localStorage.setItem('currentRole', 'admin');
-                    localStorage.setItem('apiToken', result.token);
+                if (result) {
                     hideLoading();
-                    showToast('登录成功！', 'success');
-                    setTimeout(function() {
-                        window.location.href = 'app.html';
-                    }, 500);
+                    // auth.js 会负责跳转到 app.html
                 }
             } catch (err) {
                 hideLoading();

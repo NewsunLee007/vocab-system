@@ -20,6 +20,12 @@ const app = {
             // 如果用户已经登录，根据角色将他分配到对应的工作台
             router.redirectByRole();
             
+            // 如果 URL 参数包含 force_change_password，则显示修改密码弹窗
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('action') === 'force_change_password') {
+                auth.showForceChangePasswordModal();
+            }
+            
             // 后台同步词库到服务器
             setTimeout(() => {
                 dataSync.syncWordlistsToServer().catch(err => {
@@ -27,8 +33,10 @@ const app = {
                 });
             }, 2000);
         } else {
-            // 如果未登录，交由路由处理（触发拦截重定向回首页）
-            router.navigate('login');
+            // 如果未登录，且当前是在 app.html 内，才重定向回首页
+            if (window.location.pathname.endsWith('app.html')) {
+                window.location.href = 'index.html';
+            }
         }
         
         console.log('新纪元英语词汇系统已初始化');

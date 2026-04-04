@@ -54,10 +54,20 @@ const db = {
                 
                 this._data.wordLists = (d.wordlists || d.wordLists || []).map(wordList => ({
                     ...wordList,
-                    words: Array.isArray(wordList?.words) ? wordList.words : []
+                    words: Array.isArray(wordList?.words) ? wordList.words : [],
+                    // 为词表添加默认的teacherId，确保与教师关联
+                    teacherId: wordList?.teacherId || 't001'
                 }));
-                this._data.tasks = d.tasks || [];
-                this._data.learningLogs = d.learningLogs || [];
+                this._data.tasks = (d.tasks || []).map(task => ({
+                    ...task,
+                    // 为任务添加默认的teacherId，确保与教师关联
+                    teacherId: task?.teacherId || 't001'
+                }));
+                this._data.learningLogs = (d.learningLogs || []).map(log => ({
+                    ...log,
+                    // 为学习日志添加默认的teacherId，确保与教师关联
+                    teacherId: log?.teacherId || 't001'
+                }));
                 this._data.studentStates = d.studentStates || {};
                 this._data.admins = d.admins || [];
                 this._data.dict = this.normalizeDict(d.dict || {});
@@ -186,7 +196,7 @@ const db = {
             ...student,
             name: student.name || student.username || '',
             class: student.class || student.className || '',
-            teacherId: student.teacherId || null,  // 确保保留 teacherId
+            teacherId: student.teacherId || 't001',  // 默认教师ID，确保每个学生都有教师关联
             coins: Number(student.coins || 0),
             badges: Array.isArray(student.badges) ? student.badges : [],
             streak: Number(student.streak || 0),

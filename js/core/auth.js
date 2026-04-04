@@ -355,8 +355,15 @@ const auth = {
             if (helpers && typeof helpers.hideLoading === 'function') helpers.hideLoading();
 
             if (result && result.user) {
+                // 确保教师ID格式一致，与学生的teacherId格式匹配
+                let teacherId = result.user.id;
+                // 如果是本地开发环境且ID为'1'，转换为't001'以匹配默认值
+                if ((api._baseUrl.includes('localhost') || api._baseUrl.includes('127.0.0.1')) && teacherId === '1') {
+                    teacherId = 't001';
+                }
+                
                 const teacher = {
-                    id: result.user.id,
+                    id: teacherId,
                     name: result.user.username,
                     role: 'teacher',
                     passwordChanged: result.user.passwordChanged

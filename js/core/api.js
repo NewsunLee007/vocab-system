@@ -99,10 +99,15 @@ const api = {
             console.log('本地开发环境，模拟登录成功');
             const mockToken = 'local_dev_token_' + Date.now();
             this.setToken(mockToken);
+            // 为教师角色使用't001'格式的ID，与学生的teacherId格式匹配
+            let mockId = '1';
+            if (credentials.role === 'teacher') {
+                mockId = 't001';
+            }
             return {
                 success: true,
                 user: {
-                    id: '1',
+                    id: mockId,
                     username: credentials.username,
                     role: credentials.role,
                     passwordChanged: true
@@ -147,7 +152,7 @@ const api = {
             return {
                 success: true,
                 user: {
-                    id: '1',
+                    id: 't001', // 使用't001'格式以匹配学生的teacherId
                     username: '教师',
                     role: 'teacher',
                     passwordChanged: true

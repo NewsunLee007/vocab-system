@@ -52,7 +52,7 @@ const admin = {
         try {
             const teachers = await api.fetchTeacherAccounts();
             // 同步到 db 缓存（供其他功能使用）
-            db._data.teachers = teachers.map(t => ({ id: t.id, name: t.username, dbId: t.id }));
+            db._data.teachers = teachers.map(t => ({ id: t.id, username: t.username, name: t.name || t.username, dbId: t.id }));
             
             tbody.innerHTML = '';
             
@@ -383,8 +383,8 @@ const admin = {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-slate-50';
                 row.innerHTML = `
-                    <td class="p-3 border-b font-medium">${teacher.username || teacher.id}</td>
-                    <td class="p-3 border-b">${teacher.name || teacher.username || teacher.id}</td>
+                    <td class="p-3 border-b font-medium">${teacher.username}</td>
+                    <td class="p-3 border-b">${teacher.name || teacher.username}</td>
                     <td class="p-3 border-b">${classes.length}</td>
                     <td class="p-3 border-b">${students.length}</td>
                     <td class="p-3 border-b">${wordlists.length}</td>

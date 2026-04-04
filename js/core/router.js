@@ -9,7 +9,6 @@ const router = {
 
     // 视图配置
     views: {
-        login: 'view-login',
         admin: 'view-admin',
         teacher: 'view-teacher',
         student: 'view-student',
@@ -19,8 +18,6 @@ const router = {
 
     // 路径映射
     pathMap: {
-        '/': 'login',
-        '/login': 'login',
         '/admin': 'admin',
         '/teacher': 'teacher',
         '/student': 'student',
@@ -116,10 +113,16 @@ const router = {
     navigate(viewName, updateHistory = true, useReplaceState = false) {
         console.log(`=== router.navigate: ${viewName} ===`);
         
+        // 拦截旧的 login 视图，重定向到门户页
+        if (viewName === 'login') {
+            window.location.href = 'index.html';
+            return false;
+        }
+        
         // 权限检查
         if (!this.checkPermission(viewName)) {
             console.warn(`无权访问视图: ${viewName}`);
-            this.navigate('login');
+            window.location.href = 'index.html';
             return false;
         }
 

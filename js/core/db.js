@@ -547,6 +547,14 @@ const db = {
                 delete this._data.studentStates[studentId];
             }
             this.save();
+            
+            // 同步到后端数据库
+            if (window.api && typeof window.api.deleteStudent === 'function') {
+                window.api.deleteStudent(studentId).catch(err => {
+                    console.warn('Failed to delete student from backend:', err);
+                });
+            }
+            
             return true;
         }
         return false;

@@ -3,8 +3,8 @@ const { getAuthUser } = require('../_lib/auth');
 const { ok, fail, methodNotAllowed } = require('../_lib/http');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'GET' && req.method !== 'PUT' && req.method !== 'POST') {
-    return methodNotAllowed(req, res, ['GET', 'PUT', 'POST']);
+  if (req.method !== 'GET' && req.method !== 'PUT' && req.method !== 'POST' && req.method !== 'DELETE') {
+    return methodNotAllowed(req, res, ['GET', 'PUT', 'POST', 'DELETE']);
   }
 
   try {
@@ -127,6 +127,18 @@ module.exports = async function handler(req, res) {
       });
 
       return ok(res, updatedStudent);
+    }
+
+    if (req.method === 'DELETE') {
+      if (user.role !== 'ADMIN' && user.role !== 'TEACHER') {
+        return fail(res, 403, '无权删除学生');
+      }
+
+      await prisma.user.delete({
+        where: { id }
+      });
+
+      return ok(res, { success: true, message: '学生已删除' });
     }
   } catch (error) {
     console.error('学生数据接口错误:', error);

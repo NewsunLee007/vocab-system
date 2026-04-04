@@ -542,6 +542,18 @@ const api = {
             throw new Error(message || 'Update student coins failed');
         }
         return this._readSuccessData(response);
+    },
+
+    async deleteStudent(studentId) {
+        const response = await fetch(this._url(`/students/${studentId}`), {
+            method: 'DELETE',
+            headers: this._headers()
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Delete student failed');
+        }
+        return this._readSuccessData(response);
     }
 };
 

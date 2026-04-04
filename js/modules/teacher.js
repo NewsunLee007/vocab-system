@@ -1002,6 +1002,19 @@ const teacher = {
      */
     createWordlistItem(wl, isTextbook) {
         const tagClass = wl.type === '教材' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-purple-500/20 text-purple-300';
+        
+        // 检查是否有AI生成的练习和例句
+        const hasAIExercises = wl.aiMaterials && (wl.aiMaterials.flashcard || wl.aiMaterials.context || wl.aiMaterials.matching);
+        const hasAIExamples = wl.aiMaterials && wl.aiMaterials.flashcard && wl.aiMaterials.flashcard.length > 0;
+        
+        // 生成AI标记
+        let aiBadge = '';
+        if (hasAIExercises && hasAIExamples) {
+            aiBadge = `<span class="ml-2 px-2 py-1 rounded text-xs bg-green-500/20 text-green-300"><i class="fa-solid fa-robot mr-1"></i>AI 完整</span>`;
+        } else if (hasAIExercises || hasAIExamples) {
+            aiBadge = `<span class="ml-2 px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-300"><i class="fa-solid fa-robot mr-1"></i>AI 部分</span>`;
+        }
+        
         // 构建副标题信息
         let subtitle = '';
         if (wl.textbook || wl.grade || wl.volume || wl.unit) {
@@ -1020,6 +1033,7 @@ const teacher = {
                 <div class="flex items-center">
                     <span class="px-2 py-1 rounded text-xs ${tagClass}">${wl.type}</span>
                     <span class="font-medium text-white ml-3">${wl.title}</span>
+                    ${aiBadge}
                 </div>
                 ${subtitle ? `<div class="text-xs text-slate-400 mt-1">${subtitle} · ${wl.words.length}词</div>` : `<span class="text-xs text-slate-500 ml-2">(${wl.words.length}词)</span>`}
             </div>

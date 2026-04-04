@@ -3870,7 +3870,7 @@ const student = {
             listHtml += `
                 <div class="mb-4">
                     <div class="text-xs text-indigo-200 mb-2">${groupName}</div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="grid grid-cols-1 gap-2">
                         ${wls.map(wl => `
                             <button 
                                 class="text-left p-3 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-white transition"
@@ -3929,14 +3929,15 @@ const student = {
                 { name: [wl.textbook, wl.grade, wl.volume, helpers.formatUnitLabel(wl.unit || wl.title)].filter(Boolean).join(' ') || helpers.formatUnitLabel(wl.title) || '所选单元', words: formatted },
                 { name: '系统词库', words: systemWords }
             ];
-            helpers.memoryStore.set('zootopia_datasets', JSON.stringify(datasets));
+            // 同时存储到localStorage，确保Zootopia页面能读取到
+            localStorage.setItem('zootopia_datasets', JSON.stringify(datasets));
             const user = auth.getCurrentUser();
             const className = user ? (user.class || user.className || user.classId || '') : '';
             const classId = user ? (user.classId || user.class || '') : '';
             const userInfo = user 
                 ? { name: user.name || '学生', className: className || undefined, classId: classId || undefined, groupId: user.groupId || '1' }
                 : { name: '学生', className: '', classId: '', groupId: '1' };
-            helpers.memoryStore.set('zootopia_user', JSON.stringify(userInfo));
+            localStorage.setItem('zootopia_user', JSON.stringify(userInfo));
 
             const selector = document.getElementById('game-dataset-selector');
             if (selector) selector.remove();

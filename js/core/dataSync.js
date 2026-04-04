@@ -20,6 +20,31 @@ const dataSync = {
         }
     },
 
+    async syncStudentCoins(studentId, coins) {
+        try {
+            this.init();
+            
+            console.log('syncStudentCoins:', { studentId, coins });
+            
+            if (!window.api) {
+                console.log('API not available, cannot sync coins');
+                return false;
+            }
+
+            try {
+                const result = await window.api.updateStudentCoins(studentId, coins);
+                console.log('Coins synced to server:', result);
+                return true;
+            } catch (apiError) {
+                console.warn('Failed to sync coins to server:', apiError.message || apiError);
+                return false;
+            }
+        } catch (error) {
+            console.warn('Sync student coins error:', error.message || error);
+            return false;
+        }
+    },
+
     async saveLearningRecord(record) {
         try {
             this.init();

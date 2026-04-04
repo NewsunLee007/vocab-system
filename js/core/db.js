@@ -350,7 +350,7 @@ const db = {
 
     addTeacher(teacherData) {
         const newTeacher = {
-            id: teacherData.id,
+            id: teacherData.id, // 使用用户设定的ID，如t008
             pwd: helpers.hash(teacherData.pwd || '123'),
             name: teacherData.name,
             subject: teacherData.subject || '英语',
@@ -520,6 +520,14 @@ const db = {
         if (student) {
             student.coins += amount;
             this.save();
+            
+            // 同步到后端数据库
+            if (window.dataSync && typeof window.dataSync.syncStudentCoins === 'function') {
+                window.dataSync.syncStudentCoins(studentId, student.coins).catch(err => {
+                    console.warn('Failed to sync coins:', err);
+                });
+            }
+            
             return student.coins;
         }
         return null;

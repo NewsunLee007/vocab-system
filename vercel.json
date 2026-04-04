@@ -17,6 +17,10 @@
       "destination": "/api/word-lists/index"
     },
     {
+      "source": "/api/admin/fix-teacher",
+      "destination": "/api/admin/fix-teacher"
+    },
+    {
       "source": "/api/word-lists/:id",
       "destination": "/api/word-lists/index"
     },

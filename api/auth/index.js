@@ -147,6 +147,7 @@ async function handleRegister(req, res) {
         role: normalizedRole,
         passwordHash,
         passwordChanged: false,
+        teacherId: operator.role === 'TEACHER' && normalizedRole === 'STUDENT' ? operator.id : null,
       },
     });
 

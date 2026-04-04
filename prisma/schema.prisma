@@ -24,6 +24,7 @@ model User {
   passwordChanged Boolean          @default(false)
   loginAttempts   Int              @default(0)
   lockUntil       DateTime?
+  teacherId       String?          // 关联的教师ID (针对学生)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   

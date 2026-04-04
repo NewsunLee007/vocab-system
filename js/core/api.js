@@ -515,7 +515,7 @@ const api = {
 
     async updateStudentCoins(studentId, coins) {
         const response = await fetch(this._url(`/students/${studentId}`), {
-            method: 'POST',
+            method: 'PUT',
             headers: this._headers({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ coins })
         });

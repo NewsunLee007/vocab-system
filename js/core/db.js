@@ -408,16 +408,8 @@ const db = {
         // admin 能看到全部学生
         if (teacherId === 'admin') return this._data.students;
         
-        // 如果教师是普通教师，让他们看到所有学生（因为学生数据中可能没有teacherId字段）
-        // 或者只返回有匹配teacherId或者没有teacherId的学生
-        return this._data.students.filter(s => {
-            // 如果学生有明确的 teacherId，必须匹配
-            if (s.teacherId) {
-                return s.teacherId === teacherId;
-            }
-            // 如果学生的 teacherId 为 null 或不存在，包含进来（可能是后端数据问题）
-            return true;
-        });
+        // 只返回与教师关联的学生
+        return this._data.students.filter(s => s.teacherId === teacherId);
     },
 
     findStudent(id) {

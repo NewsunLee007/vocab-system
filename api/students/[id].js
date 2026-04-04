@@ -3,8 +3,8 @@ const { getAuthUser } = require('../_lib/auth');
 const { ok, fail, methodNotAllowed } = require('../_lib/http');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'GET' && req.method !== 'PUT') {
-    return methodNotAllowed(req, res, ['GET', 'PUT']);
+  if (req.method !== 'GET' && req.method !== 'PUT' && req.method !== 'POST') {
+    return methodNotAllowed(req, res, ['GET', 'PUT', 'POST']);
   }
 
   try {
@@ -103,6 +103,22 @@ module.exports = async function handler(req, res) {
       });
 
       return ok(res, updated);
+    }
+
+    if (req.method === 'POST') {
+      const { coins } = req.body;
+      
+      if (typeof coins !== 'number') {
+        return fail(res, 400, '积分必须是数字');
+      }
+
+      // 更新学生积分
+      const updatedStudent = await prisma.user.update({
+        where: { id },
+        data: { coins: coins }
+      });
+
+      return ok(res, updatedStudent);
     }
   } catch (error) {
     console.error('学生数据接口错误:', error);

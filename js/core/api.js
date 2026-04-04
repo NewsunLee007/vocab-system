@@ -514,10 +514,10 @@ const api = {
     },
 
     async updateStudentCoins(studentId, coins) {
-        const response = await fetch(this._url('/students/coins'), {
+        const response = await fetch(this._url(`/students/${studentId}`), {
             method: 'POST',
             headers: this._headers({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ studentId, coins })
+            body: JSON.stringify({ coins })
         });
         if (!response.ok) {
             const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);

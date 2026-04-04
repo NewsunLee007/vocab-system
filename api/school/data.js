@@ -101,8 +101,6 @@ module.exports = async function handler(req, res) {
         console.log('读取 WordList 表失败，可能尚未迁移', e.message);
       }
       
-      const oldPayload = schoolData?.payload || {};
-      
       // 合并数据库中的词表和旧版JSON词表
       const mergedWordlists = [...wordlists];
       const oldWordlists = oldPayload.wordlists || oldPayload.wordLists || [];

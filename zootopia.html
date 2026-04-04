@@ -129,15 +129,43 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
         const store = (() => {
-            try {
-                const openerStore = window.opener && window.opener.helpers && window.opener.helpers.memoryStore;
-                if (openerStore && typeof openerStore.get === 'function' && typeof openerStore.set === 'function') return openerStore;
-            } catch (e) {}
-            const map = new Map();
+            const STORAGE_PREFIX = 'zootopia_';
             return {
-                set: (k, v) => (map.set(String(k), v), true),
-                get: (k) => (map.has(String(k)) ? map.get(String(k)) : null),
-                remove: (k) => map.delete(String(k))
+                set: (k, v) => {
+                    try {
+                        const key = STORAGE_PREFIX + String(k);
+                        localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v));
+                        return true;
+                    } catch (e) {
+                        console.warn('Failed to save to store:', e);
+                        return false;
+                    }
+                },
+                get: (k) => {
+                    try {
+                        const key = STORAGE_PREFIX + String(k);
+                        const value = localStorage.getItem(key);
+                        if (value === null) return null;
+                        try {
+                            return JSON.parse(value);
+                        } catch (e) {
+                            return value;
+                        }
+                    } catch (e) {
+                        console.warn('Failed to load from store:', e);
+                        return null;
+                    }
+                },
+                remove: (k) => {
+                    try {
+                        const key = STORAGE_PREFIX + String(k);
+                        localStorage.removeItem(key);
+                        return true;
+                    } catch (e) {
+                        console.warn('Failed to remove from store:', e);
+                        return false;
+                    }
+                }
             };
         })();
 
@@ -326,6 +354,7 @@
             const [gameState, setGameState] = useState('playing'); 
             const [currentBatch, setCurrentBatch] = useState([]);
             const [processedWords, setProcessedWords] = useState(0);
+            const [completedWords, setCompletedWords] = useState(new Set());
 
             // V11: Smart Sorting & Chunking
             const batches = useMemo(() => {
@@ -348,6 +377,7 @@
                     setGameState('playing');
                     setLives(3); 
                     setProcessedWords(0);
+                    setCompletedWords(new Set());
                 } else {
                     setGameState('victory');
                 }
@@ -359,14 +389,20 @@
                     const newLives = prev - 1;
                     if (newLives <= 0) {
                         setGameState('game_over');
-                        saveScore(score); 
+                        saveScore(score);
+                        saveLearningRecords(false);
                     }
                     return newLives;
                 });
             };
 
             const addScore = (points) => setScore(s => s + points);
-            const markWordComplete = () => setProcessedWords(p => p + 1);
+            const markWordComplete = (word) => {
+                setProcessedWords(p => p + 1);
+                if (word) {
+                    setCompletedWords(prev => new Set(prev).add(word.en));
+                }
+            };
             const nextLevel = () => setLevel(l => l + 1);
 
             const saveScore = (finalScore) => {
@@ -383,7 +419,48 @@
                 store.set('zootopia_history', JSON.stringify([historyItem, ...existing]));
             };
 
-            useEffect(() => { if (gameState === 'victory') saveScore(score); }, [gameState]);
+            const saveLearningRecords = async (isVictory) => {
+                // 尝试使用dataSync保存学习记录
+                if (window.dataSync && typeof window.dataSync.saveLearningRecord === 'function') {
+                    console.log('Saving learning records...');
+                    for (const word of currentBatch) {
+                        const isCompleted = completedWords.has(word.en);
+                        await window.dataSync.saveLearningRecord({
+                            word: word.en,
+                            cn: word.cn,
+                            correct: isCompleted,
+                            mode: gameType.toLowerCase(),
+                            score: isCompleted ? 100 : 0,
+                            gameType: gameType
+                        });
+                    }
+                    console.log('Learning records saved');
+                } else if (window.opener && window.opener.dataSync) {
+                    // 尝试从opener获取dataSync
+                    console.log('Saving learning records via opener...');
+                    for (const word of currentBatch) {
+                        const isCompleted = completedWords.has(word.en);
+                        await window.opener.dataSync.saveLearningRecord({
+                            word: word.en,
+                            cn: word.cn,
+                            correct: isCompleted,
+                            mode: gameType.toLowerCase(),
+                            score: isCompleted ? 100 : 0,
+                            gameType: gameType
+                        });
+                    }
+                    console.log('Learning records saved via opener');
+                } else {
+                    console.warn('dataSync not available, cannot save learning records');
+                }
+            };
+
+            useEffect(() => {
+                if (gameState === 'victory') {
+                    saveScore(score);
+                    saveLearningRecords(true);
+                }
+            }, [gameState]);
 
             return { 
                 level, 
@@ -519,7 +596,11 @@
                         setSolved(s => [...s, cards[first].pairId]);
                         setFlipped([]);
                         setIsChecking(false);
-                        markWordComplete();
+                        // 找到对应的单词并标记完成
+                        const matchedWord = currentBatch.find(word => word.id === cards[first].pairId);
+                        if (matchedWord) {
+                            markWordComplete(matchedWord);
+                        }
                     } else {
                         // No Match
                         setMismatch([first, second]);
@@ -652,7 +733,7 @@
                 }
                 
                 setTimeout(() => {
-                    if (option.id === currentWord.id) markWordComplete();
+                    if (option.id === currentWord.id) markWordComplete(currentWord);
                     setFeedback(null);
                     setLightning(null);
                 }, 1000);
@@ -726,7 +807,7 @@
                     // Speak the word on correct spelling
                     speak(currentWord.en);
                     setTimeout(() => {
-                        markWordComplete();
+                        markWordComplete(currentWord);
                     }, 1000);
                 } else {
                     loseLife();
@@ -1085,20 +1166,59 @@
             // Load on mount
             useEffect(() => {
                 try {
-                    const savedDatasets = store.get('zootopia_datasets');
-                    if (savedDatasets) {
-                        const parsedDatasets = JSON.parse(savedDatasets);
-                        console.log('Loaded datasets:', parsedDatasets);
-                        setDatasets(parsedDatasets);
-                        if (parsedDatasets.length > 0) {
-                            setActiveDataset(parsedDatasets[0].name);
+                    // 尝试从zootopia_words读取（学生端传递的数据）
+                    const savedWords = store.get('zootopia_words');
+                    if (savedWords) {
+                        const parsedWords = JSON.parse(savedWords);
+                        console.log('Loaded words from student app:', parsedWords);
+                        if (parsedWords.length > 0) {
+                            const dataset = {
+                                name: '学生词库',
+                                words: parsedWords.map((word, index) => ({
+                                    id: index + 1,
+                                    en: word.en || word.word || word,
+                                    cn: word.cn || word.meaning || word,
+                                    tag: 'Student'
+                                }))
+                            };
+                            setDatasets([dataset]);
+                            setActiveDataset('学生词库');
+                        }
+                    } 
+                    // 如果没有学生端数据，尝试从zootopia_datasets读取
+                    else {
+                        const savedDatasets = store.get('zootopia_datasets');
+                        if (savedDatasets) {
+                            const parsedDatasets = JSON.parse(savedDatasets);
+                            console.log('Loaded datasets:', parsedDatasets);
+                            setDatasets(parsedDatasets);
+                            if (parsedDatasets.length > 0) {
+                                setActiveDataset(parsedDatasets[0].name);
+                            }
                         }
                     }
+                    
+                    // 尝试加载用户信息
                     const savedUser = store.get('zootopia_user');
                     if(savedUser) {
                         const parsedUser = JSON.parse(savedUser);
                         console.log('Loaded user info:', parsedUser);
                         setUserInfo(parsedUser);
+                    }
+                    // 尝试从学生端获取用户信息
+                    else if (window.opener && window.opener.auth && window.opener.auth.getCurrentUser) {
+                        const user = window.opener.auth.getCurrentUser();
+                        if (user) {
+                            const userInfo = {
+                                name: user.username || user.name || 'Cadet 007',
+                                className: user.className || '未设置班级',
+                                classId: user.className?.charAt(0) || 'A',
+                                groupId: '1'
+                            };
+                            setUserInfo(userInfo);
+                            store.set('zootopia_user', JSON.stringify(userInfo));
+                            console.log('Loaded user info from opener:', userInfo);
+                        }
                     }
                 } catch (e) {
                     console.error('Failed to load saved data:', e);

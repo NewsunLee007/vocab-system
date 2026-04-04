@@ -5,9 +5,104 @@ const dataSync = {
         if (this._initialized) return;
         this._initialized = true;
         console.log('dataSync initialized');
-        // 确保API模块已加载
         if (window.api && typeof window.api.initToken === 'function') {
             window.api.initToken();
+        }
+    },
+
+    async saveStudentData(studentData) {
+        try {
+            this.init();
+            
+            if (!window.api) {
+                console.log('API not available, cannot save student data');
+                return false;
+            }
+
+            const user = window.auth && window.auth.getCurrentUser ? window.auth.getCurrentUser() : null;
+            if (!user) {
+                console.log('No user logged in, cannot save student data');
+                return false;
+            }
+
+            if (user.role !== 'STUDENT') {
+                console.log('User is not a student, skipping student data save');
+                return false;
+            }
+
+            console.log('Saving student data:', studentData);
+            const result = await window.api.updateStudentData(user.id, studentData);
+            console.log('Student data saved:', result);
+            return true;
+        } catch (error) {
+            console.warn('Save student data error:', error.message || error);
+            return false;
+        }
+    },
+
+    async fetchStudentData() {
+        try {
+            this.init();
+            
+            if (!window.api) {
+                console.log('API not available, cannot fetch student data');
+                return null;
+            }
+
+            const user = window.auth && window.auth.getCurrentUser ? window.auth.getCurrentUser() : null;
+            if (!user) {
+                console.log('No user logged in, cannot fetch student data');
+                return null;
+            }
+
+            if (user.role !== 'STUDENT') {
+                console.log('User is not a student, skipping student data fetch');
+                return null;
+            }
+
+            const result = await window.api.fetchStudentData(user.id);
+            console.log('Student data fetched:', result);
+            return result;
+        } catch (error) {
+            console.warn('Fetch student data error:', error.message || error);
+            return null;
+        }
+    },
+
+    async saveWordList(wordList) {
+        try {
+            this.init();
+            
+            if (!window.api) {
+                console.log('API not available, cannot save wordlist');
+                return null;
+            }
+
+            console.log('Saving wordlist:', wordList);
+            const result = await window.api.createWordList(wordList);
+            console.log('Wordlist saved:', result);
+            return result;
+        } catch (error) {
+            console.warn('Save wordlist error:', error.message || error);
+            return null;
+        }
+    },
+
+    async fetchWordLists() {
+        try {
+            this.init();
+            
+            if (!window.api) {
+                console.log('API not available, cannot fetch wordlists');
+                return [];
+            }
+
+            const result = await window.api.fetchWordLists();
+            console.log('Wordlists fetched:', result);
+            return result;
+        } catch (error) {
+            console.warn('Fetch wordlists error:', error.message || error);
+            return [];
         }
     },
 
@@ -23,7 +118,6 @@ const dataSync = {
 
     async saveLearningRecord(record) {
         try {
-            // 确保初始化
             this.init();
             
             console.log('saveLearningRecord:', record);
@@ -52,6 +146,16 @@ const dataSync = {
                 try {
                     const result = await window.api.createLearningRecord(payload);
                     console.log('Learning record saved to server:', result);
+                    
+                    // 同时更新学生积分
+                    const user = window.auth && window.auth.getCurrentUser ? window.auth.getCurrentUser() : null;
+                    if (user && user.role === 'STUDENT' && record.correct) {
+                        this.saveStudentData({
+                            coins: { increment: 10 },
+                            totalLearned: { increment: 1 }
+                        });
+                    }
+                    
                     return true;
                 } catch (apiError) {
                     console.warn('Failed to save to server, using local only:', apiError.message || apiError);
@@ -69,7 +173,6 @@ const dataSync = {
 
     async saveErrorWord(word, wordlistId, errorType, correctAnswer) {
         try {
-            // 确保初始化
             this.init();
             
             console.log('saveErrorWord:', { word, wordlistId, errorType, correctAnswer });
@@ -92,7 +195,6 @@ const dataSync = {
 
     async ensureVocabularyExists(word, definition) {
         try {
-            // 确保初始化
             this.init();
             
             if (!window.api) {
@@ -141,7 +243,6 @@ const dataSync = {
 
     async syncWordlistsToServer() {
         try {
-            // 确保初始化
             this.init();
             
             if (!window.db || !window.api) {
@@ -153,8 +254,18 @@ const dataSync = {
             console.log('Syncing wordlists to server:', wordLists.length);
             
             for (const wordList of wordLists) {
+                try {
+                    await this.saveWordList({
+                        name: wordList.title || wordList.name,
+                        description: wordList.description || '',
+                        words: wordList.words || []
+                    });
+                } catch (e) {
+                    console.warn('Failed to save wordlist:', wordList.name, e);
+                }
+                
                 if (wordList.words && Array.isArray(wordList.words)) {
-                    console.log(`Syncing wordlist: ${wordList.name || 'Unnamed'} (${wordList.words.length} words)`);
+                    console.log(`Syncing words: ${wordList.name || 'Unnamed'} (${wordList.words.length} words)`);
                     for (const word of wordList.words) {
                         const wordData = window.db.findWord ? window.db.findWord(word.toLowerCase()) : null;
                         if (wordData) {
@@ -163,7 +274,6 @@ const dataSync = {
                                 wordData.meaning || wordData.definition || word
                             );
                         } else {
-                            // 尝试直接使用单词作为词汇
                             await this.ensureVocabularyExists(word, word);
                         }
                     }

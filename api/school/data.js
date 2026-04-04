@@ -12,7 +12,6 @@ module.exports = async function handler(req, res) {
     if (!user) return fail(res, 401, 'No token provided');
 
     if (req.method === 'GET') {
-      // 先尝试从SchoolData表读取旧数据
       let schoolData = null;
       try {
         schoolData = await prisma.schoolData.findUnique({ where: { id: 'school' } });
@@ -20,12 +19,10 @@ module.exports = async function handler(req, res) {
         console.log('SchoolData表不存在或读取失败，将使用新数据结构');
       }
       
-      // 从User表读取教师和学生数据
       let teachers = [];
       let students = [];
       
       if (user.role === 'ADMIN') {
-        // 管理员可以看到所有教师和学生
         teachers = await prisma.user.findMany({
           where: { role: 'TEACHER' },
           orderBy: { createdAt: 'desc' }
@@ -35,7 +32,6 @@ module.exports = async function handler(req, res) {
           orderBy: { createdAt: 'desc' }
         });
       } else if (user.role === 'TEACHER') {
-        // 教师只能看到自己和所有学生
         teachers = await prisma.user.findMany({
           where: { id: user.id, role: 'TEACHER' }
         });
@@ -43,9 +39,13 @@ module.exports = async function handler(req, res) {
           where: { role: 'STUDENT' },
           orderBy: { createdAt: 'desc' }
         });
+      } else if (user.role === 'STUDENT') {
+        teachers = [];
+        students = await prisma.user.findMany({
+          where: { id: user.id, role: 'STUDENT' }
+        });
       }
       
-      // 格式化数据为前端期望的格式
       const normalizedTeachers = teachers.map(t => ({
         id: t.id,
         name: t.name || t.username,
@@ -57,24 +57,57 @@ module.exports = async function handler(req, res) {
         id: s.id,
         name: s.username,
         class: s.className || '',
-        teacherId: null, // User表中没有teacherId字段
+        teacherId: null,
         passwordChanged: s.passwordChanged,
-        coins: 0,
-        badges: [],
-        streak: 0,
-        totalLearned: 0,
-        totalTests: 0,
-        totalCorrect: 0,
-        totalQuestions: 0
+        coins: s.coins || 0,
+        badges: s.badges || [],
+        streak: s.streak || 0,
+        totalLearned: s.totalLearned || 0,
+        totalTests: s.totalTests || 0,
+        totalCorrect: s.totalCorrect || 0,
+        totalQuestions: s.totalQuestions || 0
       }));
       
-      // 从SchoolData获取词表、任务等其他数据（如果存在）
+      let wordlists = [];
+      try {
+        if (user.role === 'ADMIN') {
+          wordlists = await prisma.wordList.findMany({
+            orderBy: { updatedAt: 'desc' },
+            include: { createdBy: true }
+          });
+        } else if (user.role === 'TEACHER') {
+          wordlists = await prisma.wordList.findMany({
+            where: {
+              OR: [
+                { createdById: user.id },
+                { isPublic: true }
+              ]
+            },
+            orderBy: { updatedAt: 'desc' },
+            include: { createdBy: true }
+          });
+        }
+      } catch (e) {
+        console.log('WordList表不存在或读取失败');
+      }
+      
+      const normalizedWordLists = wordlists.map(wl => ({
+        id: wl.id,
+        title: wl.name,
+        name: wl.name,
+        description: wl.description,
+        words: wl.words || [],
+        teacherId: wl.createdById,
+        createdAt: wl.createdAt,
+        updatedAt: wl.updatedAt
+      }));
+      
       const oldPayload = schoolData?.payload || {};
       
       const payload = {
         teachers: normalizedTeachers,
         students: normalizedStudents,
-        wordlists: oldPayload.wordlists || oldPayload.wordLists || [],
+        wordlists: normalizedWordLists.length > 0 ? normalizedWordLists : (oldPayload.wordlists || oldPayload.wordLists || []),
         tasks: oldPayload.tasks || [],
         learningLogs: oldPayload.learningLogs || [],
         studentStates: oldPayload.studentStates || {},
@@ -94,8 +127,6 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 允许 ADMIN、TEACHER、STUDENT 都可以同步数据
-    // 学生需要同步学习记录、积分等数据
     if (user.role !== 'ADMIN' && user.role !== 'TEACHER' && user.role !== 'STUDENT') {
       return fail(res, 403, '权限不足');
     }

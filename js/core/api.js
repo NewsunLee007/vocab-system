@@ -423,6 +423,94 @@ const api = {
             throw new Error(message || 'Delete teacher failed');
         }
         return this._readSuccessData(response);
+    },
+
+    // ── 词表管理 ──────────────────────────────────────────────────────────
+
+    async fetchWordLists() {
+        const response = await fetch(this._url('/word-lists'), {
+            headers: this._headers()
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Fetch word lists failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    async createWordList(payload) {
+        const response = await fetch(this._url('/word-lists'), {
+            method: 'POST',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Create word list failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    async fetchWordList(id) {
+        const response = await fetch(this._url(`/word-lists/${id}`), {
+            headers: this._headers()
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Fetch word list failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    async updateWordList(id, payload) {
+        const response = await fetch(this._url(`/word-lists/${id}`), {
+            method: 'PUT',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Update word list failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    async deleteWordList(id) {
+        const response = await fetch(this._url(`/word-lists/${id}`), {
+            method: 'DELETE',
+            headers: this._headers()
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Delete word list failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    // ── 学生数据管理 ──────────────────────────────────────────────────────────
+
+    async fetchStudentData(studentId) {
+        const response = await fetch(this._url(`/students/${studentId}`), {
+            headers: this._headers()
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Fetch student data failed');
+        }
+        return this._readSuccessData(response);
+    },
+
+    async updateStudentData(studentId, payload) {
+        const response = await fetch(this._url(`/students/${studentId}`), {
+            method: 'PUT',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);
+            throw new Error(message || 'Update student data failed');
+        }
+        return this._readSuccessData(response);
     }
 };
 

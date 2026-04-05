@@ -48,8 +48,12 @@ const auth = {
     },
 
     buildStudentSession(apiUser) {
-        const dbStudent = db?.findStudent?.(apiUser.id) || db?.findStudentByClassAndName?.(apiUser.className, apiUser.username);
-        const stats = dbStudent ? db.getStudentStats(dbStudent.id) : null;
+        let dbStudent = null;
+        let stats = null;
+        if (typeof db !== 'undefined') {
+            dbStudent = db?.findStudent?.(apiUser.id) || db?.findStudentByClassAndName?.(apiUser.className, apiUser.username);
+            stats = dbStudent ? db.getStudentStats(dbStudent.id) : null;
+        }
         return {
             id: apiUser.id,
             name: apiUser.username,
@@ -63,7 +67,7 @@ const auth = {
             totalTests: stats?.totalTests ?? dbStudent?.totalTests ?? 0,
             totalCorrect: stats?.totalCorrect ?? dbStudent?.totalCorrect ?? 0,
             totalQuestions: stats?.totalQuestions ?? dbStudent?.totalQuestions ?? 0,
-            title: stats?.title ?? helpers.getTitle(stats?.coins ?? dbStudent?.coins ?? 0),
+            title: stats?.title ?? (typeof helpers !== 'undefined' ? helpers.getTitle(stats?.coins ?? dbStudent?.coins ?? 0) : '初学乍练'),
             teacherId: stats?.teacherId ?? dbStudent?.teacherId ?? null
         };
     },
@@ -169,9 +173,11 @@ const auth = {
                 
                 this.currentUser = admin;
                 
-                // 尝试拉取云端数据 (包括词表等)
+                // 尝试拉取云端数据 (包括词表等)，但只在 app.html 且存在 db 对象时才执行
                 try {
-                    await db.init(); // Re-init to fetch cloud data
+                    if (typeof db !== 'undefined' && db.init) {
+                        await db.init(); // Re-init to fetch cloud data
+                    }
                 } catch (e) {
                     console.warn('Failed to sync cloud data after admin login', e);
                 }
@@ -394,7 +400,14 @@ const auth = {
                 }
                 
                 this.currentUser = teacher;
-                await db.init();
+                
+                try {
+                    if (typeof db !== 'undefined' && db.init) {
+                        await db.init();
+                    }
+                } catch (e) {
+                    console.warn('Failed to sync cloud data after teacher login', e);
+                }
                 
                 // 关闭模态框
                 app.hideTeacherLogin();
@@ -437,7 +450,9 @@ const auth = {
 
             if (result && result.user) {
                 try {
-                    await db.init();
+                    if (typeof db !== 'undefined' && db.init) {
+                        await db.init();
+                    }
                 } catch (e) {
                     console.warn('Failed to refresh school data after student login:', e);
                 }
@@ -501,10 +516,12 @@ const auth = {
         });
 
         // 更新系统登录记录
-        db.updateSystem({
-            lastLoginIP: db.getSystem().mockCurrentIP,
-            lastLoginStudentId: hydratedStudent.id
-        });
+        if (typeof db !== 'undefined' && db.updateSystem && db.getSystem) {
+            db.updateSystem({
+                lastLoginIP: db.getSystem().mockCurrentIP,
+                lastLoginStudentId: hydratedStudent.id
+            });
+        }
         
         this.currentUser = {
             role: 'student',

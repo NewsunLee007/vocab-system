@@ -38,7 +38,7 @@ const matchingTest = {
 
     showTestView() {
         const viewHtml = `
-            <div id="matching-test-view" class="fixed inset-0 bg-slate-50 z-[100] flex flex-col transition-opacity duration-300 opacity-0">
+            <div id="matching-test-view" class="fixed inset-0 bg-slate-50 z-[100] flex flex-col">
                 <div class="bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
                     <button onclick="matchingTest.exit()" class="text-slate-500 hover:text-slate-800 transition">
                         <i class="fa-solid fa-arrow-left mr-1 sm:mr-2"></i><span class="hidden sm:inline">退出</span>

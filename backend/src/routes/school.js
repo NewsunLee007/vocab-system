@@ -22,8 +22,8 @@ router.get(
         : await conn.query('SELECT id, username, name, subject, role, password_changed AS passwordChanged FROM teachers WHERE id=? LIMIT 1', [teacherId]);
 
       const studentsRows = teacherId
-        ? await conn.query('SELECT id, teacher_id AS teacherId, class_name AS className, name, password_changed AS passwordChanged, coins, badges, streak, total_learned AS totalLearned, total_tests AS totalTests, total_correct AS totalCorrect, total_questions AS totalQuestions FROM students WHERE teacher_id=? ORDER BY created_at DESC', [teacherId])
-        : await conn.query('SELECT id, teacher_id AS teacherId, class_name AS className, name, password_changed AS passwordChanged, coins, badges, streak, total_learned AS totalLearned, total_tests AS totalTests, total_correct AS totalCorrect, total_questions AS totalQuestions FROM students ORDER BY created_at DESC');
+      ? await conn.query('SELECT id, teacher_id AS teacherId, class_name AS className, name, plain_password AS plainPassword, password_changed AS passwordChanged, coins, badges, streak, total_learned AS totalLearned, total_tests AS totalTests, total_correct AS totalCorrect, total_questions AS totalQuestions FROM students WHERE teacher_id=? ORDER BY created_at DESC', [teacherId])
+      : await conn.query('SELECT id, teacher_id AS teacherId, class_name AS className, name, plain_password AS plainPassword, password_changed AS passwordChanged, coins, badges, streak, total_learned AS totalLearned, total_tests AS totalTests, total_correct AS totalCorrect, total_questions AS totalQuestions FROM students ORDER BY created_at DESC');
 
       const vocabRows = teacherId
         ? await conn.query('SELECT id, teacher_id AS teacherId, title, type, textbook, grade, volume, unit, words, created_at AS createdAt FROM vocabulary WHERE teacher_id=? ORDER BY created_at DESC', [teacherId])

@@ -53,11 +53,12 @@ router.post(
     const studentId = id || `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const assignedTeacherId = req.user.role === 'teacher' ? req.user.sub : (teacherId || null);
     const passwordHash = await bcrypt.hash(password || '123456', 10);
+    const plainPassword = password || '123456';
 
     await withConn((conn) =>
       conn.query(
-        'INSERT INTO students (id, teacher_id, class_name, name, password_hash, password_changed, badges) VALUES (?,?,?,?,?,0,?)',
-        [studentId, assignedTeacherId, className, name, passwordHash, JSON.stringify([])]
+        'INSERT INTO students (id, teacher_id, class_name, name, password_hash, plain_password, password_changed, badges) VALUES (?,?,?,?,?,?,0,?)',
+        [studentId, assignedTeacherId, className, name, passwordHash, plainPassword, JSON.stringify([])]
       )
     );
 

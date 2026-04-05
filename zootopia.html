@@ -442,13 +442,23 @@
                             }
                             setUserInfo(prev => ({ ...prev, coins: (prev.coins || 0) + coinsToAward }));
                             // Refresh student dashboard UI if available
-                            if (window.opener.student && typeof window.opener.student.renderDashboard === 'function') {
-                                window.opener.student.renderDashboard();
+                            if (window.opener.student && typeof window.opener.student.render === 'function') {
+                                window.opener.student.render();
                             }
                         }
+                    } else {
+                        // Fallback: save to local storage if window.opener is missing
+                        const pendingCoinsStr = store.get('zootopia_pending_coins');
+                        const pendingCoins = parseInt(pendingCoinsStr) || 0;
+                        store.set('zootopia_pending_coins', pendingCoins + coinsToAward);
+                        console.log('Saved pending coins to local storage:', coinsToAward);
                     }
                 } catch (e) {
                     console.warn('Failed to sync coins with main system', e);
+                    // Fallback on error
+                    const pendingCoinsStr = store.get('zootopia_pending_coins');
+                    const pendingCoins = parseInt(pendingCoinsStr) || 0;
+                    store.set('zootopia_pending_coins', pendingCoins + coinsToAward);
                 }
             };
 

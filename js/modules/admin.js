@@ -626,6 +626,7 @@ const admin = {
                 <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('name')">
                     姓名 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
                 </th>
+                <th class="text-left py-3 px-4 text-slate-600">密码</th>
                 <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('teacher')">
                     老师 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
                 </th>
@@ -645,6 +646,7 @@ const admin = {
                 <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('name')">
                     姓名 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
                 </th>
+                <th class="text-left py-3 px-4 text-slate-600">密码</th>
                 <th class="text-left py-3 px-4 text-slate-600 cursor-pointer hover:bg-slate-100" onclick="admin.sortStudents('teacher')">
                     老师 <i class="fa-solid fa-sort text-slate-400 ml-1"></i>
                 </th>
@@ -659,8 +661,8 @@ const admin = {
         }
         
         if (students.length === 0) {
-            const colCount = this._studentBatchDeleteMode ? 7 : 6;
-            tbody.innerHTML = `<tr><td colspan="${colCount + 1}" class="p-4 text-center text-slate-400">暂无符合条件的学生</td></tr>`;
+            const colCount = this._studentBatchDeleteMode ? 8 : 7;
+            tbody.innerHTML = `<tr><td colspan="${colCount}" class="p-4 text-center text-slate-400">暂无符合条件的学生</td></tr>`;
         } else {
             students.forEach(student => {
                 const teacher = db.findTeacher(student.teacherId);
@@ -677,6 +679,7 @@ const admin = {
                     ` : ''}
                     <td class="p-3 border-b">${student.class || '-'}</td>
                     <td class="p-3 border-b font-medium">${student.name}</td>
+                    <td class="p-3 border-b font-mono text-slate-500 select-all">${student.plainPassword || '123456'}</td>
                     <td class="p-3 border-b">${teacher ? teacher.name : '-'}</td>
                     <td class="p-3 border-b text-yellow-600">
                         <i class="fa-solid fa-coins mr-1"></i>${student.coins || 0}
@@ -685,6 +688,9 @@ const admin = {
                     <td class="p-3 border-b">
                         <button onclick="admin.editStudent('${student.id}')" class="text-indigo-600 hover:text-indigo-800 text-sm mr-2">
                             <i class="fa-solid fa-pen mr-1"></i>编辑
+                        </button>
+                        <button onclick="admin.resetStudentPwd('${student.id}')" class="text-amber-600 hover:text-amber-800 text-sm mr-2">
+                            <i class="fa-solid fa-key mr-1"></i>重置密码
                         </button>
                         <button onclick="admin.deleteStudent('${student.id}')" class="text-rose-600 hover:text-rose-800 text-sm">
                             <i class="fa-solid fa-trash mr-1"></i>删除
@@ -960,6 +966,34 @@ const admin = {
         this._allStudents = db.getStudents();
         this.filterStudents();
         helpers.showToast('学生信息更新成功！', 'success');
+    },
+
+    /**
+     * 重置学生密码
+     */
+    async resetStudentPwd(studentId) {
+        const student = db.findStudent(studentId);
+        if (!student) return;
+        
+        if (!confirm(`确定要将学生 "${student.name}" 的密码重置为 123456 吗？`)) {
+            return;
+        }
+        
+        try {
+            await api.resetStudentPassword(student.name, student.class || '');
+            
+            // 更新本地状态
+            student.plainPassword = '123456';
+            student.passwordChanged = false;
+            db.save();
+            
+            helpers.showToast(`已成功将学生 "${student.name}" 的密码重置为：123456`, 'success');
+            
+            this._allStudents = db.getStudents();
+            this.filterStudents();
+        } catch (err) {
+            helpers.showToast('重置失败：' + (err.message || '网络错误'), 'error');
+        }
     },
 
     /**

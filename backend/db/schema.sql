@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS students (
   class_name VARCHAR(64) NOT NULL,
   name VARCHAR(100) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  plain_password VARCHAR(255) NULL DEFAULT '123456',
   password_changed TINYINT(1) NOT NULL DEFAULT 0,
   coins INT NOT NULL DEFAULT 0,
   badges JSON NULL,

@@ -13,6 +13,19 @@ const student = {
             return;
         }
         
+        // 检查并同步ZPD离线金币
+        try {
+            const pendingCoinsStr = localStorage.getItem('zootopia_pending_coins');
+            const pendingCoins = parseInt(pendingCoinsStr) || 0;
+            if (pendingCoins > 0) {
+                db.addCoins(user.id, pendingCoins);
+                helpers.showToast(`ZPD特训离线奖励已同步: +${pendingCoins} 金币`, 'success');
+                localStorage.removeItem('zootopia_pending_coins');
+            }
+        } catch (e) {
+            console.warn('Failed to sync offline coins', e);
+        }
+
         const stats = db.getStudentStats(user.id);
         if (!stats) {
             console.warn('student.render: No stats found for user', user.id);

@@ -521,13 +521,14 @@ const teacher = {
                 <div>
                     <div class="text-xl font-bold text-white">${student.name}</div>
                     <div class="text-sm text-slate-400">班级：${student.class || '-'}</div>
+                    <div class="text-sm text-slate-400 mt-0.5">当前密码：<span class="text-white bg-slate-800 px-2 py-0.5 rounded select-all font-mono">${student.plainPassword || '123456'}</span></div>
                 </div>
                 <div class="ml-auto flex gap-2">
                     <button onclick="teacher.editStudentFromDetail()" class="px-3 py-1.5 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 rounded-lg text-sm transition">
                         <i class="fa-solid fa-pen mr-1"></i>编辑
                     </button>
                     <button onclick="teacher.resetStudentPwd('${student.id}', true)" class="px-3 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 rounded-lg text-sm transition">
-                        <i class="fa-solid fa-key mr-1"></i>重置密码
+                        <i class="fa-solid fa-key mr-1"></i>重置为123456
                     </button>
                 </div>
             </div>

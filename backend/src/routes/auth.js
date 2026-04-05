@@ -143,7 +143,7 @@ router.post(
         const isMatch = await bcrypt.compare(oldPassword, row.passwordHash);
         if (!isMatch) throw Object.assign(new Error('Old password incorrect'), { statusCode: 401, code: 'INVALID_CREDENTIALS' });
         const hash = await bcrypt.hash(newPassword, 10);
-        await conn.query('UPDATE students SET password_hash=?, password_changed=1 WHERE id=?', [hash, userId]);
+        await conn.query('UPDATE students SET password_hash=?, plain_password=?, password_changed=1 WHERE id=?', [hash, newPassword, userId]);
       });
       return ok(res, { message: 'Password updated successfully.' });
     }
@@ -159,6 +159,33 @@ router.post(
     });
 
     return ok(res, { message: 'Password updated successfully.' });
+  })
+);
+
+const resetPasswordSchema = z.object({
+  body: z.object({
+    username: z.string().min(1),
+    className: z.string().min(1),
+    newPassword: z.string().min(1)
+  })
+});
+
+router.post(
+  '/reset-password',
+  requireAuth(),
+  requireRole(['admin', 'teacher']),
+  validate(resetPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const { username, className, newPassword } = req.validated.body;
+    
+    await withConn(async (conn) => {
+      const rows = await conn.query('SELECT id FROM students WHERE class_name=? AND name=? LIMIT 1', [className, username]);
+      if (rows.length === 0) throw Object.assign(new Error('Student not found'), { statusCode: 404, code: 'NOT_FOUND' });
+      const hash = await bcrypt.hash(newPassword, 10);
+      await conn.query('UPDATE students SET password_hash=?, plain_password=?, password_changed=0 WHERE class_name=? AND name=?', [hash, newPassword, className, username]);
+    });
+
+    return ok(res, { message: 'Student password reset successfully.' });
   })
 );
 

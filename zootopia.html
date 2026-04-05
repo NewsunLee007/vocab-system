@@ -416,18 +416,39 @@
             const nextLevel = () => setLevel(l => l + 1);
 
             const saveScore = (finalScore) => {
+                const currentScore = finalScore || score;
                 const historyItem = {
                     id: Date.now(),
                     date: new Date().toISOString(),
                     classId: userInfo.classId,
                     groupId: userInfo.groupId,
                     game: gameType,
-                    score: finalScore || score,
+                    score: currentScore,
                     maxLevel: level
                 };
                 const existing = store.get('zootopia_history') || [];
                 const existingArray = Array.isArray(existing) ? existing : [];
                 store.set('zootopia_history', [historyItem, ...existingArray]);
+
+                // Sync coins to main system
+                try {
+                    if (currentScore > 0 && window.opener && window.opener.db && window.opener.auth) {
+                        const user = window.opener.auth.getCurrentUser();
+                        if (user && user.id) {
+                            const coinsToAward = Math.max(1, Math.floor(currentScore / 10));
+                            window.opener.db.addCoins(user.id, coinsToAward);
+                            if (window.opener.helpers && window.opener.helpers.showToast) {
+                                window.opener.helpers.showToast(`ZPD特训奖励: +${coinsToAward} 金币`, 'success');
+                            }
+                            // Refresh student dashboard UI if available
+                            if (window.opener.student && typeof window.opener.student.renderDashboard === 'function') {
+                                window.opener.student.renderDashboard();
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to sync coins with main system', e);
+                }
             };
 
             const saveLearningRecords = async (isVictory) => {

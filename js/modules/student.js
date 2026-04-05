@@ -3938,12 +3938,21 @@ const student = {
                 helpers.showToast('该单元暂无单词', 'warning');
                 return;
             }
+            
+            // 确保上下文有 currentWordlistId，以便 enrichWordData 能够读取教师审核的数据
+            const originalWordlistId = this.currentWordlistId;
+            this.currentWordlistId = wordlistId;
+            
             const formatted = wl.words.map((w, idx) => {
-                const wd = db.findWord((w || '').toLowerCase()) || {};
-                const cn = wd.meaning || '';
+                const wd = this.enrichWordData(w) || {};
+                const cn = wd.meaning || `[未翻译] ${w}`;
                 const tag = this.inferZootopiaTag(cn);
                 return { id: idx + 1, en: w, cn, tag };
             });
+            
+            // 恢复上下文
+            this.currentWordlistId = originalWordlistId;
+            
             const allDict = db.getAllWords ? db.getAllWords() : [];
             const systemWords = allDict.slice(0, 300).map((wd, i) => ({
                 id: i + 1, en: wd.word, cn: wd.meaning || '', tag: this.inferZootopiaTag(wd.meaning || '')

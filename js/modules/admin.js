@@ -554,9 +554,9 @@ const admin = {
      * 筛选学生
      */
     filterStudents() {
-        const classFilter = document.getElementById('filter-student-class').value;
-        const teacherFilter = document.getElementById('filter-student-teacher').value;
-        const searchText = document.getElementById('filter-student-search').value.toLowerCase();
+        const classFilter = document.getElementById('filter-student-class')?.value || '';
+        const teacherFilter = document.getElementById('filter-student-teacher')?.value || '';
+        const searchText = document.getElementById('filter-student-search')?.value.toLowerCase() || '';
         
         let filtered = this._allStudents.filter(s => {
             if (classFilter && s.class !== classFilter) return false;
@@ -586,6 +586,9 @@ const admin = {
         
         this.renderStudentsList(filtered);
         this.updateStudentsStats(filtered);
+        
+        // 当列表重绘后，要重新检查一下当前选中的学生，并更新顶部的计数器和全选框状态
+        this.updateSelectedStudentsCount();
     },
 
     /**
@@ -754,6 +757,12 @@ const admin = {
             actionBar.classList.add('hidden');
         }
         
+        // 恢复全选框默认未勾选状态
+        const actionCheckbox = document.getElementById('select-all-students');
+        const headerCheckbox = document.getElementById('select-all-students-checkbox');
+        if (actionCheckbox) actionCheckbox.checked = false;
+        if (headerCheckbox) headerCheckbox.checked = false;
+        
         this.filterStudents();
     },
 
@@ -767,6 +776,8 @@ const admin = {
         } else {
             this._selectedStudentsForDelete.push(studentId);
         }
+        
+        // 当单选改变时，我们需要重新检查全选框的状态，以及更新选中人数
         this.updateSelectedStudentsCount();
     },
 
@@ -774,25 +785,40 @@ const admin = {
      * 全选/取消全选学生
      */
     toggleSelectAllStudents(checked) {
+        const classFilter = document.getElementById('filter-student-class')?.value || '';
+        const teacherFilter = document.getElementById('filter-student-teacher')?.value || '';
+        const searchText = document.getElementById('filter-student-search')?.value.toLowerCase() || '';
+        
+        let filteredIds = this._allStudents.filter(s => {
+            if (classFilter && s.class !== classFilter) return false;
+            if (teacherFilter && s.teacherId !== teacherFilter) return false;
+            if (searchText && !s.name.toLowerCase().includes(searchText)) return false;
+            return true;
+        }).map(s => s.id);
+        
+        // 防止由于 checkbox 的状态相互同步导致循环触发，仅当它实际上在改变选择状态时才执行
         if (checked) {
-            const classFilter = document.getElementById('filter-student-class').value;
-            const teacherFilter = document.getElementById('filter-student-teacher').value;
-            const searchText = document.getElementById('filter-student-search').value.toLowerCase();
+            // 如果已经被全选过了，避免重复执行
+            const isAlreadyAllSelected = filteredIds.length > 0 && filteredIds.every(id => this._selectedStudentsForDelete.includes(id));
+            if (isAlreadyAllSelected) return;
             
-            let filtered = this._allStudents.filter(s => {
-                if (classFilter && s.class !== classFilter) return false;
-                if (teacherFilter && s.teacherId !== teacherFilter) return false;
-                if (searchText && !s.name.toLowerCase().includes(searchText)) return false;
-                return true;
-            });
-            
-            this._selectedStudentsForDelete = filtered.map(s => s.id);
+            // 我们不能直接用过滤后的列表覆盖已选项，而是应该把过滤后的结果合并进当前的选中列表中，避免丢失其他页/条件下的已选
+            const newSelected = new Set(this._selectedStudentsForDelete);
+            filteredIds.forEach(id => newSelected.add(id));
+            this._selectedStudentsForDelete = Array.from(newSelected);
         } else {
-            this._selectedStudentsForDelete = [];
+            // 如果已经被全取消了，避免重复执行
+            const isAlreadyAllDeselected = filteredIds.every(id => !this._selectedStudentsForDelete.includes(id));
+            if (isAlreadyAllDeselected) return;
+            
+            // 如果是取消全选，只取消当前筛选下的这批学生
+            this._selectedStudentsForDelete = this._selectedStudentsForDelete.filter(id => !filteredIds.includes(id));
         }
         
-        this.updateSelectedStudentsCount();
+        // 当列表发生全选变化时，我们需要重新渲染所有的复选框状态
         this.filterStudents();
+        // 强制再更新一次显示计数，以防 filterStudents 没能完全覆盖
+        this.updateSelectedStudentsCount();
     },
 
     /**
@@ -802,6 +828,37 @@ const admin = {
         const countEl = document.getElementById('selected-students-count');
         if (countEl) {
             countEl.textContent = `已选择 ${this._selectedStudentsForDelete.length} 人`;
+        }
+        
+        // 动态检查所有项是否被全选，如果是则勾选全选框
+        const actionCheckbox = document.getElementById('select-all-students');
+        const headerCheckbox = document.getElementById('select-all-students-checkbox');
+        
+        // 获取当前筛选下的所有学生总数
+        const classFilter = document.getElementById('filter-student-class')?.value || '';
+        const teacherFilter = document.getElementById('filter-student-teacher')?.value || '';
+        const searchText = document.getElementById('filter-student-search')?.value.toLowerCase() || '';
+        
+        const filteredCount = this._allStudents.filter(s => {
+            if (classFilter && s.class !== classFilter) return false;
+            if (teacherFilter && s.teacherId !== teacherFilter) return false;
+            if (searchText && !s.name.toLowerCase().includes(searchText)) return false;
+            return true;
+        }).length;
+        
+        const isAllSelected = filteredCount > 0 && 
+            this._allStudents.filter(s => {
+                if (classFilter && s.class !== classFilter) return false;
+                if (teacherFilter && s.teacherId !== teacherFilter) return false;
+                if (searchText && !s.name.toLowerCase().includes(searchText)) return false;
+                return true;
+            }).every(s => this._selectedStudentsForDelete.includes(s.id));
+        
+        if (actionCheckbox && actionCheckbox.checked !== isAllSelected) {
+            actionCheckbox.checked = isAllSelected;
+        }
+        if (headerCheckbox && headerCheckbox.checked !== isAllSelected) {
+            headerCheckbox.checked = isAllSelected;
         }
     },
 

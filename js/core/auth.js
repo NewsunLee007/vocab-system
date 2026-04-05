@@ -167,7 +167,9 @@ const auth = {
                     }
                     
                     this.showForceChangePasswordModal();
-                    app.updateNav();
+                    if (typeof app !== 'undefined' && app.updateNav) {
+                        app.updateNav();
+                    }
                     return true;
                 }
                 
@@ -182,8 +184,10 @@ const auth = {
                     console.warn('Failed to sync cloud data after admin login', e);
                 }
                 
-                // 关闭模态框
-                app.hideAdminLogin();
+                // 关闭模态框 (如果 app 对象存在)
+                if (typeof app !== 'undefined' && app.hideAdminLogin) {
+                    app.hideAdminLogin();
+                }
                 
                 helpers.showToast('欢迎回来，教务处管理员！', 'success');
                 
@@ -191,8 +195,12 @@ const auth = {
                 if (!window.location.pathname.endsWith('app.html')) {
                     window.location.href = 'app.html';
                 } else {
-                    router.navigate('admin', true, true);
-                    app.updateNav();
+                    if (typeof router !== 'undefined' && router.navigate) {
+                        router.navigate('admin', true, true);
+                    }
+                    if (typeof app !== 'undefined' && app.updateNav) {
+                        app.updateNav();
+                    }
                 }
                 return true;
             }
@@ -287,7 +295,9 @@ const auth = {
                 });
                 
                 // 强制更新导航栏
-                app.updateNav();
+                if (typeof app !== 'undefined' && app.updateNav) {
+                    app.updateNav();
+                }
                 
                 // 如果不在 app.html，则重定向
                 if (!window.location.pathname.endsWith('app.html')) {
@@ -395,7 +405,9 @@ const auth = {
                     }
                     
                     this.showForceChangePasswordModal();
-                    app.updateNav();
+                    if (typeof app !== 'undefined' && app.updateNav) {
+                        app.updateNav();
+                    }
                     return true;
                 }
                 
@@ -409,8 +421,10 @@ const auth = {
                     console.warn('Failed to sync cloud data after teacher login', e);
                 }
                 
-                // 关闭模态框
-                app.hideTeacherLogin();
+                // 关闭模态框 (如果 app 对象存在)
+                if (typeof app !== 'undefined' && app.hideTeacherLogin) {
+                    app.hideTeacherLogin();
+                }
                 
                 helpers.showToast(`欢迎回来，${teacher.name}！`, 'success');
                 
@@ -418,9 +432,12 @@ const auth = {
                 if (!window.location.pathname.endsWith('app.html')) {
                     window.location.href = 'app.html';
                 } else {
-                    // 根据角色重定向，使用 replaceState 替换历史记录
-                    router.navigate('teacher', true, true);
-                    app.updateNav();
+                    if (typeof router !== 'undefined' && router.navigate) {
+                        router.navigate('teacher', true, true);
+                    }
+                    if (typeof app !== 'undefined' && app.updateNav) {
+                        app.updateNav();
+                    }
                 }
                 return true;
             }
@@ -470,7 +487,9 @@ const auth = {
                      }
                      
                      this.showForceChangePasswordModal();
-                     app.updateNav();
+                     if (typeof app !== 'undefined' && app.updateNav) {
+                         app.updateNav();
+                     }
                      return true;
                 }
 
@@ -489,7 +508,9 @@ const auth = {
                     } else {
                         this.completeStudentLogin(student);
                     }
-                    app.updateNav();
+                    if (typeof app !== 'undefined' && app.updateNav) {
+                        app.updateNav();
+                    }
                 }
                 return true;
             }
@@ -535,9 +556,13 @@ const auth = {
         if (!window.location.pathname.endsWith('app.html')) {
             window.location.href = 'app.html';
         } else {
-            const result = router.navigate('student');
-            console.log('Navigation result:', result);
-            app.updateNav();
+            if (typeof router !== 'undefined' && router.navigate) {
+                const result = router.navigate('student');
+                console.log('Navigation result:', result);
+            }
+            if (typeof app !== 'undefined' && app.updateNav) {
+                app.updateNav();
+            }
         }
     },
 

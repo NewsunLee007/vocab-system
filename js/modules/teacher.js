@@ -2163,7 +2163,7 @@ const teacher = {
     /**
      * 确认关联选中的教材单元
      */
-    confirmLinkTextbookUnits() {
+    async confirmLinkTextbookUnits() {
         if (!this._selectedTextbookUnits || this._selectedTextbookUnits.length === 0) {
             helpers.showToast('请至少选择一个单元', 'warning');
             return;
@@ -2173,15 +2173,17 @@ const teacher = {
         let successCount = 0;
         let failCount = 0;
         
-        this._selectedTextbookUnits.forEach(unit => {
+        helpers.showLoading('正在关联并保存到云端数据库...');
+        
+        for (const unit of this._selectedTextbookUnits) {
             const wordlist = db.findWordList(unit.id);
             if (!wordlist) {
                 failCount++;
-                return;
+                continue;
             }
             
-            // 创建关联副本
-            db.addWordList({
+            // 创建关联副本并存入真正的数据库表
+            await db.addWordListAsync({
                 teacherId: user.id,
                 title: wordlist.title,
                 type: '教材',
@@ -2194,7 +2196,9 @@ const teacher = {
             });
             
             successCount++;
-        });
+        }
+        
+        helpers.hideLoading();
         
         // 显示结果
         if (successCount > 0) {
@@ -2292,7 +2296,7 @@ const teacher = {
     /**
      * 确认添加词表
      */
-    confirmAddWordlist() {
+    async confirmAddWordlist() {
         const title = document.getElementById('new-wordlist-name').value.trim();
         const type = document.getElementById('new-wordlist-type').value;
         const textbook = document.getElementById('new-wordlist-textbook').value;
@@ -2312,7 +2316,9 @@ const teacher = {
         }
 
         const user = auth.getCurrentUser();
-        db.addWordList({
+        
+        helpers.showLoading('正在保存到云端数据库...');
+        await db.addWordListAsync({
             teacherId: user.id,
             title: title,
             type: type,
@@ -2320,6 +2326,7 @@ const teacher = {
             grade: grade,
             words: words
         });
+        helpers.hideLoading();
 
         this.hideAddWordlistModal();
         this.renderWordlists();

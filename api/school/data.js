@@ -87,16 +87,37 @@ module.exports = async function handler(req, res) {
           }
         });
         
-        wordlists = dbWordLists.map(wl => ({
-          id: wl.id,
-          name: wl.name,
-          description: wl.description,
-          words: wl.words || [],
-          isPublic: wl.isPublic,
-          createdById: wl.createdById,
-          createdAt: wl.createdAt,
-          updatedAt: wl.updatedAt
-        }));
+        wordlists = dbWordLists.map(wl => {
+          let meta = {};
+          try {
+            if (wl.description && wl.description.startsWith('{')) {
+              meta = JSON.parse(wl.description);
+            } else {
+              meta = { description: wl.description };
+            }
+          } catch (e) {
+            meta = { description: wl.description };
+          }
+          
+          return {
+            id: wl.id,
+            title: wl.name,
+            name: wl.name,
+            description: meta.description || wl.description,
+            type: meta.type || '自定义',
+            textbook: meta.textbook,
+            grade: meta.grade,
+            volume: meta.volume,
+            unit: meta.unit,
+            sourceWordlistId: meta.sourceWordlistId,
+            words: wl.words || [],
+            isPublic: wl.isPublic,
+            teacherId: wl.createdById,
+            createdById: wl.createdById,
+            createdAt: wl.createdAt,
+            updatedAt: wl.updatedAt
+          };
+        });
       } catch (e) {
         console.log('读取 WordList 表失败，可能尚未迁移', e.message);
       }
@@ -117,7 +138,15 @@ module.exports = async function handler(req, res) {
         tasks: oldPayload.tasks || [],
         learningLogs: oldPayload.learningLogs || [],
         studentStates: oldPayload.studentStates || {},
-        admins: oldPayload.admins || []
+        admins: oldPayload.admins || [],
+        dict: oldPayload.dict || {},
+        aiDrafts: oldPayload.aiDrafts || {},
+        aiConfig: oldPayload.aiConfig || null,
+        difficultWords: oldPayload.difficultWords || {},
+        learningHistory: oldPayload.learningHistory || {},
+        teacherReviewedSentences: oldPayload.teacherReviewedSentences || {},
+        testQuestionBank: oldPayload.testQuestionBank || {},
+        studentTestHistory: oldPayload.studentTestHistory || {}
       };
       
       console.log('=== 返回学校数据 ===', { 
@@ -145,30 +174,47 @@ module.exports = async function handler(req, res) {
     const existed = await prisma.schoolData.findUnique({ where: { id: 'school' } });
     const oldPayload = existed?.payload || {};
 
+    const mergedPayload = { ...oldPayload, ...payload };
+
     if (user.role === 'STUDENT') {
-      // 学生只能更新他们自己的状态和日志，绝对不能覆盖其他人的数据
-      payload.teachers = oldPayload.teachers || [];
-      payload.wordlists = oldPayload.wordlists || oldPayload.wordLists || [];
-      payload.tasks = oldPayload.tasks || [];
-      payload.admins = oldPayload.admins || [];
+      mergedPayload.teachers = oldPayload.teachers || [];
+      mergedPayload.wordlists = oldPayload.wordlists || oldPayload.wordLists || [];
+      mergedPayload.tasks = oldPayload.tasks || [];
+      mergedPayload.admins = oldPayload.admins || [];
+      mergedPayload.aiConfig = oldPayload.aiConfig || null;
+      mergedPayload.dict = oldPayload.dict || {};
+      mergedPayload.aiDrafts = oldPayload.aiDrafts || {};
+      mergedPayload.teacherReviewedSentences = oldPayload.teacherReviewedSentences || {};
+      mergedPayload.testQuestionBank = oldPayload.testQuestionBank || {};
       
-      // 保留原有学生列表，更新或追加当前学生的信息
-      const incomingStudent = payload.students && payload.students[0];
+      const incomingStudent = payload.students && payload.students.find(s => s.id === user.id);
       let mergedStudents = oldPayload.students || [];
       if (incomingStudent) {
          mergedStudents = mergedStudents.filter(s => s.id !== incomingStudent.id);
          mergedStudents.push(incomingStudent);
       }
-      payload.students = mergedStudents;
-
-      // 学习日志可以全量替换，因为 GET 的时候学生拉取的是所有人的日志（目前系统逻辑是这样，暂时保持）
-      // 或者为了安全，也可以增量合并日志。这里简化处理，保留原逻辑。
+      mergedPayload.students = mergedStudents;
+    } else if (user.role === 'TEACHER') {
+      const incomingTeacher = payload.teachers && payload.teachers.find(t => t.id === user.id);
+      let mergedTeachers = oldPayload.teachers || [];
+      if (incomingTeacher) {
+          mergedTeachers = mergedTeachers.filter(t => t.id !== incomingTeacher.id);
+          mergedTeachers.push(incomingTeacher);
+      }
+      mergedPayload.teachers = mergedTeachers;
+      
+      if (!payload.aiConfig) {
+          mergedPayload.aiConfig = oldPayload.aiConfig || null;
+      }
+      if (!payload.admins) {
+          mergedPayload.admins = oldPayload.admins || [];
+      }
     }
 
     const row = await prisma.schoolData.upsert({
       where: { id: 'school' },
-      update: { payload, updatedBy: user.id },
-      create: { id: 'school', payload, updatedBy: user.id },
+      update: { payload: mergedPayload, updatedBy: user.id },
+      create: { id: 'school', payload: mergedPayload, updatedBy: user.id },
     });
 
     if (existed) return ok(res, { id: row.id, data: row.payload, updatedAt: row.updatedAt });

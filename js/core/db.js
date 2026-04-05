@@ -579,6 +579,60 @@ const db = {
         return this._data.wordLists.find(wl => wl.id === id);
     },
 
+    async addWordListAsync(wordlistData) {
+        if (!this._data) return null;
+        
+        let dbId = helpers.generateId('wl');
+        let dbCreatedAt = helpers.getTodayDate();
+        
+        // 尝试保存到真正的后端数据库表
+        try {
+            if (window.api && typeof window.api.createWordList === 'function') {
+                const result = await window.api.createWordList({
+                    name: wordlistData.title,
+                    description: JSON.stringify({
+                        type: wordlistData.type,
+                        textbook: wordlistData.textbook,
+                        grade: wordlistData.grade,
+                        volume: wordlistData.volume,
+                        unit: wordlistData.unit,
+                        sourceWordlistId: wordlistData.sourceWordlistId
+                    }),
+                    words: wordlistData.words || [],
+                    isPublic: true // 教材词表通常是公开的
+                });
+                
+                if (result && result.id) {
+                    dbId = result.id;
+                    if (result.createdAt) {
+                        dbCreatedAt = new Date(result.createdAt).toISOString().split('T')[0];
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('同步保存词表到数据库失败，将仅保存在 JSON payload 中:', e);
+        }
+
+        const newWordList = {
+            id: dbId,
+            teacherId: wordlistData.teacherId,
+            title: wordlistData.title,
+            type: wordlistData.type,
+            words: wordlistData.words || [],
+            createdAt: dbCreatedAt
+        };
+        
+        // 保存教材、年级、册别、单元等额外字段
+        if (wordlistData.textbook) newWordList.textbook = wordlistData.textbook;
+        if (wordlistData.grade) newWordList.grade = wordlistData.grade;
+        if (wordlistData.volume) newWordList.volume = wordlistData.volume;
+        if (wordlistData.unit) newWordList.unit = wordlistData.unit;
+        
+        this._data.wordLists.push(newWordList);
+        this.save();
+        return newWordList;
+    },
+
     addWordList(wordlistData) {
         if (!this._data) return null;
         const newWordList = {

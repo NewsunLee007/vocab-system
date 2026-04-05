@@ -2076,10 +2076,13 @@ const admin = {
 
         // 保存分组数据
         let importedCount = 0;
-        Object.entries(groups).forEach(([key, group]) => {
-            if (group.words.length === 0) return;
+        
+        helpers.showLoading('正在保存到云端数据库...');
+        
+        for (const [key, group] of Object.entries(groups)) {
+            if (group.words.length === 0) continue;
 
-            const wordlist = db.addWordList({
+            const wordlist = await db.addWordListAsync({
                 teacherId: 'system',
                 title: `${group.textbook} ${group.grade}${group.volume} ${group.unit}`,
                 type: '教材',
@@ -2098,7 +2101,9 @@ const admin = {
             });
 
             importedCount++;
-        });
+        }
+        
+        helpers.hideLoading();
 
         this.closeImportWordlistModal();
         this.renderWordlists();
@@ -2222,7 +2227,8 @@ const admin = {
         }
 
         // 保存词表
-        db.addWordList({
+        helpers.showLoading('正在保存到云端数据库...');
+        await db.addWordListAsync({
             teacherId: 'system',
             title: `${textbook} ${grade}${volume} ${unit}`,
             type: '教材',
@@ -2232,6 +2238,8 @@ const admin = {
             unit: unit,
             words: words
         });
+        
+        helpers.hideLoading();
 
         // 更新词典
         Object.entries(dict).forEach(([word, data]) => {

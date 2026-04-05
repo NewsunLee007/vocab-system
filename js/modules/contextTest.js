@@ -53,17 +53,17 @@ const contextTest = {
      */
     showTestView() {
         const viewHtml = `
-            <div id="context-test-view" class="fixed inset-0 bg-slate-50 z-40 flex flex-col">
+            <div id="context-test-view" class="fixed inset-0 bg-slate-50 z-[100] flex flex-col">
                 <!-- 头部 -->
-                <div class="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
+                <div class="bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
                     <button onclick="contextTest.saveAndExit()" class="text-slate-500 hover:text-slate-800 transition flex items-center">
-                        <i class="fa-solid fa-floppy-disk mr-2"></i>保存退出
+                        <i class="fa-solid fa-floppy-disk mr-1 sm:mr-2"></i><span class="hidden sm:inline">保存退出</span>
                     </button>
-                    <div class="text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                    <div class="text-xs sm:text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
                         语境选择 <span id="context-progress">1/${this.session.words.length}</span>
                     </div>
                     <button onclick="contextTest.pause()" class="text-slate-500 hover:text-amber-600 transition flex items-center">
-                        <i class="fa-solid fa-pause mr-2"></i>暂停
+                        <i class="fa-solid fa-pause mr-1 sm:mr-2"></i><span class="hidden sm:inline">暂停</span>
                     </button>
                 </div>
 
@@ -76,19 +76,19 @@ const contextTest = {
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="w-full max-w-2xl">
                         <!-- 题目卡片 -->
-                        <div class="bg-white rounded-2xl shadow-lg p-8 mb-6">
-                            <div class="text-slate-400 font-medium text-sm mb-4 flex items-center">
-                                <i class="fa-solid fa-book-open mr-2 text-indigo-400"></i>
+                        <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-8 mb-4 sm:mb-6">
+                            <div class="text-slate-400 font-medium text-xs sm:text-sm mb-4 flex items-center">
+                                <i class="fa-solid fa-book-open mr-1 sm:mr-2 text-indigo-400"></i>
                                 阅读句子，选择最合适的单词填空
                             </div>
                             
                             <!-- 句子 -->
-                            <div id="context-sentence" class="text-xl md:text-2xl font-medium text-slate-800 leading-relaxed mb-8">
+                            <div id="context-sentence" class="text-lg sm:text-xl md:text-2xl font-medium text-slate-800 leading-relaxed mb-6 sm:mb-8 break-words">
                                 <!-- JS注入 -->
                             </div>
 
                             <!-- 选项 -->
-                            <div id="context-options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div id="context-options" class="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
                                 <!-- JS注入 -->
                             </div>
 
@@ -1234,10 +1234,10 @@ const contextTest = {
         // 显示反馈
         this.showFeedback(isCorrect, word);
 
-        // 0.5秒后自动下一题
+        // 根据正误设置间隔时间
         setTimeout(() => {
             this.nextQuestion();
-        }, 500);
+        }, isCorrect ? 800 : 2000);
     },
 
     /**

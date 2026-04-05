@@ -1687,6 +1687,9 @@ const admin = {
                     <button onclick="admin.openPreviewTestModal('${wl.id}')" class="text-teal-400 hover:text-teal-300 text-sm mr-2" title="体验练习">
                         <i class="fa-solid fa-gamepad mr-1"></i>体验
                     </button>
+                    <button onclick="admin.editAIMaterials('${wl.id}')" class="text-amber-400 hover:text-amber-300 text-sm mr-2" title="修改素材">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i>修改
+                    </button>
                 `;
             }
 
@@ -3280,6 +3283,17 @@ const admin = {
             teacher.triggerAI(wordlistId);
         } else {
             helpers.showToast('AI 生成模块未就绪，请刷新页面重试', 'error');
+        }
+    },
+
+    /**
+     * 打开已生成AI素材的修改面板
+     */
+    editAIMaterials(wordlistId) {
+        if (typeof teacher !== 'undefined' && typeof teacher.editExistingAIMaterials === 'function') {
+            teacher.editExistingAIMaterials(wordlistId);
+        } else {
+            helpers.showToast('AI 模块未就绪，请刷新页面重试', 'error');
         }
     },
 

@@ -58,15 +58,15 @@ const spellingTest = {
 
     showTestView() {
         const viewHtml = `
-            <div id="spelling-test-view" class="fixed inset-0 bg-slate-50 z-40 flex flex-col">
-                <div class="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
+            <div id="spelling-test-view" class="fixed inset-0 bg-slate-50 z-[100] flex flex-col">
+                <div class="bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
                     <button onclick="spellingTest.exit()" class="text-slate-500 hover:text-slate-800 transition">
-                        <i class="fa-solid fa-arrow-left mr-2"></i>退出
+                        <i class="fa-solid fa-arrow-left mr-1 sm:mr-2"></i><span class="hidden sm:inline">退出</span>
                     </button>
-                    <div class="text-sm font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                    <div class="text-xs sm:text-sm font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
                         听音拼写 <span id="spelling-progress">1/${this.session.words.length}</span>
                     </div>
-                    <div class="w-16"></div>
+                    <div class="w-8 sm:w-16"></div>
                 </div>
 
                 <div class="w-full h-1 bg-slate-200">
@@ -75,22 +75,22 @@ const spellingTest = {
 
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="w-full max-w-xl">
-                        <div class="bg-white rounded-2xl shadow-lg p-8 mb-6 text-center">
-                            <div class="text-slate-400 font-medium text-sm mb-6">
-                                <i class="fa-solid fa-headphones mr-2 text-amber-400"></i>
+                        <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-8 mb-4 sm:mb-6 text-center">
+                            <div class="text-slate-400 font-medium text-xs sm:text-sm mb-4 sm:mb-6">
+                                <i class="fa-solid fa-headphones mr-1 sm:mr-2 text-amber-400"></i>
                                 点击播放按钮听发音，然后拼写单词
                             </div>
                             
                             <!-- 播放按钮 -->
                             <button id="spelling-play-btn" onclick="spellingTest.playCurrentWord()" 
-                                class="w-24 h-24 rounded-full bg-amber-100 text-amber-600 hover:bg-amber-200 transition mx-auto mb-8 flex items-center justify-center">
-                                <i class="fa-solid fa-volume-high text-3xl"></i>
+                                class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-amber-100 text-amber-600 hover:bg-amber-200 transition mx-auto mb-6 sm:mb-8 flex items-center justify-center shadow-sm">
+                                <i class="fa-solid fa-volume-high text-2xl sm:text-3xl"></i>
                             </button>
 
                             <!-- 输入框 -->
-                            <div class="mb-6">
+                            <div class="mb-4 sm:mb-6">
                                 <input type="text" id="spelling-input" 
-                                    class="w-full text-center text-2xl font-bold border-b-4 border-amber-300 py-4 focus:outline-none focus:border-amber-500 uppercase"
+                                    class="w-full text-center text-xl sm:text-2xl font-bold border-b-2 sm:border-b-4 border-amber-300 py-3 sm:py-4 focus:outline-none focus:border-amber-500 uppercase transition-colors bg-transparent"
                                     placeholder="输入听到的单词" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                             </div>
 
@@ -192,11 +192,11 @@ const spellingTest = {
 
         this.showFeedback(isCorrect, correctWord);
 
-        // 3秒后下一题
+        // 根据正误设置间隔时间
         setTimeout(() => {
             this.session.currentIndex++;
             this.renderQuestion();
-        }, 3000);
+        }, isCorrect ? 800 : 2000);
     },
 
     showFeedback(isCorrect, word) {

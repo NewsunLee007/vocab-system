@@ -440,6 +440,7 @@
                             if (window.opener.helpers && window.opener.helpers.showToast) {
                                 window.opener.helpers.showToast(`ZPD特训奖励: +${coinsToAward} 金币`, 'success');
                             }
+                            setUserInfo(prev => ({ ...prev, coins: (prev.coins || 0) + coinsToAward }));
                             // Refresh student dashboard UI if available
                             if (window.opener.student && typeof window.opener.student.renderDashboard === 'function') {
                                 window.opener.student.renderDashboard();
@@ -512,6 +513,7 @@
         const LevelOverlay = ({ score, onNext, isGameOver = false, onExit, level }) => {
             // V11: Explicit Victory Check
             const isVictory = level === 'ALL' || level === undefined; // If loop passed bounds
+            const coinsEarned = Math.max(1, Math.floor(score / 10));
             
             return (
                 <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
@@ -522,7 +524,14 @@
                         <div className="text-xl font-bold text-gray-300 mb-6">
                             {isGameOver ? '任务失败' : (isVictory ? '任务完成' : '关卡完成')}
                         </div>
-                        <div className="text-6xl font-mono text-white mb-6 text-glow">{score} <span className="text-xl text-gray-400">PTS</span></div>
+                        <div className="text-6xl font-mono text-white mb-2 text-glow">{score} <span className="text-xl text-gray-400">PTS</span></div>
+                        
+                        {(isGameOver || isVictory) && score > 0 && (
+                            <div className="text-lg font-bold text-amber-400 mb-6 animate-pulse">
+                                <i className="fa-solid fa-coins mr-2"></i>获得 {coinsEarned} 金币
+                            </div>
+                        )}
+                        {!(isGameOver || isVictory) && <div className="mb-6"></div>}
                         
                         {isGameOver ? (
                             <div className="flex flex-col gap-3">
@@ -878,8 +887,7 @@
                         {currentWord && (
                             <div className="w-full max-w-2xl text-center">
                                 <div className="glass-panel p-10 rounded-3xl mb-8 border-2 border-z-blue-neon/50 shadow-2xl">
-                                    <div className="text-4xl font-bold text-cyan-300 mb-2">{currentWord.cn}</div>
-                                    <div className="text-xl text-gray-400">{currentWord.tag}</div>
+                                    <div className="text-4xl font-bold text-cyan-300">{currentWord.cn}</div>
                                 </div>
                                 <form onSubmit={handleSubmit}>
                                     <div className="relative w-full">
@@ -954,6 +962,9 @@
                 <div className="absolute top-6 right-6 glass-panel px-4 py-2 rounded-xl text-right">
                     <div className="font-bold text-lg text-white">{userInfo.name}</div>
                     <div className="text-sm text-gray-300">班级：{(userInfo.className && userInfo.className.trim()) || userInfo.classId || '-'}</div>
+                    {userInfo.coins !== undefined && (
+                        <div className="text-sm text-amber-400 font-bold mt-1"><i className="fa-solid fa-coins mr-1"></i>{userInfo.coins}</div>
+                    )}
                 </div>
                 <i className="fa-solid fa-shield-halved text-8xl text-z-blue-neon mb-4 text-glow"></i>
                 <h1 className="text-6xl font-black text-white mb-2 text-outline">ZPD Cadet Training</h1>
@@ -1232,25 +1243,32 @@
                         }
                     }
                     
-                    // 尝试加载用户信息
-                    const savedUser = store.get('zootopia_user');
-                    if(savedUser) {
-                        console.log('Loaded user info:', savedUser);
-                        setUserInfo(savedUser);
-                    }
                     // 尝试从学生端获取用户信息
-                    else if (window.opener && window.opener.auth && window.opener.auth.getCurrentUser) {
+                    let userInfoObj = null;
+                    if (window.opener && window.opener.auth && window.opener.auth.getCurrentUser) {
                         const user = window.opener.auth.getCurrentUser();
                         if (user) {
-                            const userInfo = {
+                            let coins = 0;
+                            if (window.opener.db && window.opener.db.getUserCoins) {
+                                coins = window.opener.db.getUserCoins(user.id);
+                            }
+                            userInfoObj = {
                                 name: user.username || user.name || 'Cadet 007',
                                 className: user.className || '未设置班级',
                                 classId: user.className?.charAt(0) || 'A',
-                                groupId: '1'
+                                groupId: '1',
+                                coins: coins
                             };
-                            setUserInfo(userInfo);
-                            store.set('zootopia_user', JSON.stringify(userInfo));
-                            console.log('Loaded user info from opener:', userInfo);
+                            setUserInfo(userInfoObj);
+                            store.set('zootopia_user', JSON.stringify(userInfoObj));
+                            console.log('Loaded user info from opener:', userInfoObj);
+                        }
+                    }
+                    if(!userInfoObj) {
+                        const savedUser = store.get('zootopia_user');
+                        if(savedUser) {
+                            console.log('Loaded user info:', savedUser);
+                            setUserInfo(savedUser);
                         }
                     }
                 } catch (e) {

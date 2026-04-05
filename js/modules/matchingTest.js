@@ -38,15 +38,15 @@ const matchingTest = {
 
     showTestView() {
         const viewHtml = `
-            <div id="matching-test-view" class="fixed inset-0 bg-slate-50 z-40 flex flex-col">
-                <div class="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
+            <div id="matching-test-view" class="fixed inset-0 bg-slate-50 z-[100] flex flex-col transition-opacity duration-300 opacity-0">
+                <div class="bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
                     <button onclick="matchingTest.exit()" class="text-slate-500 hover:text-slate-800 transition">
-                        <i class="fa-solid fa-arrow-left mr-2"></i>退出
+                        <i class="fa-solid fa-arrow-left mr-1 sm:mr-2"></i><span class="hidden sm:inline">退出</span>
                     </button>
-                    <div class="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                    <div class="text-xs sm:text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
                         词义匹配 <span id="matching-progress">1/${this.session.words.length}</span>
                     </div>
-                    <div class="w-16"></div>
+                    <div class="w-8 sm:w-16"></div>
                 </div>
 
                 <div class="w-full h-1 bg-slate-200">
@@ -55,24 +55,24 @@ const matchingTest = {
 
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="w-full max-w-xl">
-                        <div class="bg-white rounded-2xl shadow-lg p-8 mb-6">
-                            <div class="text-slate-400 font-medium text-sm mb-6 text-center">
+                        <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-8 mb-6">
+                            <div class="text-slate-400 font-medium text-xs sm:text-sm mb-4 sm:mb-6 text-center">
                                 <i class="fa-solid fa-link mr-2 text-emerald-400"></i>
                                 选择单词对应的中文释义
                             </div>
                             
                             <!-- 单词显示 -->
-                            <div class="text-center mb-8">
-                                <div id="matching-word" class="text-4xl font-bold text-slate-800 mb-2"></div>
-                                <div id="matching-phonetic" class="text-slate-400"></div>
+                            <div class="text-center mb-6 sm:mb-8">
+                                <div id="matching-word" class="text-3xl sm:text-4xl font-bold text-slate-800 mb-2 break-all"></div>
+                                <div id="matching-phonetic" class="text-sm sm:text-base text-slate-400"></div>
                                 <button id="matching-speak-btn" onclick="matchingTest.playCurrentWord()" 
-                                    class="mt-3 w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition">
+                                    class="mt-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition">
                                     <i class="fa-solid fa-volume-high"></i>
                                 </button>
                             </div>
 
                             <!-- 选项 -->
-                            <div id="matching-options" class="grid grid-cols-1 gap-3">
+                            <div id="matching-options" class="grid grid-cols-1 gap-2 sm:gap-3">
                                 <!-- JS注入 -->
                             </div>
 
@@ -112,7 +112,7 @@ const matchingTest = {
 
         question.options.forEach((option, index) => {
             const btn = document.createElement('button');
-            btn.className = 'matching-option w-full text-left px-6 py-4 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-slate-700 transition';
+            btn.className = 'matching-option w-full text-left px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-slate-700 transition break-words';
             btn.innerHTML = `<span class="font-medium">${option}</span>`;
             btn.onclick = () => this.checkAnswer(index, question.correctIndex, word);
             optionsContainer.appendChild(btn);
@@ -255,7 +255,7 @@ const matchingTest = {
         setTimeout(() => {
             this.session.currentIndex++;
             this.renderQuestion();
-        }, 2000);
+        }, isCorrect ? 800 : 1500);
     },
 
     showFeedback(isCorrect, word) {

@@ -948,6 +948,11 @@ const teacher = {
                     title="体验练习">
                     <i class="fa-solid fa-gamepad text-xs"></i>
                 </button>
+                <button onclick="event.stopPropagation(); teacher.editExistingAIMaterials('${wl.id}')" 
+                    class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white border border-amber-500/30 flex items-center justify-center transition-all" 
+                    title="修改AI生成的素材">
+                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                </button>
             `;
         }
 
@@ -1048,8 +1053,11 @@ const teacher = {
         let previewButtonHtml = '';
         if (hasMaterials) {
             previewButtonHtml = `
-                <button onclick="admin.openPreviewTestModal('${wl.id}')" class="text-xs bg-teal-500/20 text-teal-400 hover:bg-teal-500 hover:text-white px-3 py-1.5 rounded-lg border border-teal-500/30 transition" title="体验练习">
-                    <i class="fa-solid fa-gamepad mr-1"></i>体验练习
+                <button onclick="event.stopPropagation(); admin.openPreviewTestModal('${wl.id}')" class="text-xs bg-teal-500/20 text-teal-400 hover:bg-teal-500 hover:text-white px-3 py-1.5 rounded-lg border border-teal-500/30 transition mr-2" title="体验练习">
+                    <i class="fa-solid fa-gamepad mr-1"></i>体验
+                </button>
+                <button onclick="event.stopPropagation(); teacher.editExistingAIMaterials('${wl.id}')" class="text-xs bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white px-3 py-1.5 rounded-lg border border-amber-500/30 transition" title="修改AI生成的素材">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i>修改
                 </button>
             `;
         }
@@ -2502,8 +2510,8 @@ const teacher = {
 
         // 检查是否已有生成的素材
         const user = auth.getCurrentUser();
-        const existingReview = db.getTeacherReviewedSentences(user.id, wordlistId);
-        const existingDraft = db.getAIDraft(wordlistId, user.id);
+        const existingReview = db.getTeacherReviewedSentences(wordlist.teacherId || 'system', wordlistId);
+        const existingDraft = db.getAIDraft(wordlistId, wordlist.teacherId || 'system');
         
         // 如果有历史记录，显示自定义确认对话框
         if (existingReview && existingReview.sentences && Object.keys(existingReview.sentences).length > 0) {
@@ -2526,6 +2534,27 @@ const teacher = {
 
         // 没有历史记录，直接开始生成
         this.startAIGeneration(wordlist);
+    },
+
+    /**
+     * 直接进入修改已有的AI素材
+     */
+    editExistingAIMaterials(wordlistId) {
+        this.currentAIWordlistId = wordlistId;
+        const wordlist = db.findWordList(wordlistId);
+        if (!wordlist) return;
+        
+        this._pendingWordlist = wordlist;
+        const existingReview = db.getTeacherReviewedSentences(wordlist.teacherId || 'system', wordlistId);
+        const existingDraft = db.getAIDraft(wordlistId, wordlist.teacherId || 'system');
+        
+        if (existingReview && existingReview.sentences && Object.keys(existingReview.sentences).length > 0) {
+            this.showExistingMaterials(wordlist, existingReview);
+        } else if (existingDraft && existingDraft.materials) {
+            this.showExistingDraft(wordlist, existingDraft);
+        } else {
+            helpers.showToast('没有找到可修改的AI素材', 'warning');
+        }
     },
 
     /**
@@ -3317,7 +3346,7 @@ const teacher = {
                     console.log('保留已导入的AI素材，不重新初始化');
                 } else {
                     // 检查数据库中是否有已保存的审核记录（包含AI素材）
-                    const savedReview = teacherReview.loadReviewedSentences(this.currentAIWordlistId, user.id);
+                    const savedReview = teacherReview.loadReviewedSentences(this.currentAIWordlistId, wordlist.teacherId || 'system');
                     const hasSavedAIMaterials = savedReview && savedReview.sentences && 
                         Object.values(savedReview.sentences).some(s => s.isFromAIMaterials);
                     
@@ -3342,7 +3371,7 @@ const teacher = {
                 }
                 
                 // 检查是否有已审核的句子
-                const hasReviewed = teacherReview.hasReviewedSentences(this.currentAIWordlistId, user.id);
+                const hasReviewed = teacherReview.hasReviewedSentences(this.currentAIWordlistId, wordlist.teacherId || 'system');
                 
                 if (hasReviewed) {
                     helpers.showToast('已加载您之前审核过的句子', 'info');
@@ -3384,11 +3413,11 @@ const teacher = {
         
         // 检查是否有已审核的句子
         const user = auth.getCurrentUser();
-        const hasReviewed = teacherReview.hasReviewedSentences(this.currentAIWordlistId, user.id);
+        const hasReviewed = teacherReview.hasReviewedSentences(this.currentAIWordlistId, wordlist.teacherId || 'system');
         
         if (hasReviewed) {
             // 加载已审核的句子
-            const savedReview = teacherReview.loadReviewedSentences(this.currentAIWordlistId, user.id);
+            const savedReview = teacherReview.loadReviewedSentences(this.currentAIWordlistId, wordlist.teacherId || 'system');
             if (savedReview) {
                 helpers.showToast('已加载您之前审核过的句子', 'info');
             }

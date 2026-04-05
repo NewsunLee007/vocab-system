@@ -64,14 +64,14 @@ const flashcardLearning = {
      */
     showLearningView() {
         const viewHtml = `
-            <div id="flashcard-learning-view" class="fixed inset-0 z-40 flex flex-col mesh-bg pt-16 animate-fade-in">
+            <div id="flashcard-learning-view" class="fixed inset-0 z-[100] flex flex-col mesh-bg pt-16 animate-fade-in">
                 <!-- Top Control Bar -->
-                <div class="px-6 py-4 flex justify-between items-center relative z-10">
-                    <button onclick="flashcardLearning.exit()" class="text-white/80 hover:text-white transition absolute left-6 top-1/2 -translate-y-1/2 flex items-center px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10">
-                        <i class="fa-solid fa-arrow-left mr-2"></i>退出学习
+                <div class="px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center relative z-10">
+                    <button onclick="flashcardLearning.exit()" class="text-white/80 hover:text-white transition absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10">
+                        <i class="fa-solid fa-arrow-left mr-1 sm:mr-2"></i><span class="hidden sm:inline">退出学习</span>
                     </button>
                     <div class="w-full text-center pointer-events-none">
-                        <div class="text-sm font-medium text-indigo-100 bg-indigo-900/40 border border-indigo-500/30 px-4 py-1.5 rounded-full inline-block backdrop-blur-sm">
+                        <div class="text-xs sm:text-sm font-medium text-indigo-100 bg-indigo-900/40 border border-indigo-500/30 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full inline-block backdrop-blur-sm">
                             卡片认知 <span id="flashcard-progress" class="text-white ml-1">1/${this.session.words.length}</span>
                         </div>
                     </div>

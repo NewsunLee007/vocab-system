@@ -455,12 +455,13 @@ const teacherReview = {
         if (!user) return false;
         
         const wordlist = db.findWordList(this.state.currentWordlistId);
+        if (!wordlist) return false;
         
         const reviewData = {
             wordlistId: this.state.currentWordlistId,
-            wordlistTitle: wordlist?.title || '',
-            teacherId: user.id,
-            teacherName: user.name,
+            wordlistTitle: wordlist.title || '',
+            teacherId: wordlist.teacherId || 'system',
+            teacherName: user.name, // 记录最后修改人
             sentences: this.state.reviewedSentences,
             wordCount: this.state.words.length,
             approvedCount: this.getApprovedCount(),
@@ -468,8 +469,8 @@ const teacherReview = {
             version: 1
         };
         
-        // 使用db模块保存
-        db.saveTeacherReviewedSentences(user.id, this.state.currentWordlistId, reviewData);
+        // 使用db模块保存到词表所属的teacherId下
+        db.saveTeacherReviewedSentences(wordlist.teacherId || 'system', this.state.currentWordlistId, reviewData);
         
         this.state.isModified = false;
         return true;
@@ -482,7 +483,13 @@ const teacherReview = {
      * @returns {Object|null} 审核数据
      */
     loadReviewedSentences(wordlistId, teacherId) {
-        return db.getTeacherReviewedSentences(teacherId, wordlistId);
+        // 如果传入了 teacherId 则使用，否则尝试从词表中获取
+        let tid = teacherId;
+        if (!tid) {
+            const wl = db.findWordList(wordlistId);
+            tid = wl ? wl.teacherId || 'system' : 'system';
+        }
+        return db.getTeacherReviewedSentences(tid, wordlistId);
     },
 
     /**

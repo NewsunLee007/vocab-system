@@ -226,10 +226,11 @@ const aiSentenceService = {
                             }
                         }
                         
-                        // 检查无效选项（占位符、词性标注等）
+                        // 检查无效选项（占位符、词性标注等）或全是英文单词（AI搞错指令返回了英文）
                         const hasInvalidOptions = options.some(opt => this.isInvalidOption(opt));
-                        if (hasInvalidOptions) {
-                            console.warn('AI 返回的 matching 选项包含无效占位符，正在补充干扰项');
+                        const isMostlyEnglish = options.filter(opt => /^[a-zA-Z\s\.\-']+$/.test(opt)).length >= 2;
+                        if (hasInvalidOptions || isMostlyEnglish) {
+                            console.warn('AI 返回的 matching 选项包含无效占位符或错误地返回了英文单词，正在使用本地中文干扰项补充');
                             const distractors = this.generateMeaningDistractors(correctMeaning);
                             options = [correctMeaning, ...distractors];
                         } else {

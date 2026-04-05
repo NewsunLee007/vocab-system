@@ -154,9 +154,8 @@
                 
                 const result = await auth.loginStudent();
                 
-                if (result) {
-                    hideLoading();
-                }
+                // 无论登录成功与否，都需要关闭加载动画，避免密码错误时死循环
+                hideLoading();
             } catch (err) {
                 hideLoading();
                 showToast(err.message || '登录失败', 'error');

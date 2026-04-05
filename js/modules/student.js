@@ -1417,6 +1417,10 @@ const student = {
         try {
             const options = [];
             const pool = (this.quizState?.words || []).filter(w => w !== correctWord);
+            
+            // 防御：确保正确答案的数据有效
+            const validCorrectMeaning = correctWordData.meaning || `[缺失中文释义] ${correctWord}`;
+            
             if (mode === 'meaning_to_word') {
                 options.push({ value: correctWord, display: correctWord, isCorrect: true });
                 const shuffled = pool.slice().sort(() => Math.random() - 0.5);
@@ -1424,21 +1428,40 @@ const student = {
                     options.push({ value: shuffled[i], display: shuffled[i], isCorrect: false });
                 }
             } else {
-                options.push({ value: correctWordData.meaning, display: correctWordData.meaning, isCorrect: true });
+                options.push({ value: validCorrectMeaning, display: validCorrectMeaning, isCorrect: true });
+                
                 const shuffledOthers = pool.slice().sort(() => Math.random() - 0.5);
-                for (let i = 0; i < Math.min(3, shuffledOthers.length); i++) {
+                let addedDistractors = 0;
+                
+                for (let i = 0; i < shuffledOthers.length && addedDistractors < 3; i++) {
                     const otherWordData = this.enrichWordData(shuffledOthers[i]);
-                    if (otherWordData.meaning && otherWordData.meaning !== correctWordData.meaning) {
-                        options.push({ value: otherWordData.meaning, display: otherWordData.meaning, isCorrect: false });
+                    // 防御：确保干扰项的中文有效，且与正确答案不同，也不能是英文单词本身
+                    const otherMeaning = otherWordData.meaning;
+                    if (otherMeaning && otherMeaning !== validCorrectMeaning && otherMeaning !== shuffledOthers[i]) {
+                        options.push({ value: otherMeaning, display: otherMeaning, isCorrect: false });
+                        addedDistractors++;
+                    }
+                }
+                
+                // 如果干扰项不够（比如整个词库释义都缺失），就去大词典里随机抽
+                if (addedDistractors < 3 && typeof db !== 'undefined' && db.getAllWords) {
+                    const allWords = db.getAllWords();
+                    const extraPool = allWords.filter(w => w.meaning && w.meaning !== validCorrectMeaning && w.word !== correctWord);
+                    const shuffledExtra = extraPool.sort(() => Math.random() - 0.5);
+                    
+                    for (let i = 0; i < shuffledExtra.length && addedDistractors < 3; i++) {
+                        options.push({ value: shuffledExtra[i].meaning, display: shuffledExtra[i].meaning, isCorrect: false });
+                        addedDistractors++;
                     }
                 }
             }
             return options.sort(() => Math.random() - 0.5);
         } catch (error) {
             errorHandler.handle(error, '生成选择题选项');
+            const safeMeaning = correctWordData.meaning || `[缺失中文释义] ${correctWord}`;
             return [{
-                value: mode === 'meaning_to_word' ? correctWord : correctWordData.meaning,
-                display: mode === 'meaning_to_word' ? correctWord : correctWordData.meaning,
+                value: mode === 'meaning_to_word' ? correctWord : safeMeaning,
+                display: mode === 'meaning_to_word' ? correctWord : safeMeaning,
                 isCorrect: true
             }];
         }

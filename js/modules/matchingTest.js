@@ -167,10 +167,10 @@ const matchingTest = {
         }
         
         // 生成新题目（使用智能洗牌确保位置分布均匀）
-        const correctMeaning = wordData.meaning || word;
+        const correctMeaning = wordData.meaning || `[缺失中文释义] ${word}`;
         const allWords = db.getAllWords ? db.getAllWords() : [];
         const distractorMeanings = allWords
-            .filter(w => w.word.toLowerCase() !== word.toLowerCase() && w.meaning)
+            .filter(w => w.word.toLowerCase() !== word.toLowerCase() && w.meaning && w.meaning !== word)
             .map(w => w.meaning)
             .slice(0, 10);
         const shuffledDistractors = helpers.shuffle(distractorMeanings).slice(0, 3);

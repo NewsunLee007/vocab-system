@@ -468,7 +468,7 @@ const admin = {
     /**
      * 保存编辑的教师信息
      */
-    saveEditTeacher() {
+    async saveEditTeacher() {
         const id = document.getElementById('edit-teacher-id').value;
         const name = document.getElementById('edit-teacher-name').value.trim();
         const pwd = document.getElementById('edit-teacher-pwd').value.trim();
@@ -498,7 +498,7 @@ const admin = {
             this.viewTeacherDetail(id);
         }
         
-        this.renderTeacherList();
+        await this.renderTeacherList();
         helpers.showToast('教师信息更新成功！', 'success');
     },
 
@@ -2016,7 +2016,7 @@ const admin = {
     /**
      * 确认导入词表
      */
-    confirmImportWordlist() {
+    async confirmImportWordlist() {
         if (!this.currentExcelData || this.currentExcelData.length === 0) {
             helpers.showToast('没有可导入的数据', 'warning');
             return;
@@ -2175,7 +2175,7 @@ const admin = {
     /**
      * 保存手动添加的词表
      */
-    saveAdminWordlist() {
+    async saveAdminWordlist() {
         const textbook = document.getElementById('admin-wordlist-textbook').value;
         const grade = document.getElementById('admin-wordlist-grade').value;
         const volume = document.getElementById('admin-wordlist-volume').value;

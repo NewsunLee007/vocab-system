@@ -1679,6 +1679,17 @@ const admin = {
             const aiButtonIcon = aiDraft ? 'fa-check-circle' : 'fa-robot';
             const aiButtonLabel = aiDraft ? 'AI已生成' : 'AI生成';
 
+            const reviewed = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
+            const hasMaterials = wl.aiMaterials || (reviewed && reviewed.sentences && Object.keys(reviewed.sentences).length > 0);
+            let previewButtonHtml = '';
+            if (hasMaterials) {
+                previewButtonHtml = `
+                    <button onclick="admin.openPreviewTestModal('${wl.id}')" class="text-teal-400 hover:text-teal-300 text-sm mr-2" title="体验练习">
+                        <i class="fa-solid fa-gamepad mr-1"></i>体验
+                    </button>
+                `;
+            }
+
             const row = document.createElement('tr');
             row.className = 'hover:bg-white/10 transition border-b border-white/10';
             row.innerHTML = `
@@ -1691,6 +1702,7 @@ const admin = {
                     <button onclick="admin.viewWordlistDetail('${wl.id}')" class="text-indigo-400 hover:text-indigo-300 text-sm mr-2">
                         <i class="fa-solid fa-eye mr-1"></i>查看
                     </button>
+                    ${previewButtonHtml}
                     <button onclick="admin.triggerAIGenerate('${wl.id}')" class="${aiButtonClass} text-sm mr-2">
                         <i class="fa-solid ${aiButtonIcon} mr-1"></i>${aiButtonLabel}
                     </button>
@@ -3269,5 +3281,106 @@ const admin = {
         } else {
             helpers.showToast('AI 生成模块未就绪，请刷新页面重试', 'error');
         }
+    },
+
+    /**
+     * 打开体验练习模态框
+     */
+    openPreviewTestModal(wordlistId) {
+        const wl = db.findWordList(wordlistId);
+        if (!wl) return;
+
+        const optionsContainer = document.getElementById('preview-test-options');
+        optionsContainer.innerHTML = `
+            <button onclick="admin.startPreviewTest('flashcard', '${wordlistId}')" class="w-full bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-700 p-4 rounded-xl flex items-center transition group">
+                <div class="w-12 h-12 bg-indigo-100 text-indigo-500 rounded-lg flex items-center justify-center mr-4 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-clone text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="font-bold text-lg mb-1">卡片认知</div>
+                    <div class="text-sm text-slate-500">体验带AI例句的单词卡片学习</div>
+                </div>
+            </button>
+            <button onclick="admin.startPreviewTest('matching', '${wordlistId}')" class="w-full bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 text-slate-700 p-4 rounded-xl flex items-center transition group">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-500 rounded-lg flex items-center justify-center mr-4 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-link text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="font-bold text-lg mb-1">词义匹配</div>
+                    <div class="text-sm text-slate-500">体验自动生成智能干扰项的选择题</div>
+                </div>
+            </button>
+            <button onclick="admin.startPreviewTest('context', '${wordlistId}')" class="w-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-slate-700 p-4 rounded-xl flex items-center transition group">
+                <div class="w-12 h-12 bg-blue-100 text-blue-500 rounded-lg flex items-center justify-center mr-4 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-quote-left text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="font-bold text-lg mb-1">语境选择</div>
+                    <div class="text-sm text-slate-500">体验AI生成的真实语境填空题</div>
+                </div>
+            </button>
+            <button onclick="admin.startPreviewTest('spelling', '${wordlistId}')" class="w-full bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-200 text-slate-700 p-4 rounded-xl flex items-center transition group">
+                <div class="w-12 h-12 bg-amber-100 text-amber-500 rounded-lg flex items-center justify-center mr-4 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-keyboard text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="font-bold text-lg mb-1">听音拼写</div>
+                    <div class="text-sm text-slate-500">体验带例句发音的拼写训练</div>
+                </div>
+            </button>
+        `;
+
+        const modal = document.getElementById('modal-preview-test');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.firstElementChild.classList.remove('scale-95');
+        }, 10);
+    },
+
+    /**
+     * 关闭体验练习模态框
+     */
+    closePreviewTestModal() {
+        const modal = document.getElementById('modal-preview-test');
+        modal.classList.add('opacity-0');
+        modal.firstElementChild.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    },
+
+    /**
+     * 开始体验练习
+     */
+    startPreviewTest(type, wordlistId) {
+        const wl = db.findWordList(wordlistId);
+        if (!wl) return;
+
+        this.closePreviewTestModal();
+
+        const options = { 
+            wordlistId: wl.id, 
+            teacherId: wl.teacherId || 'system', 
+            studentId: 'admin-preview' 
+        };
+        
+        const onComplete = () => {
+            helpers.showToast('体验练习已完成！', 'success');
+        };
+
+        setTimeout(() => {
+            if (type === 'flashcard' && typeof flashcardLearning !== 'undefined') {
+                flashcardLearning.start(wl.words, onComplete, options);
+            } else if (type === 'matching' && typeof matchingTest !== 'undefined') {
+                matchingTest.start(wl.words, onComplete, options);
+            } else if (type === 'context' && typeof contextTest !== 'undefined') {
+                contextTest.start(wl.words, onComplete, options);
+            } else if (type === 'spelling' && typeof spellingTest !== 'undefined') {
+                spellingTest.start(wl.words, onComplete, options);
+            } else {
+                helpers.showToast('练习模块未加载', 'error');
+            }
+        }, 350); // 等待模态框关闭动画完成
     }
 };

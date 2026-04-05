@@ -2018,6 +2018,21 @@
         </div>
     </div>
 
+    <!-- 体验练习模态框 -->
+    <div id="modal-preview-test" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] hidden opacity-0 transition-opacity">
+        <div class="glass-card rounded-3xl p-8 w-full max-w-md transform scale-95 transition-transform">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">选择体验类型</h3>
+                <button onclick="admin.closePreviewTestModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4" id="preview-test-options">
+                <!-- JS动态注入按钮 -->
+            </div>
+        </div>
+    </div>
+
     <!-- 核心模块加载 -->
     <script src="js/utils/helpers.js"></script>
     <script src="js/utils/tour.js"></script>

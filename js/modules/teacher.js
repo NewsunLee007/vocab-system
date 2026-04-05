@@ -938,6 +938,19 @@ const teacher = {
         const subtitleParts = [wl.textbook, wl.grade, wl.volume].filter(Boolean);
         const subtitle = subtitleParts.join(' · ');
 
+        const reviewed = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
+        const hasMaterials = wl.aiMaterials || (reviewed && reviewed.sentences && Object.keys(reviewed.sentences).length > 0);
+        let previewButtonHtml = '';
+        if (hasMaterials) {
+            previewButtonHtml = `
+                <button onclick="event.stopPropagation(); admin.openPreviewTestModal('${wl.id}')" 
+                    class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 hover:bg-teal-500 hover:text-white border border-teal-500/30 flex items-center justify-center transition-all" 
+                    title="体验练习">
+                    <i class="fa-solid fa-gamepad text-xs"></i>
+                </button>
+            `;
+        }
+
         item.innerHTML = `
             <div class="flex-1 cursor-pointer" onclick="teacher.editWordlist('${wl.id}')">
                 <div class="flex items-center gap-3 mb-1">
@@ -951,6 +964,7 @@ const teacher = {
                 </div>
             </div>
             <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                ${previewButtonHtml}
                 <button onclick="event.stopPropagation(); teacher.triggerAI('${wl.id}')" 
                     class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all" 
                     title="AI生成题目">
@@ -1028,6 +1042,18 @@ const teacher = {
         
         const item = document.createElement('div');
         item.className = 'p-4 border border-white/10 rounded-xl bg-slate-700/30 flex justify-between items-center hover:bg-slate-600/30 transition';
+        
+        const reviewed = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
+        const hasMaterials = wl.aiMaterials || (reviewed && reviewed.sentences && Object.keys(reviewed.sentences).length > 0);
+        let previewButtonHtml = '';
+        if (hasMaterials) {
+            previewButtonHtml = `
+                <button onclick="admin.openPreviewTestModal('${wl.id}')" class="text-xs bg-teal-500/20 text-teal-400 hover:bg-teal-500 hover:text-white px-3 py-1.5 rounded-lg border border-teal-500/30 transition" title="体验练习">
+                    <i class="fa-solid fa-gamepad mr-1"></i>体验练习
+                </button>
+            `;
+        }
+
         item.innerHTML = `
             <div class="flex-1 cursor-pointer" onclick="teacher.editWordlist('${wl.id}')">
                 <div class="flex items-center">
@@ -1038,6 +1064,7 @@ const teacher = {
                 ${subtitle ? `<div class="text-xs text-slate-400 mt-1">${subtitle} · ${wl.words.length}词</div>` : `<span class="text-xs text-slate-500 ml-2">(${wl.words.length}词)</span>`}
             </div>
             <div class="flex space-x-2">
+                ${previewButtonHtml}
                 <button onclick="teacher.editWordlist('${wl.id}')" class="text-xs text-amber-400 hover:text-amber-300 px-2 py-1 rounded hover:bg-amber-500/20 transition" title="编辑">
                     <i class="fa-solid fa-pen"></i>
                 </button>

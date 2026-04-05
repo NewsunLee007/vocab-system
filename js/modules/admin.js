@@ -1724,6 +1724,9 @@ const admin = {
                     <button onclick="admin.editAIMaterials('${wl.id}')" class="text-amber-400 hover:text-amber-300 text-sm mr-2" title="修改素材">
                         <i class="fa-solid fa-pen-to-square mr-1"></i>修改
                     </button>
+                    <button onclick="admin.deleteAIMaterials('${wl.id}')" class="text-rose-400 hover:text-rose-300 text-sm mr-2" title="删除素材">
+                        <i class="fa-solid fa-trash-can mr-1"></i>删除AI素材
+                    </button>
                 `;
             }
 
@@ -3326,6 +3329,22 @@ const admin = {
     editAIMaterials(wordlistId) {
         if (typeof teacher !== 'undefined' && typeof teacher.editExistingAIMaterials === 'function') {
             teacher.editExistingAIMaterials(wordlistId);
+        } else {
+            helpers.showToast('AI 模块未就绪，请刷新页面重试', 'error');
+        }
+    },
+
+    /**
+     * 删除词表的AI生成素材
+     */
+    deleteAIMaterials(wordlistId) {
+        if (typeof teacher !== 'undefined' && typeof teacher.deleteAIMaterials === 'function') {
+            // 直接调用教师端的删除逻辑，因为已经实现了完整的删除流程
+            teacher.deleteAIMaterials(wordlistId);
+            // 删除完成后由于当前是在管理端，需额外刷新一下管理端的列表
+            setTimeout(() => {
+                this.filterWordlists();
+            }, 500);
         } else {
             helpers.showToast('AI 模块未就绪，请刷新页面重试', 'error');
         }

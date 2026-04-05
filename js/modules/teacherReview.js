@@ -708,9 +708,14 @@ const teacherReview = {
                     <button onclick="teacherReview.batchApproveAll()" class="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-sm font-semibold rounded-lg transition">
                         <i class="fa-solid fa-check-double mr-1"></i>一键通过所有
                     </button>
-                    <button onclick="teacherReview.switchAITab('publish')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
-                        进入发布<i class="fa-solid fa-arrow-right ml-1"></i>
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="teacher.closeAIModal()" class="px-4 py-2 border border-indigo-600 text-indigo-700 hover:bg-indigo-50 text-sm font-semibold rounded-lg transition">
+                            <i class="fa-solid fa-save mr-1"></i>保存并退出
+                        </button>
+                        <button onclick="teacherReview.switchAITab('publish')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+                            进入发布<i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -819,7 +824,7 @@ const teacherReview = {
      */
     batchApproveAll() {
         // 确认对话框
-        if (!confirm('确定要一键通过所有素材的核验吗？\n\n通过后可直接进入发布环节。')) {
+        if (!confirm('确定要一键通过所有素材的核验吗？\n\n通过后您可以选择“保存并退出”或“进入发布”环节。')) {
             return;
         }
         
@@ -844,11 +849,6 @@ const teacherReview = {
         if (typeof helpers !== 'undefined' && helpers.showToast) {
             helpers.showToast(`已批量通过 ${Object.keys(this.state.reviewedSentences).length} 个素材的核验！`, 'success');
         }
-        
-        // 自动切换到发布标签
-        setTimeout(() => {
-            this.switchAITab('publish');
-        }, 500);
     },
 
     /**

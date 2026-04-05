@@ -954,6 +954,11 @@ const teacher = {
                     title="修改AI生成的素材">
                     <i class="fa-solid fa-pen-to-square text-xs"></i>
                 </button>
+                <button onclick="event.stopPropagation(); teacher.deleteAIMaterials('${wl.id}')" 
+                    class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white border border-rose-500/30 flex items-center justify-center transition-all" 
+                    title="删除AI素材">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
             `;
         }
 
@@ -1057,8 +1062,11 @@ const teacher = {
                 <button onclick="event.stopPropagation(); admin.openPreviewTestModal('${wl.id}')" class="text-xs bg-teal-500/20 text-teal-400 hover:bg-teal-500 hover:text-white px-3 py-1.5 rounded-lg border border-teal-500/30 transition mr-2" title="体验练习">
                     <i class="fa-solid fa-gamepad mr-1"></i>体验
                 </button>
-                <button onclick="event.stopPropagation(); teacher.editExistingAIMaterials('${wl.id}')" class="text-xs bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white px-3 py-1.5 rounded-lg border border-amber-500/30 transition" title="修改AI生成的素材">
+                <button onclick="event.stopPropagation(); teacher.editExistingAIMaterials('${wl.id}')" class="text-xs bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white px-3 py-1.5 rounded-lg border border-amber-500/30 transition mr-2" title="修改AI生成的素材">
                     <i class="fa-solid fa-pen-to-square mr-1"></i>修改
+                </button>
+                <button onclick="event.stopPropagation(); teacher.deleteAIMaterials('${wl.id}')" class="text-xs bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white px-3 py-1.5 rounded-lg border border-rose-500/30 transition" title="删除AI素材">
+                    <i class="fa-solid fa-trash-can mr-1"></i>删除
                 </button>
             `;
         }
@@ -2559,6 +2567,37 @@ const teacher = {
     },
 
     /**
+     * 删除词表的AI生成素材
+     */
+    deleteAIMaterials(wordlistId) {
+        if (!confirm('确定要删除该词表的AI生成素材吗？\n删除后将无法恢复，学生也将无法进行相关体验。')) {
+            return;
+        }
+        
+        const wordlist = db.findWordList(wordlistId);
+        if (!wordlist) return;
+        
+        const teacherId = wordlist.teacherId || 'system';
+        
+        // 删除草稿
+        if (db._data && db._data.aiDrafts && db._data.aiDrafts[teacherId]) {
+            delete db._data.aiDrafts[teacherId][wordlistId];
+        }
+        
+        // 删除已审核内容
+        if (db._data && db._data.teacherReviewedSentences && db._data.teacherReviewedSentences[teacherId]) {
+            delete db._data.teacherReviewedSentences[teacherId][wordlistId];
+        }
+        
+        // 重置词表上的标记
+        wordlist.aiMaterials = null;
+        db.save();
+        
+        helpers.showToast('已成功删除AI素材', 'success');
+        this.renderWordlists();
+    },
+
+    /**
      * 显示AI确认对话框
      */
     showAIConfirmDialog(message, type) {
@@ -3262,9 +3301,9 @@ const teacher = {
                         <div class="text-xs text-slate-500 mt-2">请点击左侧"核验"标签进入句子审核界面</div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="teacher.switchAITab('verify')" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-semibold">进入核验</button>
-                        <button onclick="teacher.saveDraft()" class="px-4 py-2 border border-amber-600 text-amber-700 rounded-lg hover:bg-amber-50 text-sm font-semibold">保存草稿</button>
-                    </div>
+                    <button onclick="teacher.switchAITab('verify')" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-semibold">进入核验</button>
+                    <button onclick="teacher.closeAIModal()" class="px-4 py-2 border border-amber-600 text-amber-700 rounded-lg hover:bg-amber-50 text-sm font-semibold">保存并退出</button>
+                </div>
                 </div>
             </div>
         `;

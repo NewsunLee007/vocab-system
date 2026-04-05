@@ -152,8 +152,12 @@ const spellingTest = {
         
         // 播放动画
         const btn = document.getElementById('spelling-play-btn');
-        btn.classList.add('scale-110');
-        setTimeout(() => btn.classList.remove('scale-110'), 200);
+        if (btn) {
+            btn.classList.add('scale-110');
+            setTimeout(() => {
+                if (btn) btn.classList.remove('scale-110');
+            }, 200);
+        }
     },
 
     showHint() {

@@ -226,8 +226,12 @@ const matchingTest = {
 
         // 动画
         const btn = document.getElementById('matching-speak-btn');
-        btn.classList.add('scale-110');
-        setTimeout(() => btn.classList.remove('scale-110'), 200);
+        if (btn) {
+            btn.classList.add('scale-110');
+            setTimeout(() => {
+                if (btn) btn.classList.remove('scale-110');
+            }, 200);
+        }
     },
 
     checkAnswer(selectedIndex, correctIndex, word) {

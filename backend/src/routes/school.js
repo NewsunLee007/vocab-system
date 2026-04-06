@@ -15,21 +15,31 @@ router.get(
   asyncHandler(async (req, res) => {
     const teacherId = req.user.role === 'teacher' ? req.user.sub : null;
 
+    // Fetch the student's assigned teacher id if they are a student
+    let studentTeacherId = null;
+    if (req.user.role === 'student') {
+      const studentRows = await withConn(async (conn) => conn.query('SELECT teacher_id FROM students WHERE id=? LIMIT 1', [req.user.sub]));
+      if (studentRows && studentRows[0]) {
+        studentTeacherId = studentRows[0].teacher_id;
+      }
+    }
+    const filterTeacherId = teacherId || studentTeacherId;
+
     const [teachers, students, vocabulary, tasks, globalStoreRows] = await withConn(async (conn) => {
       const teachersRows = req.user.role === 'admin'
         ? await conn.query('SELECT id, username, name, subject, role, password_changed AS passwordChanged FROM teachers ORDER BY created_at DESC')
-        : await conn.query('SELECT id, username, name, subject, role, password_changed AS passwordChanged FROM teachers WHERE id=? LIMIT 1', [teacherId]);
+        : await conn.query('SELECT id, username, name, subject, role, password_changed AS passwordChanged FROM teachers WHERE id=? LIMIT 1', [filterTeacherId]);
 
-      const studentsRows = teacherId
-      ? await conn.query('SELECT id, teacher_id AS teacherId, class_name AS className, name, plain_password AS plainPassword, password_changed AS passwordChanged, coins, badges, streak, total_learned AS totalLearned, total_tests AS totalTests, total_correct AS totalCorrect, total_questions AS totalQuestions FROM students WHERE teacher_id=? ORDER BY created_at DESC', [teacherId])
+      const studentsRows = filterTeacherId
+      ? await conn.query('SELECT id, teacher_id AS teacherId, class_name AS className, name, plain_password AS plainPassword, password_changed AS passwordChanged, coins, badges, streak, total_learned AS totalLearned, total_tests AS totalTests, total_correct AS totalCorrect, total_questions AS totalQuestions FROM students WHERE teacher_id=? ORDER BY created_at DESC', [filterTeacherId])
       : await conn.query('SELECT id, teacher_id AS teacherId, class_name AS className, name, plain_password AS plainPassword, password_changed AS passwordChanged, coins, badges, streak, total_learned AS totalLearned, total_tests AS totalTests, total_correct AS totalCorrect, total_questions AS totalQuestions FROM students ORDER BY created_at DESC');
 
-      const vocabRows = teacherId
-        ? await conn.query('SELECT id, teacher_id AS teacherId, title, type, textbook, grade, volume, unit, words, created_at AS createdAt FROM vocabulary WHERE teacher_id=? ORDER BY created_at DESC', [teacherId])
+      const vocabRows = filterTeacherId
+        ? await conn.query('SELECT id, teacher_id AS teacherId, title, type, textbook, grade, volume, unit, words, created_at AS createdAt FROM vocabulary WHERE teacher_id=? ORDER BY created_at DESC', [filterTeacherId])
         : await conn.query('SELECT id, teacher_id AS teacherId, title, type, textbook, grade, volume, unit, words, created_at AS createdAt FROM vocabulary ORDER BY created_at DESC');
 
-      const tasksRows = teacherId
-        ? await conn.query('SELECT * FROM tasks WHERE teacher_id=? ORDER BY created_at DESC', [teacherId])
+      const tasksRows = filterTeacherId
+        ? await conn.query('SELECT * FROM tasks WHERE teacher_id=? ORDER BY created_at DESC', [filterTeacherId])
         : await conn.query('SELECT * FROM tasks ORDER BY created_at DESC');
 
       const gsRows = await conn.query('SELECT payload FROM global_store WHERE id="main"');

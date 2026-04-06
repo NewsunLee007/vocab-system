@@ -444,18 +444,42 @@
             </div>
 
             <div id="tab-students" class="hidden bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
                     <div class="flex items-center gap-3">
                         <h3 class="text-xl font-bold text-white">学生管理</h3>
                         <span id="teacher-student-count" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-sm font-medium">0</span>
                     </div>
-                    <div class="flex space-x-2">
-                        <button onclick="teacher.toggleBatchDeleteMode()" id="btn-batch-delete" class="px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:shadow-lg transition">
-                            <i class="fa-solid fa-trash-can mr-2"></i>批量删除
-                        </button>
-                        <button onclick="teacher.showAddStudentModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
-                            <i class="fa-solid fa-plus mr-2"></i>添加学生
-                        </button>
+                    <div class="flex items-center space-x-3 flex-wrap gap-y-2">
+                        <!-- 班级筛选 -->
+                        <select id="teacher-student-class-filter" onchange="teacher.renderStudents()" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white min-w-[120px] outline-none">
+                            <option value="all">全部班级</option>
+                        </select>
+                        
+                        <!-- 排序选项 -->
+                        <select id="teacher-student-sort" onchange="teacher.renderStudents()" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white outline-none">
+                            <option value="default">默认排序</option>
+                            <option value="coins_desc">金币降序</option>
+                            <option value="name_asc">姓名升序</option>
+                        </select>
+
+                        <!-- 视图切换 -->
+                        <div class="flex bg-slate-700 rounded-lg p-1">
+                            <button onclick="teacher.setStudentViewMode('grid')" id="btn-view-grid" class="w-8 h-8 rounded-md bg-slate-600 text-white flex items-center justify-center transition" title="方块视图">
+                                <i class="fa-solid fa-grip"></i>
+                            </button>
+                            <button onclick="teacher.setStudentViewMode('list')" id="btn-view-list" class="w-8 h-8 rounded-md text-slate-400 hover:text-white flex items-center justify-center transition" title="列表视图">
+                                <i class="fa-solid fa-list"></i>
+                            </button>
+                        </div>
+
+                        <div class="flex space-x-2 ml-2">
+                            <button onclick="teacher.toggleBatchDeleteMode()" id="btn-batch-delete" class="px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:shadow-lg transition">
+                                <i class="fa-solid fa-list-check mr-2"></i>批量操作
+                            </button>
+                            <button onclick="teacher.showAddStudentModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
+                                <i class="fa-solid fa-plus mr-2"></i>添加学生
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <!-- 批量删除操作栏 -->
@@ -480,7 +504,24 @@
                     </div>
                 </div>
                 <div id="teacher-students-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- JS动态渲染 -->
+                    <!-- JS动态渲染方块视图 -->
+                </div>
+                <div id="teacher-students-list" class="hidden overflow-x-auto mt-2">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-600/50 text-slate-400 text-sm">
+                                <th class="py-3 px-4 font-medium"></th>
+                                <th class="py-3 px-4 font-medium">姓名</th>
+                                <th class="py-3 px-4 font-medium">班级</th>
+                                <th class="py-3 px-4 font-medium">当前密码</th>
+                                <th class="py-3 px-4 font-medium">金币/徽章</th>
+                                <th class="py-3 px-4 font-medium text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-students-list-body" class="text-slate-300">
+                            <!-- JS动态渲染列表视图 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1676,8 +1717,8 @@
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">班级（所有学生将使用此班级）</label>
-                    <input type="text" id="new-student-class" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="如：七年级1班">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">班级</label>
+                    <input type="text" id="new-student-class" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="如：701">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">学生姓名列表（每行一个）</label>

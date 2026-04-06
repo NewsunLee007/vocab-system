@@ -248,6 +248,29 @@ const teacher = {
     },
 
     /**
+     * 切换学生列表视图模式
+     */
+    setStudentViewMode(mode) {
+        this.studentViewMode = mode;
+        const btnGrid = document.getElementById('btn-view-grid');
+        const btnList = document.getElementById('btn-view-list');
+        
+        if (mode === 'grid') {
+            btnGrid.classList.replace('text-slate-400', 'text-white');
+            btnGrid.classList.add('bg-slate-600');
+            btnList.classList.replace('text-white', 'text-slate-400');
+            btnList.classList.remove('bg-slate-600');
+        } else {
+            btnList.classList.replace('text-slate-400', 'text-white');
+            btnList.classList.add('bg-slate-600');
+            btnGrid.classList.replace('text-white', 'text-slate-400');
+            btnGrid.classList.remove('bg-slate-600');
+        }
+        
+        this.renderStudents();
+    },
+
+    /**
      * 渲染学生列表
      */
     renderStudents() {
@@ -257,23 +280,67 @@ const teacher = {
             return;
         }
         
-        const students = db.getStudentsByTeacher(user.id);
-        console.log('renderStudents:', { teacherId: user.id, studentCount: students.length, students: students.map(s => ({ id: s.id, name: s.name })) });
+        let students = db.getStudentsByTeacher(user.id);
+        
+        // 更新班级筛选下拉框
+        const classFilterEl = document.getElementById('teacher-student-class-filter');
+        if (classFilterEl) {
+            const currentFilter = classFilterEl.value;
+            const uniqueClasses = [...new Set(students.map(s => s.class).filter(c => c))].sort();
+            
+            let optionsHtml = '<option value="all">全部班级</option>';
+            uniqueClasses.forEach(c => {
+                optionsHtml += `<option value="${c}">${c}</option>`;
+            });
+            classFilterEl.innerHTML = optionsHtml;
+            classFilterEl.value = uniqueClasses.includes(currentFilter) ? currentFilter : 'all';
+            
+            // 应用筛选
+            if (classFilterEl.value !== 'all') {
+                students = students.filter(s => s.class === classFilterEl.value);
+            }
+        }
+        
+        // 应用排序
+        const sortEl = document.getElementById('teacher-student-sort');
+        if (sortEl) {
+            const sortVal = sortEl.value;
+            if (sortVal === 'coins_desc') {
+                students.sort((a, b) => (b.coins || 0) - (a.coins || 0));
+            } else if (sortVal === 'name_asc') {
+                students.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'zh-CN'));
+            }
+        }
         
         const countEl = document.getElementById('teacher-student-count');
         if (countEl) {
             countEl.innerText = students.length;
-            console.log('Updated student count to:', students.length);
+        }
+        
+        const grid = document.getElementById('teacher-students-grid');
+        const listContainer = document.getElementById('teacher-students-list');
+        const listBody = document.getElementById('teacher-students-list-body');
+        
+        if (!grid || !listContainer || !listBody) return;
+        
+        const mode = this.studentViewMode || 'grid';
+        grid.innerHTML = '';
+        listBody.innerHTML = '';
+        
+        if (mode === 'grid') {
+            grid.classList.remove('hidden');
+            listContainer.classList.add('hidden');
         } else {
-            console.warn('teacher-student-count element not found');
+            grid.classList.add('hidden');
+            listContainer.classList.remove('hidden');
         }
 
-        const grid = document.getElementById('teacher-students-grid');
-        if (!grid) return;
-        grid.innerHTML = '';
-
         if (students.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8">暂无学生，请添加学生名单</div>';
+            if (mode === 'grid') {
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8">暂无匹配学生数据</div>';
+            } else {
+                listBody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 py-8">暂无匹配学生数据</td></tr>';
+            }
             return;
         }
 
@@ -281,48 +348,92 @@ const teacher = {
         const selectedIds = this._selectedStudentsForDelete || [];
 
         students.forEach(student => {
-            const card = document.createElement('div');
             const isSelected = selectedIds.includes(student.id);
+            const pwdDisplay = student.passwordChanged ? '<span class="text-emerald-400 text-xs"><i class="fa-solid fa-check-circle mr-1"></i>已改密</span>' : `<span class="text-rose-400 text-xs">当前密码：${student.plainPassword || '123456'}</span>`;
             
-            if (isBatchMode) {
-                card.className = `p-4 border rounded-xl flex justify-between items-center transition cursor-pointer ${isSelected ? 'bg-rose-500/20 border-rose-500/50' : 'bg-slate-700/50 border-white/10 hover:bg-slate-600/50'}`;
-                card.onclick = () => this.toggleStudentSelection(student.id);
+            if (mode === 'grid') {
+                const card = document.createElement('div');
+                
+                if (isBatchMode) {
+                    card.className = `p-4 border rounded-xl flex justify-between items-center transition cursor-pointer ${isSelected ? 'bg-rose-500/20 border-rose-500/50' : 'bg-slate-700/50 border-white/10 hover:bg-slate-600/50'}`;
+                    card.onclick = () => this.toggleStudentSelection(student.id);
+                } else {
+                    card.className = 'p-4 border border-white/10 rounded-xl bg-slate-700/50 flex justify-between items-center hover:bg-slate-600/50 hover:shadow-lg transition cursor-pointer relative group';
+                    card.onclick = () => this.viewStudentDetail(student.id);
+                }
+                
+                card.innerHTML = `
+                    ${isBatchMode ? `
+                        <div class="mr-3">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} class="w-5 h-5 text-rose-600 rounded focus:ring-rose-500 pointer-events-none">
+                        </div>
+                    ` : ''}
+                    <div class="flex-1">
+                        <span class="font-bold text-white">${student.name}</span>
+                        <div class="text-xs text-slate-400 mt-1">${student.class}</div>
+                        ${!isBatchMode ? `<div class="mt-1">${pwdDisplay}</div>` : ''}
+                    </div>
+                    <div class="text-right mr-3">
+                        <div class="text-xs text-yellow-400">
+                            <i class="fa-solid fa-coins mr-1"></i>${student.coins || 0}
+                        </div>
+                        <div class="text-xs text-slate-400 mt-1">已学: ${student.totalLearned || 0}</div>
+                    </div>
+                    ${!isBatchMode ? `
+                        <div class="absolute right-2 top-2 bottom-2 flex flex-col justify-center space-y-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800/90 px-2 rounded-lg border border-white/10">
+                            <button onclick="event.stopPropagation(); teacher.editStudent('${student.id}')" class="text-xs text-indigo-400 hover:text-indigo-300 p-1.5 rounded hover:bg-indigo-500/20 transition" title="编辑">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); teacher.resetStudentPwd('${student.id}')" class="text-xs text-amber-400 hover:text-amber-300 p-1.5 rounded hover:bg-amber-500/20 transition" title="重置密码为123456">
+                                <i class="fa-solid fa-key"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); teacher.deleteStudent('${student.id}')" class="text-xs text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-500/20 transition" title="删除">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    ` : ''}
+                `;
+                grid.appendChild(card);
             } else {
-                card.className = 'p-4 border border-white/10 rounded-xl bg-slate-700/50 flex justify-between items-center hover:bg-slate-600/50 hover:shadow-lg transition cursor-pointer';
-                card.onclick = () => this.viewStudentDetail(student.id);
+                // List Mode
+                const tr = document.createElement('tr');
+                tr.className = `border-b border-slate-600/30 transition cursor-pointer ${isSelected && isBatchMode ? 'bg-rose-500/10' : 'hover:bg-slate-700/50'}`;
+                
+                if (isBatchMode) {
+                    tr.onclick = () => this.toggleStudentSelection(student.id);
+                } else {
+                    tr.onclick = () => this.viewStudentDetail(student.id);
+                }
+                
+                tr.innerHTML = `
+                    <td class="py-3 px-4 w-12">
+                        ${isBatchMode ? `
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 pointer-events-none">
+                        ` : '<i class="fa-solid fa-user text-slate-500"></i>'}
+                    </td>
+                    <td class="py-3 px-4 font-medium text-white">${student.name}</td>
+                    <td class="py-3 px-4 text-slate-300">${student.class}</td>
+                    <td class="py-3 px-4">${pwdDisplay}</td>
+                    <td class="py-3 px-4">
+                        <span class="text-yellow-400 text-sm font-medium"><i class="fa-solid fa-coins mr-1"></i>${student.coins || 0}</span>
+                        ${student.badges && student.badges.length > 0 ? `<span class="ml-2 text-indigo-300 text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full">${student.badges.length} 徽章</span>` : ''}
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        ${!isBatchMode ? `
+                            <button onclick="event.stopPropagation(); teacher.editStudent('${student.id}')" class="text-indigo-400 hover:text-indigo-300 p-2 rounded hover:bg-indigo-500/20 transition mx-1" title="编辑">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); teacher.resetStudentPwd('${student.id}')" class="text-amber-400 hover:text-amber-300 p-2 rounded hover:bg-amber-500/20 transition mx-1" title="重置密码">
+                                <i class="fa-solid fa-key"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); teacher.deleteStudent('${student.id}')" class="text-rose-400 hover:text-rose-300 p-2 rounded hover:bg-rose-500/20 transition mx-1" title="删除">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </td>
+                `;
+                listBody.appendChild(tr);
             }
-            
-            card.innerHTML = `
-                ${isBatchMode ? `
-                    <div class="mr-3">
-                        <input type="checkbox" ${isSelected ? 'checked' : ''} class="w-5 h-5 text-rose-600 rounded focus:ring-rose-500 pointer-events-none">
-                    </div>
-                ` : ''}
-                <div class="flex-1">
-                    <span class="font-bold text-white">${student.name}</span>
-                    <div class="text-xs text-slate-400">${student.class}</div>
-                </div>
-                <div class="text-right mr-3">
-                    <div class="text-xs text-yellow-400">
-                        <i class="fa-solid fa-coins mr-1"></i>${student.coins || 0}
-                    </div>
-                    <div class="text-xs text-slate-400 mt-1">已学: ${student.totalLearned || 0}</div>
-                </div>
-                ${!isBatchMode ? `
-                    <div class="flex space-x-1">
-                        <button onclick="event.stopPropagation(); teacher.editStudent('${student.id}')" class="text-xs text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded hover:bg-indigo-500/20 transition" title="编辑">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button onclick="event.stopPropagation(); teacher.resetStudentPwd('${student.id}')" class="text-xs text-amber-400 hover:text-amber-300 px-2 py-1 rounded hover:bg-amber-500/20 transition" title="重置密码为123456">
-                            <i class="fa-solid fa-key"></i>
-                        </button>
-                        <button onclick="event.stopPropagation(); teacher.deleteStudent('${student.id}')" class="text-xs text-rose-400 hover:text-rose-300 px-2 py-1 rounded hover:bg-rose-500/20 transition" title="删除">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                ` : ''}
-            `;
-            grid.appendChild(card);
         });
     },
 
@@ -3857,6 +3968,8 @@ const teacher = {
             aiAnalysis: analysis,
             aiMaterials: { context: materials.context, spelling: materials.spelling, matching: materials.matching, flashcard: materials.flashcard }
         });
+        
+        db.syncToCloud(); // 强制立即同步数据到云端
 
         this.closeAIModal();
         this.renderTasks();
@@ -4245,6 +4358,7 @@ const teacher = {
         };
         
         db.addTask(task);
+        db.syncToCloud(); // 强制立即同步数据到云端
         
         this.hideCreateTaskModal();
         this.renderTasks();
@@ -4333,6 +4447,11 @@ const teacher = {
         
         if (!className) {
             helpers.showToast('请填写班级！', 'warning');
+            return;
+        }
+        
+        if (!/^\d+$/.test(className)) {
+            helpers.showToast('班级格式必须为纯数字，例如 701', 'warning');
             return;
         }
         

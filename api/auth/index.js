@@ -41,11 +41,23 @@ async function handleLogin(req, res) {
     if (!username || !password || !role) return fail(res, 400, '缺少登录参数');
 
     const normalizedRole = String(role).toUpperCase();
-    const query = {
-      username: String(username).trim(),
-      role: normalizedRole,
-      className: normalizedRole === 'STUDENT' ? String(className || '').trim() || null : null,
-    };
+    let query;
+    if (normalizedRole === 'TEACHER') {
+      query = {
+        role: 'TEACHER',
+        OR: [
+          { username: String(username).trim() },
+          { name: String(username).trim() }
+        ]
+      };
+    } else {
+      query = {
+        username: String(username).trim(),
+        role: normalizedRole,
+        className: normalizedRole === 'STUDENT' ? String(className || '').trim() || null : null,
+      };
+    }
+    
     if (normalizedRole === 'STUDENT' && !query.className) {
       return fail(res, 400, '学生登录必须提供班级');
     }

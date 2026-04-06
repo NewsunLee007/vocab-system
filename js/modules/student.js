@@ -347,6 +347,9 @@ const student = {
             return;
         }
         
+        // 记录当前的词表ID，供学习模块（如 wordLearning, flexibleLearning）提取 AI 例句时使用
+        this.currentWordlistId = wordlist.id;
+        
         // 获取单词列表（限制数量）
         const words = wordlist.words.slice(0, batchSize);
         

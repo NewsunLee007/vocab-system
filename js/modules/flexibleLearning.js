@@ -190,7 +190,25 @@ const flexibleLearning = {
         }
 
         const word = this.session.words[this.session.currentIndex];
-        const wordData = db.findWord(word) || this.generateDefaultWordData(word);
+        let wordData = db.findWord(word) || this.generateDefaultWordData(word);
+
+        // 尝试加载 AI 生成的教师审核素材
+        const wl = (typeof student !== 'undefined' && student.currentWordlistId) ? db.findWordList(student.currentWordlistId) : null;
+        if (wl && wl.id) {
+            const review = db.getTeacherReviewedSentences(wl.teacherId || 'system', wl.id);
+            if (review && review.sentences && review.sentences[word]) {
+                const r = review.sentences[word];
+                if (r.status === 'approved' || r.status === 'modified') {
+                    wordData = {
+                        ...wordData,
+                        word: word,
+                        phonetic: r.phonetic || wordData.phonetic,
+                        meaning: r.meaning || wordData.meaning,
+                        sentence: r.sentence || wordData.sentence
+                    };
+                }
+            }
+        }
 
         // 更新进度
         const progress = ((this.session.currentIndex / this.session.words.length) * 100);

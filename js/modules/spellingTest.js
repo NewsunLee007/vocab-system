@@ -18,7 +18,7 @@ const spellingTest = {
     
     getWordDataWithReview(word) {
         let data = db.findWord(word) || {};
-        const wl = taskEngine?.state?.wordlist || (typeof student !== 'undefined' && student.currentWordlistId ? db.findWordList(student.currentWordlistId) : null);
+        const wl = (typeof taskEngine !== 'undefined' && taskEngine.state?.wordlist) || (typeof testEngine !== 'undefined' && testEngine.state?.wordlist) || (typeof student !== 'undefined' && student.currentWordlistId ? db.findWordList(student.currentWordlistId) : null);
         if (wl && wl.id) {
             const review = db.getTeacherReviewedSentences(wl.teacherId || 'system', wl.id);
             if (review && review.sentences && review.sentences[word]) {

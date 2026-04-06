@@ -3161,10 +3161,15 @@ const student = {
         const difficultWordList = difficultWords.map(dw => dw.word);
         const allWords = [...new Set([...words, ...difficultWordList])];
 
+        // Ensure taskModes is an array of supported modes, defaulting to all if empty or missing
         const supportedModes = ['spelling', 'context', 'matching'];
-        const taskModes = Array.isArray(task.taskTypes) && task.taskTypes.length
-            ? task.taskTypes.filter(mode => supportedModes.includes(mode))
-            : supportedModes;
+        let taskModes = supportedModes;
+        if (task && Array.isArray(task.taskTypes) && task.taskTypes.length > 0) {
+            const validModes = task.taskTypes.filter(mode => supportedModes.includes(mode));
+            if (validModes.length > 0) {
+                taskModes = validModes;
+            }
+        }
 
         this.showTestModeChoice(allWords, taskModes, taskId);
     },
@@ -3173,7 +3178,8 @@ const student = {
      * 显示检测模式选择界面
      */
     showTestModeChoice(words, modes, taskId) {
-        const modeOrder = ['spelling', 'context', 'matching'].filter(mode => modes.includes(mode));
+        // 使用固定的三种模式数组作为渲染依据，这样哪怕modes参数只包含了部分模式，也能显示完整的列表
+        const modeOrder = ['spelling', 'context', 'matching'];
         const modeConfig = {
             'spelling': { name: '听音拼写填空', description: '考查发音与拼写的绝对准确率', icon: 'fa-headphones', color: 'amber', required: true },
             'context': { name: '场景语境选择', description: '锻炼结合上下文推断词义的能力', icon: 'fa-book-open', color: 'indigo' },
@@ -3200,8 +3206,8 @@ const student = {
                             ${modeOrder.map(mode => {
                                 const config = modeConfig[mode];
                                 const isRequired = config.required;
-                                const isChecked = modes.includes(mode) || isRequired; 
-                                const checkedAttr = (modes.includes(mode) || isRequired) ? 'checked' : '';
+                                const isChecked = (modes && modes.includes(mode)) || isRequired; 
+                                const checkedAttr = isChecked ? 'checked' : '';
                                 
                                 return `
                                     <label class="test-mode-option group flex items-center p-4 rounded-xl cursor-pointer transition-all duration-200 ${isRequired ? 'bg-orange-50 border border-orange-200' : 'hover:bg-white border border-transparent hover:border-slate-200'}" data-mode="${mode}">
@@ -3252,7 +3258,7 @@ const student = {
         // 保存状态
         this._testWords = words;
         this._testTaskId = taskId;
-        this._selectedTestModes = [...new Set(modes)];
+        this._selectedTestModes = [...new Set(modes || ['spelling', 'context', 'matching'])];
     },
 
     /**

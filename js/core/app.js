@@ -17,23 +17,38 @@ const app = {
         
         // 统一路由分发控制权
         if (auth.isLoggedIn()) {
-            // 如果用户已经登录，根据角色将他分配到对应的工作台
-            router.redirectByRole();
+            const user = auth.getCurrentUser();
             
-            // 如果 URL 参数包含 force_change_password，则显示修改密码弹窗
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('action') === 'force_change_password') {
+            // 如果用户密码未修改，我们只弹出模态框，不进行任何角色重定向，以防止组件渲染和无限刷新
+            if (user && user.passwordChanged === false) {
+                console.log('App init: user password not changed, blocking redirection.');
+                if (window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('action', 'force_change_password');
+                    window.history.replaceState({path: url.toString()}, '', url.toString());
+                }
                 setTimeout(() => {
                     auth.showForceChangePasswordModal();
                 }, 300);
+            } else {
+                // 如果用户已经登录且密码已修改，根据角色将他分配到对应的工作台
+                router.redirectByRole();
+                
+                // 如果 URL 参数包含 force_change_password，则显示修改密码弹窗
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('action') === 'force_change_password') {
+                    setTimeout(() => {
+                        auth.showForceChangePasswordModal();
+                    }, 300);
+                }
+                
+                // 后台同步词库到服务器
+                setTimeout(() => {
+                    dataSync.syncWordlistsToServer().catch(err => {
+                        console.warn('Initial sync failed:', err);
+                    });
+                }, 2000);
             }
-            
-            // 后台同步词库到服务器
-            setTimeout(() => {
-                dataSync.syncWordlistsToServer().catch(err => {
-                    console.warn('Initial sync failed:', err);
-                });
-            }, 2000);
         } else {
             // 如果未登录，且当前是在 app.html 内，才重定向回首页
             if (window.location.pathname.endsWith('app.html')) {

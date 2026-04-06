@@ -16,6 +16,12 @@ const teacher = {
      */
     render() {
         const user = auth.getCurrentUser();
+        // 强制密码修改检查：如果密码没改，直接跳过所有组件的渲染
+        if (user && user.passwordChanged === false) {
+            console.log('Skipping teacher render due to pending password change');
+            return;
+        }
+        
         document.getElementById('teacher-dashboard-title').innerText = `${user.name} 的工作台`;
         
         this.switchTab('tab-stats');

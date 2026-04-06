@@ -302,6 +302,13 @@ const auth = {
                     modal.classList.add('opacity-0');
                 });
                 
+                // 清理 URL 上的 action 参数，防止刷新后再次弹出修改密码框
+                if (window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('action');
+                    window.history.replaceState({path: url.toString()}, '', url.toString());
+                }
+                
                 // 强制更新导航栏
                 if (typeof app !== 'undefined' && app.updateNav) {
                     app.updateNav();
@@ -312,15 +319,15 @@ const auth = {
                     window.location.href = 'app.html';
                 } else {
                     if (pendingRole === 'admin') {
-                        router.navigate('admin');
+                        router.navigate('admin', true, true);
                     } else if (pendingRole === 'teacher') {
-                        router.navigate('teacher');
+                        router.navigate('teacher', true, true);
                     } else {
                         // 学生改密后调用完成登录流程以初始化必要数据
                         if (this.currentUser) {
                             this.completeStudentLogin(this.currentUser);
                         } else {
-                            router.navigate('student');
+                            router.navigate('student', true, true);
                         }
                     }
                 }
@@ -504,6 +511,15 @@ const auth = {
                      }
                      
                      // Delay slightly to ensure app is fully loaded before showing modal
+                     // 如果已经在 app.html 并且有 action 参数了，就不要再修改 URL，以免无限刷新
+                     const urlParams = new URLSearchParams(window.location.search);
+                     if (urlParams.get('action') !== 'force_change_password') {
+                         if (window.history.replaceState) {
+                             const url = new URL(window.location.href);
+                             url.searchParams.set('action', 'force_change_password');
+                             window.history.replaceState({path: url.toString()}, '', url.toString());
+                         }
+                     }
                      setTimeout(() => {
                          this.showForceChangePasswordModal();
                      }, 100);
@@ -527,11 +543,7 @@ const auth = {
                 if (!window.location.pathname.endsWith('app.html')) {
                     window.location.href = 'app.html';
                 } else {
-                    if (typeof router !== 'undefined' && router.redirectByRole) {
-                        router.redirectByRole();
-                    } else {
-                        this.completeStudentLogin(student);
-                    }
+                    this.completeStudentLogin(student);
                     if (typeof app !== 'undefined' && app.updateNav) {
                         app.updateNav();
                     }
@@ -582,6 +594,15 @@ const auth = {
             if (!window.location.pathname.endsWith('app.html')) {
                 window.location.href = 'app.html?action=force_change_password';
             } else {
+                // 如果已经在 app.html 并且有 action 参数了，就不要再修改 URL，以免无限刷新
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('action') !== 'force_change_password') {
+                    if (window.history.replaceState) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('action', 'force_change_password');
+                        window.history.replaceState({path: url.toString()}, '', url.toString());
+                    }
+                }
                 setTimeout(() => {
                     this.showForceChangePasswordModal();
                 }, 100);
@@ -593,8 +614,14 @@ const auth = {
         if (!window.location.pathname.endsWith('app.html')) {
             window.location.href = 'app.html';
         } else {
-            if (typeof router !== 'undefined' && router.navigate) {
-                const result = router.navigate('student');
+            if (typeof router !== 'undefined' && router.redirectByRole) {
+                // 清理掉 action 参数
+                if (window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('action');
+                    window.history.replaceState({path: url.toString()}, '', url.toString());
+                }
+                const result = router.redirectByRole();
                 console.log('Navigation result:', result);
             }
             if (typeof app !== 'undefined' && app.updateNav) {

@@ -100,15 +100,22 @@ const router = {
         }
         
         const user = auth.getCurrentUser();
-        // 如果密码未修改，阻止导航到系统内部页面
+        // 如果密码未修改，阻止导航到系统内部页面，但允许应用完成初始化
         if (user && user.passwordChanged === false) {
             console.log('Password not changed, blocking navigation to internal view:', viewName);
+            // 只要确保停留在app.html并且有弹窗就可以了，不需要阻止DOM显示（为了能看到底图）
+            // 但是我们要阻止初始化特定角色的组件（否则会导致无限刷新数据）
             return false;
         }
         
         // 权限检查
         if (!this.checkPermission(viewName)) {
             console.warn(`无权访问视图: ${viewName}`);
+            // 对于因未修改密码而产生的拦截，这里我们只打断后续渲染渲染流程，
+            // 但是绝对不能重定向回 index.html。
+            if (user && user.passwordChanged === false) {
+                return false;
+            }
             window.location.href = 'index.html';
             return false;
         }
@@ -171,12 +178,12 @@ const router = {
         
         const user = auth.getCurrentUser();
         
-        // 密码未修改时，只允许登录页，其他页面让auth模块处理强制改密码流程
-        // 注意：这里不能直接返回false，否则会导致无限重定向
-        // 当用户密码未修改时，auth模块应该已经显示强制改密码模态框了
+        // 密码未修改时，不允许直接进入业务视图。
+        // 这将阻止 student/teacher/admin 等模块渲染其数据并触发无限循环，
+        // 同时确保用户只能留在当前的模态框界面。
         if (user && user.passwordChanged === false) {
-            console.log('Password not changed, but allowing navigation (auth module should handle force change)');
-            // 继续往下执行角色检查，因为强制改密码模态框应该已经显示了
+            console.log('Password not changed, blocking permission for view:', viewName);
+            return false;
         }
         
         // 角色权限检查
@@ -295,16 +302,14 @@ const router = {
         
         switch (user.role) {
             case 'admin':
-                this.navigate('admin', true, true);
-                break;
+                return this.navigate('admin', true, true);
             case 'teacher':
-                this.navigate('teacher', true, true);
-                break;
+                return this.navigate('teacher', true, true);
             case 'student':
-                this.navigate('student', true, true);
-                break;
+                return this.navigate('student', true, true);
             default:
                 window.location.href = 'index.html';
+                return false;
         }
     }
 };

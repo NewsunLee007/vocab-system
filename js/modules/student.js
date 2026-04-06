@@ -12,6 +12,10 @@ const student = {
             console.warn('student.render: No current user');
             return;
         }
+        if (user.passwordChanged === false) {
+            console.log('Skipping student render due to pending password change');
+            return;
+        }
         
         // 检查并同步ZPD离线金币
         try {

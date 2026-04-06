@@ -13,6 +13,12 @@ const admin = {
      * 渲染教务处总控台
      */
     async render() {
+        const user = auth.getCurrentUser();
+        if (user && user.passwordChanged === false) {
+            console.log('Skipping admin render due to pending password change');
+            return;
+        }
+
         this.renderStats();
         await this.renderTeacherList();
         this.renderAIConfigStatus();
@@ -1659,6 +1665,13 @@ const admin = {
      * 渲染词表列表
      */
     renderWordlists() {
+        // 如果当前是强制修改密码状态，跳过自动合并，避免无限循环
+        const user = auth.getCurrentUser();
+        if (user && user.passwordChanged === false) {
+            console.log('Skipping renderWordlists in admin view due to pending password change');
+            return;
+        }
+
         const tbody = document.getElementById('admin-wordlist-tbody');
         if (!tbody) {
             console.error('admin-wordlist-tbody not found!');
@@ -1693,9 +1706,8 @@ const admin = {
             tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400">暂无词表数据</td></tr>';
             return;
         }
-
+        
         filtered.forEach(wl => {
-            // 计算例句完成情况
             const wordsWithSentence = wl.words.filter(w => {
                 const wordData = db.findWord(w);
                 return wordData && wordData.sentence;

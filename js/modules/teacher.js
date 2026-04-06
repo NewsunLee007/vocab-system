@@ -224,30 +224,67 @@ const teacher = {
             filteredLogs = logs.filter(l => new Date(l.date) >= weekAgo);
         }
 
-        document.getElementById('stats-total-count').innerText = `共 ${filteredLogs.length} 条记录`;
+        // 聚合数据 (按日期 + 学生)
+        const aggregated = {};
+        filteredLogs.forEach(log => {
+            const key = `${log.date}_${log.studentId}`;
+            if (!aggregated[key]) {
+                aggregated[key] = {
+                    date: log.date,
+                    studentId: log.studentId,
+                    learnedCount: 0,
+                    reviewCount: 0,
+                    correctRates: [],
+                    weakWords: new Set()
+                };
+            }
+            aggregated[key].learnedCount += (Number(log.learnedCount) || 0);
+            aggregated[key].reviewCount += (Number(log.reviewCount) || 0);
+            if (log.correctRate !== undefined && log.correctRate > 0) {
+                aggregated[key].correctRates.push(Number(log.correctRate));
+            }
+            if (log.weakWord && log.weakWord !== '-') {
+                log.weakWord.split(',').forEach(w => {
+                    const word = w.trim();
+                    if (word) aggregated[key].weakWords.add(word);
+                });
+            }
+        });
+
+        const sortedRecords = Object.values(aggregated).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        document.getElementById('stats-total-count').innerText = `共 ${sortedRecords.length} 条有效统计 (按日聚合)`;
 
         const tbody = document.getElementById('teacher-stats-tbody');
         tbody.innerHTML = '';
 
-        if (filteredLogs.length === 0) {
+        if (sortedRecords.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">该时间段内暂无学情数据</td></tr>';
             return;
         }
 
-        filteredLogs.forEach(log => {
-            const student = db.findStudent(log.studentId);
+        sortedRecords.forEach(record => {
+            const student = db.findStudent(record.studentId);
             if (!student) return;
+
+            let avgRate = 0;
+            if (record.correctRates.length > 0) {
+                avgRate = Math.round(record.correctRates.reduce((a, b) => a + b, 0) / record.correctRates.length);
+            }
+            
+            const weakWordsArr = Array.from(record.weakWords);
+            const weakWordsDisplay = weakWordsArr.length > 0 ? weakWordsArr.slice(0, 3).join(', ') + (weakWordsArr.length > 3 ? '...' : '') : '-';
 
             const row = document.createElement('tr');
             row.className = 'hover:bg-white/10 transition border-b border-white/10';
             row.innerHTML = `
-                <td class="py-3 px-4">${log.date}</td>
-                <td class="py-3 px-4">${student.class}</td>
-                <td class="py-3 px-4 font-medium">${student.name}</td>
-                <td class="py-3 px-4 text-indigo-400 font-medium">+${log.learnedCount || 0}</td>
-                <td class="py-3 px-4">${log.reviewCount || 0}</td>
-                <td class="py-3 px-4 ${log.correctRate >= 80 ? 'text-emerald-400' : 'text-rose-400'} font-medium">${log.correctRate || 0}%</td>
-                <td class="py-3 px-4 text-rose-400">${log.weakWord || '-'}</td>
+                <td class="py-3 px-4">${record.date}</td>
+                <td class="py-3 px-4">${student.className || student.class || '-'}</td>
+                <td class="py-3 px-4 font-medium">${student.name || student.username}</td>
+                <td class="py-3 px-4 text-indigo-400 font-medium">+${record.learnedCount}</td>
+                <td class="py-3 px-4 text-emerald-400 font-medium">${record.reviewCount}</td>
+                <td class="py-3 px-4 ${avgRate >= 80 ? 'text-emerald-400' : (avgRate > 0 ? 'text-amber-400' : 'text-slate-400')} font-medium">${avgRate > 0 ? avgRate + '%' : '-'}</td>
+                <td class="py-3 px-4 text-rose-400 text-sm">${weakWordsDisplay}</td>
             `;
             tbody.appendChild(row);
         });
@@ -4558,17 +4595,53 @@ const teacher = {
             filteredLogs = logs.filter(l => new Date(l.date) >= weekAgo);
         }
         
-        const rows = [['日期', '班级', '姓名', '新学', '复习', '正确率', '难词']];
+        const aggregated = {};
         filteredLogs.forEach(log => {
-            const student = db.findStudent(log.studentId);
+            const key = `${log.date}_${log.studentId}`;
+            if (!aggregated[key]) {
+                aggregated[key] = {
+                    date: log.date,
+                    studentId: log.studentId,
+                    learnedCount: 0,
+                    reviewCount: 0,
+                    correctRates: [],
+                    weakWords: new Set()
+                };
+            }
+            aggregated[key].learnedCount += (Number(log.learnedCount) || 0);
+            aggregated[key].reviewCount += (Number(log.reviewCount) || 0);
+            if (log.correctRate !== undefined && log.correctRate > 0) {
+                aggregated[key].correctRates.push(Number(log.correctRate));
+            }
+            if (log.weakWord && log.weakWord !== '-') {
+                log.weakWord.split(',').forEach(w => {
+                    const word = w.trim();
+                    if (word) aggregated[key].weakWords.add(word);
+                });
+            }
+        });
+
+        const sortedRecords = Object.values(aggregated).sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        const rows = [['日期', '班级', '姓名', '新学单词', '复习单词', '平均正确率', '薄弱词汇']];
+        sortedRecords.forEach(record => {
+            const student = db.findStudent(record.studentId);
+            
+            let avgRate = 0;
+            if (record.correctRates.length > 0) {
+                avgRate = Math.round(record.correctRates.reduce((a, b) => a + b, 0) / record.correctRates.length);
+            }
+            const weakWordsArr = Array.from(record.weakWords);
+            const weakWordsDisplay = weakWordsArr.length > 0 ? weakWordsArr.slice(0, 3).join(', ') + (weakWordsArr.length > 3 ? '...' : '') : '-';
+
             rows.push([
-                log.date,
-                student ? student.class : '-',
-                student ? student.name : '-',
-                log.learnedCount || 0,
-                log.reviewCount || 0,
-                (log.correctRate || 0) + '%',
-                log.weakWord || ''
+                record.date,
+                student ? (student.className || student.class) : '-',
+                student ? (student.name || student.username) : '-',
+                record.learnedCount,
+                record.reviewCount,
+                avgRate > 0 ? avgRate + '%' : '-',
+                weakWordsDisplay
             ]);
         });
         

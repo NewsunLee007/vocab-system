@@ -416,11 +416,11 @@ const api = {
     },
 
     /** 创建教师账户（仅管理员） */
-    async createTeacherAccount({ username, password }) {
+    async createTeacherAccount({ username, password, name }) {
         const response = await fetch(this._url('/admin/teachers'), {
             method: 'POST',
             headers: this._headers({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password, name })
         });
         if (!response.ok) {
             const message = await this._readErrorMessage(response, `Server Error (${response.status}): ${response.statusText}`);

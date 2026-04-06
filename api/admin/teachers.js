@@ -45,23 +45,45 @@ module.exports = async function handler(req, res) {
 
       const passwordHash = await hashPassword(String(password || '123456'));
 
-      const user = await prisma.user.create({
-        data: {
-          username: String(username).trim(),
-          name: name ? String(name).trim() : null,
-          role: 'TEACHER',
-          passwordHash,
-          passwordChanged: false,
-        },
-      });
+      try {
+        const user = await prisma.user.create({
+          data: {
+            username: String(username).trim(),
+            name: name ? String(name).trim() : null,
+            role: 'TEACHER',
+            passwordHash,
+            passwordChanged: false,
+          },
+        });
 
-      return created(res, {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        role: 'teacher',
-        passwordChanged: user.passwordChanged,
-      });
+        return created(res, {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          role: 'teacher',
+          passwordChanged: user.passwordChanged,
+        });
+      } catch (error) {
+        if (error.code === 'P2002') {
+          // If the teacher already exists, let's update their name and password
+          const updatedUser = await prisma.user.update({
+            where: { username: String(username).trim() },
+            data: {
+              name: name ? String(name).trim() : undefined,
+              passwordHash: passwordHash
+            }
+          });
+          return ok(res, {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            name: updatedUser.name,
+            role: 'teacher',
+            passwordChanged: updatedUser.passwordChanged,
+            updated: true
+          });
+        }
+        throw error;
+      }
     }
 
     // ── DELETE: 删除教师账户 ────────────────────────────────────────────────

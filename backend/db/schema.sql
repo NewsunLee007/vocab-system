@@ -63,3 +63,27 @@ CREATE TABLE IF NOT EXISTS learning_records (
   CONSTRAINT fk_lr_vocab FOREIGN KEY (vocabulary_id) REFERENCES vocabulary(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS tasks (
+  id VARCHAR(32) PRIMARY KEY,
+  teacher_id VARCHAR(32) NULL,
+  title VARCHAR(255) NOT NULL,
+  word_list_id VARCHAR(32) NULL,
+  word_list_title VARCHAR(255) NULL,
+  type VARCHAR(32) NULL,
+  date VARCHAR(32) NULL,
+  status VARCHAR(32) NULL,
+  created_at BIGINT NULL,
+  assigned_students JSON NULL,
+  task_types JSON NULL,
+  task_type_names JSON NULL,
+  deadline VARCHAR(32) NULL,
+  ai_analysis JSON NULL,
+  ai_materials JSON NULL
+);
+
+CREATE TABLE IF NOT EXISTS global_store (
+  id VARCHAR(32) PRIMARY KEY,
+  payload JSON NOT NULL
+);
+
+

@@ -112,22 +112,18 @@
                     showToast('请输入密码！', 'warning');
                     return;
                 }
-
-                showLoading('正在登录...');
                 
-                const result = await auth.loginAdmin();
-                
-                if (result) {
-                    hideLoading();
-                    // auth.js 会负责跳转到 app.html
-                }
+                await auth.loginAdmin();
             } catch (err) {
-                hideLoading();
                 showToast(err.message || '登录失败', 'error');
             }
         }
 
         function showToast(message, type) {
+            if (typeof helpers !== 'undefined' && helpers.showToast) {
+                helpers.showToast(message, type);
+                return;
+            }
             const colors = {
                 success: 'bg-emerald-500',
                 error: 'bg-red-500',
@@ -143,18 +139,9 @@
             setTimeout(function() { toast.remove(); }, 3000);
         }
 
-        function showLoading(message) {
-            const loading = document.createElement('div');
-            loading.id = 'global-loading';
-            loading.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]';
-            loading.innerHTML = '<div class="bg-white rounded-xl px-8 py-6 flex items-center space-x-4"><i class="fa-solid fa-spinner fa-spin text-2xl text-slate-700"></i><span class="text-slate-700 font-medium">' + message + '</span></div>';
-            document.body.appendChild(loading);
-        }
-
-        function hideLoading() {
-            const loading = document.getElementById('global-loading');
-            if (loading) loading.remove();
-        }
+        document.getElementById('admin-pwd').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleAdminLogin();
+        });
     </script>
 </body>
 </html>

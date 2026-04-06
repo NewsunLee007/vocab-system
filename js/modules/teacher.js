@@ -91,7 +91,7 @@ const teacher = {
      */
     switchTab(tabId) {
         // 隐藏所有tab内容
-        ['tab-stats', 'tab-students', 'tab-words', 'tab-settings'].forEach(id => {
+        ['tab-stats', 'tab-students', 'tab-words', 'tab-tasks', 'tab-settings'].forEach(id => {
             const tabContent = document.getElementById(id);
             if (tabContent) tabContent.classList.add('hidden');
             
@@ -123,6 +123,7 @@ const teacher = {
             this.renderStudents();
         } else if (tabId === 'tab-words') {
             this.renderWordlists();
+        } else if (tabId === 'tab-tasks') {
             this.renderTasks();
         } else if (tabId === 'tab-settings') {
             this.renderSettings();
@@ -974,7 +975,7 @@ const teacher = {
                     <span>${wl.words.length} 词</span>
                 </div>
             </div>
-            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="flex items-center gap-2 transition-opacity">
                 ${previewButtonHtml}
                 <button onclick="event.stopPropagation(); teacher.triggerAI('${wl.id}')" 
                     class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all" 

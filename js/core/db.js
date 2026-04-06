@@ -1529,3 +1529,5 @@ const db = {
         }
     }
 };
+
+window.db = db;

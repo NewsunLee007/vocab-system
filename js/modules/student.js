@@ -141,8 +141,10 @@ const student = {
         }
         
         // 分离学习任务和检测任务
-        const learningTasks = tasks.filter(t => t.type === 'learn' || !t.taskTypes);
-        const testTasks = tasks.filter(t => t.type === 'test' && t.taskTypes && t.taskTypes.length > 0);
+        // 如果没有 taskTypes，说明是基础学习任务
+        const learningTasks = tasks.filter(t => !t.taskTypes || t.taskTypes.length === 0 || t.type === 'learn');
+        // 如果有 taskTypes，说明是检测任务（包括 type='test', 'mixed', 'context', 'spelling', 'matching' 等）
+        const testTasks = tasks.filter(t => t.taskTypes && t.taskTypes.length > 0 && t.type !== 'learn');
         
         // 渲染学习任务
         if (learningTasks.length > 0) {

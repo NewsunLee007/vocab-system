@@ -123,7 +123,8 @@ const admin = {
                 const wordlist = db.findWordList(task.wordListId);
                 const taskItem = document.createElement('div');
                 taskItem.className = 'flex justify-between items-center p-2 bg-slate-50 rounded';
-                const iconClass = task.type === 'test' ? 'fa-puzzle-piece text-rose-500' : 'fa-layer-group text-indigo-500';
+                const isTest = task.taskTypes && task.taskTypes.length > 0 && task.type !== 'learn';
+            const iconClass = isTest ? 'fa-puzzle-piece text-rose-500' : 'fa-layer-group text-indigo-500';
                 taskItem.innerHTML = `
                     <div class="flex items-center">
                         <i class="fa-solid ${iconClass} mr-2"></i>

@@ -1223,7 +1223,8 @@ const teacher = {
         }
 
         tasks.forEach(task => {
-            const iconClass = task.type === 'test' ? 'fa-puzzle-piece text-rose-400' : 'fa-layer-group text-indigo-400';
+            const isTest = task.taskTypes && task.taskTypes.length > 0 && task.type !== 'learn';
+            const iconClass = isTest ? 'fa-puzzle-piece text-rose-400' : 'fa-layer-group text-indigo-400';
             
             // 状态标签
             let statusText = '进行中';

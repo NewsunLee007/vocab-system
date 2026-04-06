@@ -205,7 +205,11 @@ async function handleChangePassword(req, res) {
     if (!dbUser) return fail(res, 404, '用户不存在');
 
     const valid = await verifyPassword(String(currentPassword), dbUser.passwordHash);
-    if (!valid) return fail(res, 400, '当前密码错误');
+    // If this is a forced password change (passwordChanged === false), we allow skipping the currentPassword check
+    // since the frontend might have lost the original password due to a redirect.
+    if (!valid && !(dbUser.passwordChanged === false && currentPassword === 'ignored')) {
+      return fail(res, 400, '当前密码错误');
+    }
 
     const newHash = await hashPassword(String(newPassword));
     await prisma.user.update({

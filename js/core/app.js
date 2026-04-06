@@ -47,12 +47,12 @@ const app = {
                     }, 300);
                 }
                 
-                // 后台同步词库到服务器
-                setTimeout(() => {
-                    dataSync.syncWordlistsToServer().catch(err => {
-                        console.warn('Initial sync failed:', err);
-                    });
-                }, 2000);
+                // 移除：后台自动全量同步词库到服务器（会导致严重的性能问题和网络拥堵，词汇记录会在学习时按需同步）
+                // setTimeout(() => {
+                //     dataSync.syncWordlistsToServer().catch(err => {
+                //         console.warn('Initial sync failed:', err);
+                //     });
+                // }, 2000);
             }
         } else {
             // 如果未登录，且当前是在 app.html 内，才重定向回首页

@@ -3486,8 +3486,22 @@ const teacher = {
         `;
         this.updateVerifyProgress(wordlist);
 
-        // 获取学生数量（使用已声明的user变量）
-        const studentCount = db.getStudentsByTeacher(user.id).length;
+        const allStudents = db.getStudentsByTeacher(user.id);
+        if (!this._aiPublishSelection || this._aiPublishSelection.teacherId !== user.id) {
+            this._aiPublishSelection = {
+                teacherId: user.id,
+                students: allStudents,
+                selected: new Set(allStudents.map(s => s.id)),
+                classMode: 'all'
+            };
+        } else {
+            this._aiPublishSelection.students = allStudents;
+            const validIds = new Set(allStudents.map(s => s.id));
+            this._aiPublishSelection.selected = new Set(
+                Array.from(this._aiPublishSelection.selected).filter(id => validIds.has(id))
+            );
+        }
+        const studentCount = this._aiPublishSelection.selected.size;
         
         publishPane.innerHTML = `
             <div class="bg-white rounded-2xl border shadow-sm p-6">
@@ -3499,14 +3513,26 @@ const teacher = {
                             </div>
                             <div>
                                 <div class="text-sm font-semibold text-slate-800">发布对象</div>
-                                <div class="text-xs text-slate-500">任务将发布给您的所有学生</div>
+                                <div class="text-xs text-slate-500">支持按班级筛选或多选学生</div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-bold text-indigo-600">${studentCount}</div>
+                            <div id="ai-publish-selected-count" class="text-2xl font-bold text-indigo-600">${studentCount}</div>
                             <div class="text-xs text-slate-500">名学生</div>
                         </div>
                     </div>
+                </div>
+
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="text-sm font-semibold text-slate-800">选择学生</div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="teacher.aiPublishSelectAll()" class="text-xs px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">全选</button>
+                            <button onclick="teacher.aiPublishClearAll()" class="text-xs px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">全不选</button>
+                        </div>
+                    </div>
+                    <div id="ai-publish-class-filters" class="flex flex-wrap gap-2 mb-3"></div>
+                    <div id="ai-publish-student-list" class="max-h-56 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-slate-50"></div>
                 </div>
                 
                 <div class="text-sm font-semibold text-slate-800 mb-3">截止时间 <span class="text-rose-500">*</span></div>
@@ -3520,12 +3546,14 @@ const teacher = {
                 </div>
                 <div class="flex justify-end space-x-3 mt-6">
                     <button onclick="teacher.switchAITab('verify')" class="px-4 py-2 text-slate-700 border rounded-lg hover:bg-slate-50 transition">回到核验</button>
-                    <button onclick="teacher.publishAITask()" class="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-md transition ${studentCount === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${studentCount === 0 ? 'disabled' : ''}>
+                    <button id="ai-publish-confirm-btn" onclick="teacher.publishAITask()" class="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-md transition ${studentCount === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${studentCount === 0 ? 'disabled' : ''}>
                         <i class="fa-solid fa-paper-plane mr-1"></i>确认发布给学生
                     </button>
                 </div>
             </div>
         `;
+
+        this.renderAIPublishSelector();
 
         this.switchAITab('overview');
     },
@@ -4001,9 +4029,11 @@ const teacher = {
         const taskTypes = ['context', 'spelling', 'matching'];
         const selectedTypeNames = '语境选择、听音拼写、词义匹配';
 
-        // 获取该教师的所有学生
         const allStudents = db.getStudentsByTeacher(user.id);
-        const assignedStudents = allStudents.map(s => s.id);
+        const selection = this._aiPublishSelection && this._aiPublishSelection.teacherId === user.id ? this._aiPublishSelection : null;
+        const assignedStudents = selection
+            ? allStudents.filter(s => selection.selected.has(s.id)).map(s => s.id)
+            : allStudents.map(s => s.id);
         
         // 调试
         console.log('=== Publish Task Debug ===');
@@ -4011,8 +4041,12 @@ const teacher = {
         console.log('All students:', allStudents.map(s => ({ id: s.id, name: s.name, class: s.class, teacherId: s.teacherId })));
         console.log('Assigned student IDs:', assignedStudents);
         
-        if (assignedStudents.length === 0) {
+        if (allStudents.length === 0) {
             helpers.showToast('您还没有学生，请先添加学生！', 'warning');
+            return;
+        }
+        if (assignedStudents.length === 0) {
+            helpers.showToast('请选择发布对象！', 'warning');
             return;
         }
 
@@ -4042,6 +4076,126 @@ const teacher = {
         const typeCount = taskTypes.length;
         const deadlineMsg = deadline ? `，截止时间：${deadlineDate}` : '';
         helpers.showToast(`检测任务已发布给${assignedStudents.length}名学生！包含${typeCount}种检测模式${deadlineMsg}`, 'success');
+    },
+
+    renderAIPublishSelector() {
+        const user = auth.getCurrentUser();
+        if (!user) return;
+        if (!this._aiPublishSelection || this._aiPublishSelection.teacherId !== user.id) return;
+
+        const students = this._aiPublishSelection.students || [];
+        const selected = this._aiPublishSelection.selected;
+
+        const classEl = document.getElementById('ai-publish-class-filters');
+        const listEl = document.getElementById('ai-publish-student-list');
+        if (!classEl || !listEl) return;
+
+        const classes = Array.from(new Set(students.map(s => s.class).filter(Boolean)));
+        classEl.innerHTML = '';
+
+        const allBtn = document.createElement('button');
+        allBtn.className = `text-xs px-3 py-1 rounded-lg border transition ${this._aiPublishSelection.classMode === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`;
+        allBtn.textContent = '全部班级';
+        allBtn.onclick = () => {
+            this._aiPublishSelection.classMode = 'all';
+            this.renderAIPublishSelector();
+        };
+        classEl.appendChild(allBtn);
+
+        classes.forEach(cls => {
+            const btn = document.createElement('button');
+            btn.className = `text-xs px-3 py-1 rounded-lg border transition ${this._aiPublishSelection.classMode === cls ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`;
+            btn.textContent = cls;
+            btn.onclick = () => {
+                this._aiPublishSelection.classMode = cls;
+                this.renderAIPublishSelector();
+            };
+            classEl.appendChild(btn);
+        });
+
+        const visibleStudents = this._aiPublishSelection.classMode === 'all'
+            ? students
+            : students.filter(s => s.class === this._aiPublishSelection.classMode);
+
+        listEl.innerHTML = '';
+        if (visibleStudents.length === 0) {
+            listEl.innerHTML = '<div class="text-center text-slate-400 text-sm py-6">该班级暂无学生</div>';
+            this.updateAIPublishSelectedCount();
+            return;
+        }
+
+        visibleStudents.forEach(s => {
+            const row = document.createElement('label');
+            row.className = 'flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-white transition cursor-pointer';
+            const checked = selected.has(s.id);
+            row.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    <input type="checkbox" class="ai-publish-student-checkbox w-4 h-4" ${checked ? 'checked' : ''} data-student-id="${s.id}">
+                    <div class="min-w-0">
+                        <div class="text-sm font-semibold text-slate-800 truncate">${s.name || s.username || s.id}</div>
+                        <div class="text-xs text-slate-500 truncate">${s.class || '-'}</div>
+                    </div>
+                </div>
+            `;
+            row.querySelector('input')?.addEventListener('change', (e) => {
+                const id = e.target?.dataset?.studentId;
+                if (!id) return;
+                if (e.target.checked) selected.add(id);
+                else selected.delete(id);
+                this.updateAIPublishSelectedCount();
+            });
+            listEl.appendChild(row);
+        });
+
+        this.updateAIPublishSelectedCount();
+    },
+
+    updateAIPublishSelectedCount() {
+        const user = auth.getCurrentUser();
+        if (!user) return;
+        const selection = this._aiPublishSelection && this._aiPublishSelection.teacherId === user.id ? this._aiPublishSelection : null;
+        if (!selection) return;
+
+        const countEl = document.getElementById('ai-publish-selected-count');
+        if (countEl) countEl.textContent = selection.selected.size;
+
+        const btn = document.getElementById('ai-publish-confirm-btn');
+        if (btn) {
+            if (selection.selected.size === 0) {
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.setAttribute('disabled', 'disabled');
+            } else {
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btn.removeAttribute('disabled');
+            }
+        }
+    },
+
+    aiPublishSelectAll() {
+        const user = auth.getCurrentUser();
+        if (!user) return;
+        if (!this._aiPublishSelection || this._aiPublishSelection.teacherId !== user.id) return;
+        const mode = this._aiPublishSelection.classMode || 'all';
+        const targets = mode === 'all'
+            ? this._aiPublishSelection.students
+            : this._aiPublishSelection.students.filter(s => s.class === mode);
+        targets.forEach(s => this._aiPublishSelection.selected.add(s.id));
+        this.renderAIPublishSelector();
+    },
+
+    aiPublishClearAll() {
+        const user = auth.getCurrentUser();
+        if (!user) return;
+        if (!this._aiPublishSelection || this._aiPublishSelection.teacherId !== user.id) return;
+        const mode = this._aiPublishSelection.classMode || 'all';
+        if (mode === 'all') {
+            this._aiPublishSelection.selected.clear();
+        } else {
+            this._aiPublishSelection.students
+                .filter(s => s.class === mode)
+                .forEach(s => this._aiPublishSelection.selected.delete(s.id));
+        }
+        this.renderAIPublishSelector();
     },
 
     /**

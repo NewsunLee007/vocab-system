@@ -16,6 +16,17 @@ const matchingTest = {
         studentId: null
     },
 
+    isChineseText(text) {
+        if (!text) return false;
+        return /[\u4e00-\u9fff]/.test(String(text));
+    },
+
+    normalizeMeaning(meaning, word) {
+        const m = String(meaning || '').trim();
+        if (this.isChineseText(m)) return m;
+        return word ? `[缺失中文释义] ${word}` : '[缺失中文释义]';
+    },
+
     start(words, onComplete, options = {}) {
         // 重置智能洗牌的位置追踪器
         if (typeof aiSentenceService !== 'undefined') {
@@ -137,8 +148,19 @@ const matchingTest = {
             if (unusedQuestions[word] && unusedQuestions[word].length > 0) {
                 const q = unusedQuestions[word][0];
                 this.session.questionIds.push(q.id);
+                const optionsLookLikeWords = Array.isArray(q.options) && q.options.some(o => String(o || '').toLowerCase() === word.toLowerCase());
+                let opts = (q.options || []).map(opt => {
+                    if (optionsLookLikeWords) {
+                        const wd = db.findWord(opt);
+                        return this.normalizeMeaning(wd?.meaning, opt);
+                    }
+                    return this.normalizeMeaning(opt, null);
+                });
+                if (opts[q.correctIndex] !== this.normalizeMeaning(wordData.meaning, word)) {
+                    opts[q.correctIndex] = this.normalizeMeaning(wordData.meaning, word);
+                }
                 return { 
-                    options: q.options, 
+                    options: opts, 
                     correctIndex: q.correctIndex,
                     questionId: q.id
                 };
@@ -150,14 +172,25 @@ const matchingTest = {
             const review = db.getTeacherReviewedSentences(wl.teacherId || 'system', wl.id);
             const r = review?.sentences?.[word];
             if (r && (r.status === 'approved' || r.status === 'modified') && Array.isArray(r.options) && r.options.length >= 4) {
-                const opts = r.options;
                 const corrIdx = r.correctIndex || 0;
+                const optionsLookLikeWords = r.options.some(o => String(o || '').toLowerCase() === word.toLowerCase());
+                let opts = r.options.map((opt, idx) => {
+                    if (optionsLookLikeWords) {
+                        const wd = db.findWord(opt);
+                        return this.normalizeMeaning(wd?.meaning, opt);
+                    }
+                    return this.normalizeMeaning(opt, idx === corrIdx ? word : opt);
+                });
+                if (!opts.every(o => this.isChineseText(o))) {
+                    opts = opts.map((o, idx) => this.normalizeMeaning(o, idx === corrIdx ? word : null));
+                }
+
                 // 保存到题库
                 if (teacherId && wordlistId) {
                     const qid = db.saveQuestionToBank(teacherId, wordlistId, word, {
                         options: opts,
                         correctIndex: corrIdx,
-                        meaning: r.meaning || wordData.meaning,
+                        meaning: this.normalizeMeaning(r.meaning || wordData.meaning, word),
                         type: 'matching'
                     });
                     this.session.questionIds.push(qid);
@@ -167,14 +200,18 @@ const matchingTest = {
         }
         
         // 生成新题目（使用智能洗牌确保位置分布均匀）
-        const correctMeaning = wordData.meaning || `[缺失中文释义] ${word}`;
+        const correctMeaning = this.normalizeMeaning(wordData.meaning, word);
         const allWords = db.getAllWords ? db.getAllWords() : [];
         const distractorMeanings = allWords
-            .filter(w => w.word.toLowerCase() !== word.toLowerCase() && w.meaning && w.meaning !== word)
-            .map(w => w.meaning)
-            .slice(0, 10);
+            .filter(w => w.word && w.word.toLowerCase() !== word.toLowerCase())
+            .map(w => this.normalizeMeaning(w.meaning, w.word))
+            .filter(m => this.isChineseText(m) && m !== correctMeaning)
+            .slice(0, 50);
         const shuffledDistractors = helpers.shuffle(distractorMeanings).slice(0, 3);
         const options = [correctMeaning, ...shuffledDistractors];
+        while (options.length < 4) {
+            options.push('[缺失中文释义]');
+        }
         
         // 使用智能位置平衡洗牌
         let correctIndex, finalOptions;

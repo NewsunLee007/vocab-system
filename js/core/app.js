@@ -3,10 +3,15 @@
  */
 
 const app = {
+    _initialized: false,
+    
     /**
      * 初始化应用
      */
     async init() {
+        if (this._initialized) return;
+        this._initialized = true;
+        
         await auth.init();
         await db.init();
         auth.refreshCurrentUserProfile();
@@ -140,11 +145,5 @@ const app = {
      */
     now() {
         return Date.now();
-    },
-
+    }
 };
-
-// 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    app.init();
-});

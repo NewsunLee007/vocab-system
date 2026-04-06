@@ -78,13 +78,19 @@ module.exports = async function handler(req, res) {
       
       let wordlists = [];
       try {
+        const whereClause = user.role === 'ADMIN' ? undefined : {
+          OR: [
+            { createdById: user.id },
+            { isPublic: true }
+          ]
+        };
+
+        if (user.role === 'STUDENT' && normalizedStudents.length > 0 && normalizedStudents[0].teacherId) {
+          whereClause.OR.push({ createdById: normalizedStudents[0].teacherId });
+        }
+
         const dbWordLists = await prisma.wordList.findMany({
-          where: user.role === 'ADMIN' ? undefined : {
-            OR: [
-              { createdById: user.id },
-              { isPublic: true }
-            ]
-          }
+          where: whereClause
         });
         
         wordlists = dbWordLists.map(wl => {

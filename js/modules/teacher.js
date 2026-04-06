@@ -938,9 +938,30 @@ const teacher = {
         const user = auth.getCurrentUser();
         const wordlists = db.getWordListsByTeacher(user.id);
         
-        // 分离教材词表和课外词表
-        const textbookWordlists = wordlists.filter(wl => wl.type === '教材');
+        // 分离教材词表和课外词表，并进行去重和过滤
+        let textbookWordlists = wordlists.filter(wl => wl.type === '教材');
         const extraWordlists = wordlists.filter(wl => wl.type !== '教材');
+        
+        // 过滤掉其他教师的教材副本，只保留系统预置(system/t001)或当前教师的
+        textbookWordlists = textbookWordlists.filter(wl => {
+            const tid = wl.teacherId;
+            return !tid || tid === 'system' || tid === 't001' || tid === user.id;
+        });
+
+        // 根据 title 去重：优先保留当前教师自己的副本，否则保留系统副本
+        const tbMap = new Map();
+        textbookWordlists.forEach(wl => {
+            const key = wl.title;
+            if (!tbMap.has(key)) {
+                tbMap.set(key, wl);
+            } else {
+                const existing = tbMap.get(key);
+                if (wl.teacherId === user.id) {
+                    tbMap.set(key, wl); // 当前教师的优先级最高
+                }
+            }
+        });
+        textbookWordlists = Array.from(tbMap.values());
         
         // 更新统计
         document.getElementById('teacher-wordlist-count').innerText = wordlists.length;
@@ -4243,10 +4264,20 @@ const teacher = {
         const user = auth.getCurrentUser();
         
         // 加载词表选项
-        const wordlists = db.getWordListsByTeacher(user.id);
+        const allWordlists = db.getWordLists();
+        let myWordlists = allWordlists.filter(wl => wl.teacherId === user.id);
+        
+        // 加入系统教材词表（去重：如果自己有同名副本，则使用自己的）
+        const systemWordlists = allWordlists.filter(wl => wl.type === '教材' && (wl.teacherId === 'system' || wl.teacherId === 't001' || !wl.teacherId));
+        systemWordlists.forEach(sysWl => {
+            if (!myWordlists.find(wl => wl.title === sysWl.title)) {
+                myWordlists.push(sysWl);
+            }
+        });
+        
         const wordlistSelect = document.getElementById('new-task-wordlist');
         wordlistSelect.innerHTML = '<option value="">请选择词表</option>';
-        wordlists.forEach(wl => {
+        myWordlists.forEach(wl => {
             const option = document.createElement('option');
             option.value = wl.id;
             option.textContent = wl.title;

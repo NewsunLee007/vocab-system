@@ -157,8 +157,8 @@ const flashcardLearning = {
         };
         
         let reviewed = null;
-        if (this.session.teacherId && this.session.wordlistId) {
-            const review = db.getTeacherReviewedSentences(this.session.teacherId, this.session.wordlistId);
+        if (this.session.wordlistId) {
+            const review = db.getTeacherReviewedSentences(this.session.teacherId || 'system', this.session.wordlistId);
             if (review && review.sentences && review.sentences[word]) {
                 const data = review.sentences[word];
                 if (data.status === 'approved' || data.status === 'modified') {

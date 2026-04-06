@@ -1094,7 +1094,7 @@ const teacher = {
         const subtitleParts = [wl.textbook, wl.grade, wl.volume].filter(Boolean);
         const subtitle = subtitleParts.join(' · ');
 
-        const reviewed = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
+        const reviewed = db.getTeacherReviewedSentences(wl.teacherId || 'system', wl.id);
         const hasMaterials = wl.aiMaterials || (reviewed && reviewed.sentences && Object.keys(reviewed.sentences).length > 0);
         let previewButtonHtml = '';
         if (hasMaterials) {
@@ -1209,7 +1209,7 @@ const teacher = {
         const item = document.createElement('div');
         item.className = 'p-4 border border-white/10 rounded-xl bg-slate-700/30 flex justify-between items-center hover:bg-slate-600/30 transition';
         
-        const reviewed = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
+        const reviewed = db.getTeacherReviewedSentences(wl.teacherId || 'system', wl.id);
         const hasMaterials = wl.aiMaterials || (reviewed && reviewed.sentences && Object.keys(reviewed.sentences).length > 0);
         let previewButtonHtml = '';
         if (hasMaterials) {

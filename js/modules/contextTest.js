@@ -163,8 +163,8 @@ const contextTest = {
         // 检查是否有教师审核过的句子
         let teacherReviewData = null;
         const wl = taskEngine?.state?.wordlist || testEngine?.state?.wordlist || (typeof student !== 'undefined' && student.currentWordlistId ? db.findWordList(student.currentWordlistId) : null);
-        if (wl && wl.id && wl.teacherId) {
-            const teacherReview = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
+        if (wl && wl.id) {
+            const teacherReview = db.getTeacherReviewedSentences(wl.teacherId || 'system', wl.id);
             if (teacherReview && teacherReview.sentences && teacherReview.sentences[word]) {
                 const reviewedSentence = teacherReview.sentences[word];
                 // 只使用已审核或已修改的句子

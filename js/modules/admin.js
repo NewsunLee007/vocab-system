@@ -1726,7 +1726,7 @@ const admin = {
             const aiButtonIcon = aiDraft ? 'fa-check-circle' : 'fa-robot';
             const aiButtonLabel = aiDraft ? 'AI已生成' : 'AI生成';
 
-            const reviewed = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
+            const reviewed = db.getTeacherReviewedSentences(wl.teacherId || 'system', wl.id);
             const hasMaterials = wl.aiMaterials || (reviewed && reviewed.sentences && Object.keys(reviewed.sentences).length > 0);
             let previewButtonHtml = '';
             if (hasMaterials) {
@@ -2695,6 +2695,8 @@ const admin = {
         };
         
         const teachers = db.getTeachers();
+        // 包含系统(教材词表默认的teacherId)
+        teachers.push({ id: 'system', name: '系统预设' });
         
         teachers.forEach(teacher => {
             // 检查AI草稿

@@ -77,13 +77,29 @@ const teacherReview = {
         this.state.currentWordlistId = wordlistId;
         this.state.words = words;
         this.state.currentIndex = 0;
-        this.state.isModified = true;
-        this.state.reviewedSentences = {};
         
+        const user = auth.getCurrentUser();
+        const savedReview = this.loadReviewedSentences(wordlistId, user.id);
+        
+        if (savedReview && savedReview.sentences) {
+            this.state.reviewedSentences = savedReview.sentences;
+            this.state.isModified = false;
+        } else {
+            this.state.reviewedSentences = {};
+            this.state.isModified = true;
+        }
+        
+        let hasNewWords = false;
         // 使用AI生成的素材创建审核数据
         materials.context.forEach((item, idx) => {
             const word = item.word;
             
+            // 如果已经有审核记录，保留原记录
+            if (this.state.reviewedSentences[word]) {
+                return;
+            }
+            
+            hasNewWords = true;
             // 确保选项和正确答案索引是正确的
             let options = item.options || [];
             let correctIndex = item.correctIndex !== undefined ? item.correctIndex : 0;
@@ -139,8 +155,11 @@ const teacherReview = {
             };
         });
         
-        // 自动保存到数据库
-        this.saveReviewedSentences();
+        if (hasNewWords) {
+            this.state.isModified = true;
+            // 自动保存到数据库
+            this.saveReviewedSentences();
+        }
         
         return this.state;
     },
@@ -483,12 +502,8 @@ const teacherReview = {
      * @returns {Object|null} 审核数据
      */
     loadReviewedSentences(wordlistId, teacherId) {
-        // 如果传入了 teacherId 则使用，否则尝试从词表中获取
-        let tid = teacherId;
-        if (!tid) {
-            const wl = db.findWordList(wordlistId);
-            tid = wl ? wl.teacherId || 'system' : 'system';
-        }
+        const wl = db.findWordList(wordlistId);
+        const tid = wl ? wl.teacherId || 'system' : 'system';
         return db.getTeacherReviewedSentences(tid, wordlistId);
     },
 

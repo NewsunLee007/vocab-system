@@ -837,8 +837,8 @@ const student = {
         if (this.currentWordlistId) {
             wl = db.findWordList(this.currentWordlistId);
         }
-        if (wl && wl.teacherId && wl.id) {
-            const review = db.getTeacherReviewedSentences(wl.teacherId, wl.id);
+        if (wl && wl.id) {
+            const review = db.getTeacherReviewedSentences(wl.teacherId || 'system', wl.id);
             if (review && review.sentences && review.sentences[word]) {
                 const r = review.sentences[word];
                 if (r.status === 'approved' || r.status === 'modified') {

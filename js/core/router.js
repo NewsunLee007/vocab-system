@@ -99,6 +99,13 @@ const router = {
             return false;
         }
         
+        const user = auth.getCurrentUser();
+        // 如果密码未修改，阻止导航到系统内部页面
+        if (user && user.passwordChanged === false) {
+            console.log('Password not changed, blocking navigation to internal view:', viewName);
+            return false;
+        }
+        
         // 权限检查
         if (!this.checkPermission(viewName)) {
             console.warn(`无权访问视图: ${viewName}`);
@@ -278,6 +285,11 @@ const router = {
         // Ensure we are on app.html before navigating to internal views
         if (!window.location.pathname.endsWith('app.html')) {
             window.location.href = 'app.html';
+            return;
+        }
+        
+        // 如果密码未修改，不进行常规的页面跳转
+        if (user.passwordChanged === false) {
             return;
         }
         

@@ -23,7 +23,9 @@ const app = {
             // 如果 URL 参数包含 force_change_password，则显示修改密码弹窗
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('action') === 'force_change_password') {
-                auth.showForceChangePasswordModal();
+                setTimeout(() => {
+                    auth.showForceChangePasswordModal();
+                }, 300);
             }
             
             // 后台同步词库到服务器

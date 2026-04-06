@@ -166,7 +166,11 @@ const auth = {
                         return true;
                     }
                     
-                    this.showForceChangePasswordModal();
+                    // Delay slightly to ensure app is fully loaded before showing modal
+                    setTimeout(() => {
+                        this.showForceChangePasswordModal();
+                    }, 100);
+                    
                     if (typeof app !== 'undefined' && app.updateNav) {
                         app.updateNav();
                     }
@@ -219,7 +223,7 @@ const auth = {
         const modal = document.getElementById('modal-force-change-password');
         if (modal) {
             modal.classList.remove('hidden');
-            modal.offsetHeight;
+            void modal.offsetWidth;
             modal.classList.remove('opacity-0');
         }
         // 清空输入
@@ -240,6 +244,10 @@ const auth = {
                 modal.classList.add('hidden');
             }, 300);
         }
+        
+        // 确保所有输入框被清空
+        const inputs = document.querySelectorAll('#modal-force-change-password input');
+        inputs.forEach(input => input.value = '');
     },
 
     /**
@@ -308,7 +316,12 @@ const auth = {
                     } else if (pendingRole === 'teacher') {
                         router.navigate('teacher');
                     } else {
-                        router.navigate('student');
+                        // 学生改密后调用完成登录流程以初始化必要数据
+                        if (this.currentUser) {
+                            this.completeStudentLogin(this.currentUser);
+                        } else {
+                            router.navigate('student');
+                        }
                     }
                 }
             }, 1000);
@@ -404,7 +417,11 @@ const auth = {
                         return true;
                     }
                     
-                    this.showForceChangePasswordModal();
+                    // Delay slightly to ensure app is fully loaded before showing modal
+                    setTimeout(() => {
+                        this.showForceChangePasswordModal();
+                    }, 100);
+                    
                     if (typeof app !== 'undefined' && app.updateNav) {
                         app.updateNav();
                     }
@@ -486,7 +503,11 @@ const auth = {
                          return true;
                      }
                      
-                     this.showForceChangePasswordModal();
+                     // Delay slightly to ensure app is fully loaded before showing modal
+                     setTimeout(() => {
+                         this.showForceChangePasswordModal();
+                     }, 100);
+                     
                      if (typeof app !== 'undefined' && app.updateNav) {
                          app.updateNav();
                      }
@@ -498,6 +519,9 @@ const auth = {
                 
                 // 根据角色重定向
                 helpers.showToast(`欢迎回来，${student.name}！`, 'success');
+                
+                // 设置 session 状态（因为 redirectByRole 会检查 currentUser）
+                this.currentUser = student;
                 
                 // 如果当前不在 app.html，跳转到 app.html
                 if (!window.location.pathname.endsWith('app.html')) {
@@ -552,6 +576,19 @@ const auth = {
         console.log('currentUser set:', this.currentUser);
         console.log('Session ready, navigating to student...');
         
+        if (this.currentUser.passwordChanged === false) {
+            console.log('Password not changed, redirecting to force password change');
+            this._pendingPasswordChange = { ...this.currentUser, oldPassword: 'ignored' };
+            if (!window.location.pathname.endsWith('app.html')) {
+                window.location.href = 'app.html?action=force_change_password';
+            } else {
+                setTimeout(() => {
+                    this.showForceChangePasswordModal();
+                }, 100);
+            }
+            return;
+        }
+        
         // 如果当前不在 app.html，跳转到 app.html
         if (!window.location.pathname.endsWith('app.html')) {
             window.location.href = 'app.html';
@@ -566,34 +603,7 @@ const auth = {
         }
     },
 
-    /**
-     * 显示强制修改密码模态框
-     */
-    showForceChangePasswordModal() {
-        const modal = document.getElementById('modal-force-change-password');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.offsetHeight; // Trigger reflow
-            modal.classList.remove('opacity-0');
-        }
-    },
 
-    /**
-     * 隐藏强制修改密码模态框
-     */
-    hideForceChangePasswordModal() {
-        const modal = document.getElementById('modal-force-change-password');
-        if (modal) {
-            modal.classList.add('opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-        
-        // 确保所有输入框被清空
-        const inputs = document.querySelectorAll('#modal-force-change-password input');
-        inputs.forEach(input => input.value = '');
-    },
 
     /**
      * 显示安全警告模态框

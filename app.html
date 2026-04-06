@@ -2134,6 +2134,15 @@
         
         // 调试：确保app对象可用
         console.log('App object check:', typeof app, app);
+        
+        // 启动应用
+        if (typeof app !== 'undefined' && app.init) {
+            app.init().catch(err => {
+                console.error('应用初始化失败:', err);
+            });
+        } else {
+            console.error('未找到 app.init 方法，请检查加载顺序');
+        }
     </script>
 </body>
 </html>
